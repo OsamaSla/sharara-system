@@ -1128,7 +1128,8 @@ export default function App() {
   }
 
   return (
-    <div className="no-print" style={{ direction: 'rtl', backgroundColor: '#f8fafc', minHeight: '100vh', fontFamily: 'Assistant, Rubik, sans-serif', color: '#1e293b', width: '100%', letterSpacing: '0.2px' }}>
+    <div style={{ direction: 'rtl', backgroundColor: '#f8fafc', minHeight: '100vh', fontFamily: 'Assistant, Rubik, sans-serif', color: '#1e293b', width: '100%', letterSpacing: '0.2px' }}>
+      <div className="no-print" style={{ width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       
       {/* כותרת עליונה קבועה */}
       <header style={{ backgroundColor: '#0f172a', borderBottom: '4px solid #475569', padding: '30px 24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '20px' }}>
@@ -3116,6 +3117,7 @@ export default function App() {
           </div>
         </div>
       )}
+      </div> {/* end of .no-print wrapper */}
       <PrintableReport
         sheets={sheets}
         clientDetails={{ name: clientDetails.name, phone: clientDetails.phone, email: clientDetails.email, contact: clientDetails.contact }}
