@@ -96,6 +96,7 @@ export default function App() {
   const [docDate, setDocDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [docNumber, setDocNumber] = useState<string>('1001');
   const [logoUrl, setLogoUrl] = useState<string>('');
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
 
   // דפי המדידות והשורות
   const [sheets, setSheets] = useState<Sheet[]>([
@@ -1746,8 +1747,13 @@ export default function App() {
                       <FileDown size={14} /> Excel
                     </button>
                     
+                    {/* תצוגה מקדימה */}
+                    <button onClick={() => setIsPreviewMode(true)} style={{ backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', marginRight: '10px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Printer size={14} /> תצוגה מקדימה
+                    </button>
+                    
                     {/* הדפס דוח מקצועי */}
-                    <button onClick={() => window.print()} style={{ backgroundColor: '#475569', color: '#ffffff', border: 'none', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', marginRight: '10px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <button onClick={() => { try { window.print(); } catch (e) { console.error(e); } }} style={{ backgroundColor: '#475569', color: '#ffffff', border: 'none', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', marginRight: '10px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <Printer size={14} /> הדפס דוח מקצועי
                     </button>
                     
@@ -3091,6 +3097,23 @@ export default function App() {
               </div>
             )}
           </main>
+        </div>
+      )}
+      {isPreviewMode && (
+        <div className="preview-overlay" onClick={() => setIsPreviewMode(false)}>
+          <div className="preview-container" onClick={e => e.stopPropagation()}>
+            <button className="preview-close-btn" onClick={() => setIsPreviewMode(false)}>✕ סגור תצוגה מקדימה</button>
+            <PrintableReport
+              sheets={sheets}
+              clientDetails={{ name: clientDetails.name, phone: clientDetails.phone, email: clientDetails.email, contact: clientDetails.contact }}
+              selectedProject={selectedProject}
+              docDate={docDate}
+              docNumber={docNumber}
+              logoUrl={logoUrl}
+              calculateArea={calculateArea}
+              calculateThickness={calculateThickness}
+            />
+          </div>
         </div>
       )}
       <PrintableReport

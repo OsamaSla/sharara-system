@@ -21,6 +21,7 @@ export default function PrintableReport({
   calculateArea,
   calculateThickness,
 }: PrintableReportProps) {
+  const today = new Date().toLocaleDateString('he-IL');
   const headers = [
     { label: '#', w: '3%' },
     { label: "מס' חלק", w: '7%' },
@@ -118,21 +119,21 @@ export default function PrintableReport({
               );
             })}
           </tbody>
+          <tfoot>
+            <tr className="pt-footer-row">
+              <td colSpan={headers.length}>
+                <div className="pt-footer">
+                  <span className="pt-footer-date">תאריך הפקה: {today}</span>
+                  <span className="pt-footer-sign">חתימת מנהל עבודה: _________________________</span>
+                </div>
+              </td>
+            </tr>
+          </tfoot>
           {si < sheets.length - 1 && (
             <tbody className="pt-page-break"><tr><td colSpan={headers.length} /></tr></tbody>
           )}
         </table>
       ))}
-
-      <div className="pt-footer">
-        <div className="pt-sign-line">
-          <span>חתימה: ____________________</span>
-          <span>תאריך: ____________________</span>
-        </div>
-        <div className="pt-stamp">
-          שרארה מערכות מיזוג בע"מ • טל: {clientDetails.phone} • {clientDetails.email}
-        </div>
-      </div>
     </div>
   );
 }

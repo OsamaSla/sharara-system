@@ -1,7 +1,17 @@
 @media print {
   @page {
     size: A4 portrait;
-    margin: 20mm;
+    margin: 0;
+    @bottom-center {
+      content: "עמוד " counter(page);
+      font-family: 'Assistant', 'Rubik', 'Arial', sans-serif;
+      font-size: 7pt;
+      color: #555;
+    }
+  }
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
   body {
     background: #ffffff !important;
@@ -26,7 +36,6 @@
 .print-table {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 8mm;
   font-size: 7.5pt;
   page-break-inside: auto;
 }
@@ -37,6 +46,11 @@
 
 .print-table tbody tr {
   page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.print-table tfoot {
+  display: table-footer-group;
 }
 
 .pt-logo-row th {
@@ -130,23 +144,85 @@
   height: 0;
 }
 
-.pt-footer {
-  text-align: center;
-  font-size: 7.5pt;
-  color: #555;
-  margin-top: 6mm;
-  border-top: 1px solid #999;
-  padding-top: 3mm;
+.pt-footer-row td {
+  border: none;
+  padding: 3mm 0 2mm;
 }
 
-.pt-sign-line {
+.pt-footer {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 3mm;
-  font-size: 8pt;
+  align-items: center;
+  font-size: 7.5pt;
+  color: #555;
+  border-top: 1px solid #999;
+  padding-top: 2mm;
+  margin-top: 2mm;
+}
+
+.pt-footer-date {
+  white-space: nowrap;
+}
+
+.pt-footer-sign {
+  white-space: nowrap;
 }
 
 .pt-stamp {
+  text-align: center;
   font-size: 7pt;
   color: #888;
+  padding: 2mm 0;
+  border-top: 1px solid #ccc;
+  margin-top: 1mm;
+}
+
+/* ── Preview Overlay ── */
+.preview-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.55);
+  z-index: 99999;
+  overflow: auto;
+  direction: rtl;
+}
+
+.preview-container {
+  background: #ffffff;
+  max-width: 210mm;
+  margin: 20px auto;
+  padding: 20mm;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  position: relative;
+  border-radius: 2px;
+}
+
+.preview-container .printable-report {
+  display: block !important;
+}
+
+.preview-close-btn {
+  position: sticky;
+  top: 10px;
+  float: left;
+  z-index: 10;
+  padding: 6px 16px;
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.preview-close-btn:hover {
+  background: #b91c1c;
 }
