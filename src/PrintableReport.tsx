@@ -46,16 +46,20 @@ export default function PrintableReport({
   ];
 
   return (
-    <div className="printable-report">
+    <div className="printable-report landscape-print">
       {sheets.map((sheet, si) => (
         <table key={sheet.id} className="print-table">
           <thead>
             <tr className="pt-logo-row">
               <th colSpan={headers.length}>
-                <div className="pt-header">
-                  {logoUrl && <img src={logoUrl} alt="לוגו" className="pt-logo" />}
-                  <span className="pt-title">שרארה — דוח מדידות תעלות פח</span>
-                </div>
+                  <div className="pt-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '10px', marginBottom: '15px' }}>
+                    {logoUrl ? (
+                      <img src={logoUrl} alt="לוגו" className="pt-logo" style={{ maxHeight: '70px', width: 'auto', objectFit: 'contain' }} />
+                    ) : (
+                      <div style={{ fontSize: '16px', fontWeight: 'bold' }}>עלי שרארה בע"מ</div>
+                    )}
+                    <span className="pt-title" style={{ fontSize: '18pt', fontWeight: 'bold', color: '#1f4e79', fontFamily: 'Rubik, sans-serif' }}>שרארה — דוח מדידות תעלות פח</span>
+                  </div>
               </th>
             </tr>
             <tr className="pt-info-row">

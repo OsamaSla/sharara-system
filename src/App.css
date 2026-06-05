@@ -1,14 +1,21 @@
+@page portrait-page {
+  size: A4 portrait;
+  margin: 10mm;
+}
+
+@page landscape-page {
+  size: A4 landscape;
+  margin: 5mm;
+}
+
 @media print {
-  @page {
-    size: A4 portrait;
-    margin: 0;
-    @bottom-center {
-      content: "עמוד " counter(page);
-      font-family: 'Assistant', 'Rubik', 'Arial', sans-serif;
-      font-size: 7pt;
-      color: #555;
-    }
+  .portrait-print {
+    page: portrait-page;
   }
+  .landscape-print {
+    page: landscape-page;
+  }
+  
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
