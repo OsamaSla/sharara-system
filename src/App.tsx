@@ -254,6 +254,9 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [undoStack, redoStack, sheets, isSessionInitialized, activeTab]);
 
+  // שמירת מזהה הלקוח שממנו ייבאנו פרטים בעת יצירת לקוח חדש
+  const [importedClientSourceKey, setImportedClientSourceKey] = useState<string>('');
+
   // מעקב אחר החברה והפרויקט הפעילים כרגע בטבלה כדי לזהות מתי הם הוחלפו ולתחול דפים מחדש
   const [loadedClientProject, setLoadedClientProject] = useState({
     client: "אלקטרה מיזוג אוויר",
@@ -316,6 +319,7 @@ export default function App() {
   // מעבר למצב לקוח חדש / מחיקת שדות
   const toggleClientMode = (isNew: boolean) => {
     setIsNewClient(isNew);
+    setImportedClientSourceKey(''); // איפוס מזהה הייבוא
     if (isNew) {
       setClientDetails({ name: '', phone: '', email: '', contact: '', regDate: new Date().toISOString().split('T')[0] });
       setIsNewProject(true);
@@ -960,6 +964,7 @@ export default function App() {
                               contact: data.contact,
                               regDate: data.regDate
                             });
+                            setImportedClientSourceKey(comp); // שמירת מזהה המקור לייבוא הפרויקטים
                           }
                         }
                       }}
@@ -1101,7 +1106,7 @@ export default function App() {
                   <input type="text" placeholder="הקלד שם פרויקט/אתר מיועד..." value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#ffffff', color: '#0f172a' }} />
                   
                   {(() => {
-                    const activeClient = isNewClient ? clientDetails.name.trim() : selectedClientKey;
+                    const activeClient = isNewClient ? (importedClientSourceKey || clientDetails.name.trim()) : selectedClientKey;
                     const existingProjects = clientsData[activeClient]?.projects || [];
                     if (existingProjects.length > 0) {
                       return (
@@ -1114,7 +1119,7 @@ export default function App() {
                   })()}
 
                   {(() => {
-                    const activeClient = isNewClient ? clientDetails.name.trim() : selectedClientKey;
+                    const activeClient = isNewClient ? (importedClientSourceKey || clientDetails.name.trim()) : selectedClientKey;
                     const clientObj = clientsData[activeClient];
                     if (clientObj && newProjectName.trim() && clientObj.projects.includes(newProjectName.trim())) {
                       let seqName = newProjectName.trim();
@@ -1279,6 +1284,7 @@ export default function App() {
               }
               
               setIsSessionInitialized(true);
+              setImportedClientSourceKey('');
             }}
             style={{ width: '100%', padding: '14px', backgroundColor: '#10b981', color: '#ffffff', border: 'none', borderRadius: '6px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 4px 6px -1px rgba(16,185,129,0.2)' }}
           >
