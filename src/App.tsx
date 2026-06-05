@@ -937,6 +937,40 @@ export default function App() {
                 <div>
                   <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '4px' }}>שם חברה/לקוח חדש:</label>
                   <input type="text" placeholder="הקלד שם חברה..." value={clientDetails.name} onChange={(e) => setClientDetails({...clientDetails, name: e.target.value})} style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                  
+                  {clientDetails.name.trim() && Object.keys(clientsData).some(c => c.toLowerCase() === clientDetails.name.trim().toLowerCase()) && (
+                    <div style={{ color: '#d97706', fontSize: '11px', fontWeight: 'bold', marginTop: '4px' }}>
+                      ⚠️ חברה זו כבר קיימת במערכת. פרטיה ייטענו אוטומטית באישור.
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: '8px', borderTop: '1px dashed #cbd5e1', paddingTop: '6px' }}>
+                    <label style={{ fontSize: '11px', color: '#64748b', display: 'block', marginBottom: '2px' }}>או ייבא פרטים מחברה קיימת לעריכה:</label>
+                    <select 
+                      value=""
+                      onChange={(e) => {
+                        const comp = e.target.value;
+                        if (comp) {
+                          const data = clientsData[comp];
+                          if (data) {
+                            setClientDetails({
+                              name: comp,
+                              phone: data.phone,
+                              email: data.email,
+                              contact: data.contact,
+                              regDate: data.regDate
+                            });
+                          }
+                        }
+                      }}
+                      style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#f1f5f9', color: '#475569', fontWeight: '600' }}
+                    >
+                      <option value="">-- בחר חברה לייבוא פרטים --</option>
+                      {Object.keys(clientsData).map((c, idx) => (
+                        <option key={idx} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               )}
 
@@ -1065,6 +1099,38 @@ export default function App() {
                 <div>
                   <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '4px' }}>שם הפרויקט החדש:</label>
                   <input type="text" placeholder="הקלד שם פרויקט/אתר מיועד..." value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                  
+                  {(() => {
+                    const activeClient = isNewClient ? clientDetails.name.trim() : selectedClientKey;
+                    const existingProjects = clientsData[activeClient]?.projects || [];
+                    if (existingProjects.length > 0) {
+                      return (
+                        <div style={{ marginTop: '6px', fontSize: '11px', color: '#475569', textAlign: 'right', backgroundColor: '#f1f5f9', padding: '4px 8px', borderRadius: '4px' }}>
+                          <b>פרויקטים קיימים ללקוח זה:</b> {existingProjects.join(', ')}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+
+                  {(() => {
+                    const activeClient = isNewClient ? clientDetails.name.trim() : selectedClientKey;
+                    const clientObj = clientsData[activeClient];
+                    if (clientObj && newProjectName.trim() && clientObj.projects.includes(newProjectName.trim())) {
+                      let seqName = newProjectName.trim();
+                      let counter = 2;
+                      while (clientObj.projects.includes(seqName)) {
+                        seqName = `${newProjectName.trim()} - ${counter}`;
+                        counter++;
+                      }
+                      return (
+                        <div style={{ color: '#b45309', fontSize: '11px', fontWeight: 'bold', marginTop: '6px', backgroundColor: '#fffbeb', padding: '6px 8px', borderRadius: '4px', border: '1px solid #fde68a' }}>
+                          ⚠️ פרויקט בשם זה כבר קיים! המערכת תיצור סדרה חדשה בשם: <b>"{seqName}"</b>.
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
               )}
 
