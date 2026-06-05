@@ -9,6 +9,43 @@
 }
 
 @media print {
+  /* מפת מחיקת אלמנטים לפי הטאב הפעיל */
+  .active-tab-measure .no-print {
+    display: none !important;
+  }
+  .active-tab-measure .printable-report {
+    display: block !important;
+  }
+
+  .active-tab-summary .no-print,
+  .active-tab-invoice .no-print,
+  .active-tab-pricelist .no-print,
+  .active-tab-production .no-print {
+    display: block !important;
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .active-tab-summary .printable-report,
+  .active-tab-invoice .printable-report,
+  .active-tab-pricelist .printable-report,
+  .active-tab-production .printable-report {
+    display: none !important;
+  }
+
+  /* הסתרת כפתורים וסרגלים בכל הטאבים בעת הדפסה */
+  header,
+  section,
+  button,
+  .no-print button,
+  .no-print select,
+  .no-print input:not([type="text"]):not([type="number"]),
+  .no-print label,
+  .no-print .no-print-element {
+    display: none !important;
+  }
+
   .portrait-print {
     page: portrait-page;
   }
@@ -23,12 +60,6 @@
   body {
     background: #ffffff !important;
     color: #000000 !important;
-  }
-  .no-print, .no-print * {
-    display: none !important;
-  }
-  .printable-report {
-    display: block !important;
   }
 }
 
