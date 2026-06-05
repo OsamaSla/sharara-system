@@ -913,6 +913,75 @@ export default function App() {
     XLSX.writeFile(wb, `sharara_${new Date().toISOString().slice(0,10)}.xlsx`);
   }
 
+  // ייצוא ריכוז כמויות לאקסל
+  const exportSummaryToExcel = () => {
+    const wb = XLSX.utils.book_new();
+    sheets.forEach((sheet, si) => {
+      const header = ['#', 'מס\' חלק', 'פירוט', 'פח (מ"ר)', 'בידוד (מ"ר)', 'מתאם (יח\')', 'דופן', 'שתוצר (יח\')', 'גמיש (מ"א)', 'שרשורי (מ"א)', 'פח 1.25 (מ"ר)', 'הערות'];
+      const rows = sheet.rows.map((row, idx) => {
+        const thick = calculateThickness(row.width1, row.height1, row.manualThickness);
+        const area = calculateArea(row);
+        const displayType = row.notes && ['לאמד S','צינור עגול','קופסת פיזור','מדף אש'].includes(row.notes) ? row.notes : row.type;
+        let detail = `${displayType} ${row.notes === 'צינור עגול' ? `קוטר ${row.width1}` : `${row.width1}x${row.height1}`}`;
+        if (row.type === 'מעבר') detail += ` / ${row.width2}x${row.height2}`;
+        if (row.length > 0) detail += ` L=${row.length}`;
+        const is125 = thick === 1.25;
+        return [
+          idx + 1, row.partNumber || '', detail,
+          !is125 && area > 0 ? area.toFixed(2) : '',
+          (row.acoustic || row.external) && area > 0 ? area.toFixed(2) : '',
+          row.adapterType !== 'ללא' ? row.adapterQty : '',
+          row.panels || '',
+          row.shatuzar ? 1 : '',
+          row.flexible || '',
+          row.adapterType !== 'ללא' ? row.adapterQty : '',
+          is125 && area > 0 ? area.toFixed(2) : '',
+          row.notes || ''
+        ];
+      });
+      const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+      XLSX.utils.book_append_sheet(wb, ws, `ריכוז ${si + 1}`);
+    });
+    XLSX.writeFile(wb, `sharara_summary_${new Date().toISOString().slice(0,10)}.xlsx`);
+  }
+
+  // ייצוא חשבון פרופורמה לאקסל
+  const exportInvoiceToExcel = () => {
+    const wb = XLSX.utils.book_new();
+    const allTotals = { t08: 0, t10: 0, t125: 0, flexible: 0, acoustic: 0, external: 0, sharshuri6: 0, sharshuri8: 0, sharshuri10: 0, adapterQty: 0, shatuzar: 0 };
+    sheets.forEach(s => { const t = getSheetTotals(s); Object.keys(allTotals).forEach(k => allTotals[k as keyof typeof allTotals] += t[k as keyof typeof t]); });
+    function gp(k: string) { return pricesList.find(p => p.detail === k)?.price || 0; }
+    const rows: any[] = [];
+    if (allTotals.t08 > 0) rows.push(['פח מגולוון עובי 0.8 מ"מ', allTotals.t08.toFixed(2), 'מ"ר', gp('פח 0.8'), (allTotals.t08 * gp('פח 0.8')).toFixed(2)]);
+    if (allTotals.t10 > 0) rows.push(['פח מגולוון עובי 1.0 מ"מ', allTotals.t10.toFixed(2), 'מ"ר', gp('פח 1.0'), (allTotals.t10 * gp('פח 1.0')).toFixed(2)]);
+    if (allTotals.t125 > 0) rows.push(['פח מגולוון עובי 1.25 מ"מ', allTotals.t125.toFixed(2), 'מ"ר', gp('פח 1.25'), (allTotals.t125 * gp('פח 1.25')).toFixed(2)]);
+    if (allTotals.shatuzar > 0) rows.push(['שתוצר עגול לתעלות', allTotals.shatuzar, 'יח\'', gp('שתוצר עגול'), (allTotals.shatuzar * gp('שתוצר עגול')).toFixed(2)]);
+    if (allTotals.flexible > 0) rows.push(['חיבור גמיש מונע רעידות', allTotals.flexible.toFixed(2), 'מ"א', gp('חיבור גמיש'), (allTotals.flexible * gp('חיבור גמיש')).toFixed(2)]);
+    if (allTotals.acoustic > 0) rows.push(['בידוד אקוסטי', allTotals.acoustic.toFixed(2), 'מ"ר', gp('בידוד אקוסטי'), (allTotals.acoustic * gp('בידוד אקוסטי')).toFixed(2)]);
+    if (allTotals.external > 0) rows.push(['בידוד חיצוני', allTotals.external.toFixed(2), 'מ"ר', gp('בידוד חיצוני'), (allTotals.external * gp('בידוד חיצוני')).toFixed(2)]);
+    const sumSharshuri = allTotals.sharshuri6 + allTotals.sharshuri8 + allTotals.sharshuri10;
+    if (sumSharshuri > 0) rows.push(['שרשוריות', sumSharshuri.toFixed(2), 'מ"א', gp('שרשוריות'), (sumSharshuri * gp('שרשוריות')).toFixed(2)]);
+    if (allTotals.adapterQty > 0) rows.push(['מתאמים', allTotals.adapterQty, 'יח\'', gp('מתאמים'), (allTotals.adapterQty * gp('מתאמים')).toFixed(2)]);
+    const totalSum = rows.reduce((s, r) => s + (Number(r[4]) || 0), 0);
+    rows.push(['', '', '', 'סה"כ לתשלום:', totalSum.toFixed(2)]);
+    const header = ['תיאור', 'כמות', 'יחידה', 'מחיר ליחידה', 'סה"כ'];
+    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+    ws['!cols'] = [{ wch: 30 }, { wch: 10 }, { wch: 8 }, { wch: 14 }, { wch: 14 }];
+    XLSX.utils.book_append_sheet(wb, ws, 'חשבון פרופורמה');
+    XLSX.writeFile(wb, `sharara_invoice_${new Date().toISOString().slice(0,10)}.xlsx`);
+  }
+
+  // ייצוא מחירון לאקסל
+  const exportPriceListToExcel = () => {
+    const wb = XLSX.utils.book_new();
+    const header = ['שם פריט/שירות', 'מחיר (₪)'];
+    const rows = pricesList.map(p => [p.detail, p.price]);
+    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+    ws['!cols'] = [{ wch: 35 }, { wch: 14 }];
+    XLSX.utils.book_append_sheet(wb, ws, 'מחירון');
+    XLSX.writeFile(wb, `sharara_pricelist_${new Date().toISOString().slice(0,10)}.xlsx`);
+  }
+
   return (
     <div style={{ direction: 'rtl', backgroundColor: '#f8fafc', minHeight: '100vh', fontFamily: 'Assistant, Rubik, sans-serif', color: '#1e293b', width: '100%', letterSpacing: '0.2px' }}>
       
@@ -2016,7 +2085,7 @@ export default function App() {
               <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #cbd5e1', padding: '32px', maxWidth: '1400px', margin: '0 auto', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' }}>
                 
                 {/* סרגל כפתורי ניהול נייר המכתבים - מוסתר בהדפסה */}
-                <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '20px', borderBottom: '1px solid #cbd5e1', paddingBottom: '10px' }}>
+                  <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '20px', borderBottom: '1px solid #cbd5e1', paddingBottom: '10px', gap: '8px' }}>
                   <button 
                     onClick={() => window.print()} 
                     style={{ 
@@ -2032,6 +2101,7 @@ export default function App() {
                   >
                     הדפס ריכוז כמויות / שמור כ-PDF
                   </button>
+                  <button onClick={exportSummaryToExcel} style={{ padding: '8px 16px', backgroundColor: '#16a34a', color: '#ffffff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}><FileDown size={14} /> Excel</button>
                 </div>
 
                 {/* כותרת רשמית של החברה בריכוז כמויות */}
@@ -2264,6 +2334,7 @@ export default function App() {
                     >
                       הדפס חשבון / שמור כ-PDF
                     </button>
+                    <button onClick={exportInvoiceToExcel} style={{ padding: '8px 16px', backgroundColor: '#16a34a', color: '#ffffff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}><FileDown size={14} /> Excel</button>
                   </div>
                 </div>
 
@@ -2561,22 +2632,25 @@ export default function App() {
                     <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', margin: 0 }}>מחירון העסק</h2>
                     <p style={{ fontSize: '13px', color: '#64748b', margin: '4px 0 0 0' }}>מחירון מעודכן הניתן לעדכון ועריכה בכל עת. השינויים משפיעים ישירות על כל הדוחות והחישובים במערכת.</p>
                   </div>
-                  <button 
-                    onClick={() => window.print()} 
-                    className="no-print"
-                    style={{ 
-                      padding: '8px 16px', 
-                      backgroundColor: '#2563eb', 
-                      color: '#ffffff', 
-                      border: 'none', 
-                      borderRadius: '6px', 
-                      cursor: 'pointer', 
-                      fontWeight: 'bold', 
-                      fontSize: '13px'
-                    }}
-                  >
-                    הדפס מחירון
-                  </button>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button 
+                      onClick={() => window.print()} 
+                      className="no-print"
+                      style={{ 
+                        padding: '8px 16px', 
+                        backgroundColor: '#2563eb', 
+                        color: '#ffffff', 
+                        border: 'none', 
+                        borderRadius: '6px', 
+                        cursor: 'pointer', 
+                        fontWeight: 'bold', 
+                        fontSize: '13px'
+                      }}
+                    >
+                      הדפס מחירון
+                    </button>
+                    <button onClick={exportPriceListToExcel} className="no-print" style={{ padding: '8px 16px', backgroundColor: '#16a34a', color: '#ffffff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}><FileDown size={14} /> Excel</button>
+                  </div>
                 </div>
 
                 <div style={{ overflowX: 'auto' }}>
