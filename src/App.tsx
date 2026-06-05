@@ -3,6 +3,7 @@ import './App.css';
 import { Trash2, FileSpreadsheet, Layers, CreditCard, Building2, Briefcase, Upload, User, Phone, Mail, CheckCircle2, FileDown } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import PrintableReport from './PrintableReport';
+import heroLogo from './assets/hero.png';
 
 export interface RowData {
   id: string;
@@ -119,7 +120,7 @@ export default function App() {
   // פרטי מסמך כלליים
   const [docDate, setDocDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [docNumber, setDocNumber] = useState<string>('1001');
-  const [logoUrl, setLogoUrl] = useState<string>('');
+  const [logoUrl, setLogoUrl] = useState<string>(heroLogo);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
 
   // דפי המדידות והשורות
