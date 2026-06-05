@@ -103,7 +103,7 @@ export default function App() {
     }
   ]);
   const [activeSheetId, setActiveSheetId] = useState<string>('1');
-  const [activeTab, setActiveTab] = useState<'measure' | 'summary' | 'invoice' | 'pricelist'>('measure');
+  const [activeTab, setActiveTab] = useState<'measure' | 'summary' | 'invoice' | 'pricelist' | 'production'>('measure');
 
   // מחירון מעודכן הניתן לעריכה בכל עת (טעינה מ-localStorage)
   const [pricesList, setPricesList] = useState<PriceItem[]>(() => {
@@ -476,6 +476,12 @@ export default function App() {
   const getPrice = (name: string): number => {
     const item = pricesList.find(p => p.detail === name);
     return item ? item.price : 0;
+  };
+
+  // המרת מילימטרים לסנטימטרים לצורך שרטוטי ייצור (לדוגמה: 500 -> 50)
+  const toCm = (val: number): string => {
+    if (!val) return '0';
+    return (val / 10).toString();
   };
 
   // חישוב מפורט של עלויות עבור דף מדידה בודד (לפי מחירון דינמי)
@@ -938,6 +944,9 @@ export default function App() {
             </button>
             <button onClick={() => setActiveTab('pricelist')} style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', backgroundColor: activeTab === 'pricelist' ? '#3b82f6' : 'transparent', color: activeTab === 'pricelist' ? '#ffffff' : '#94a3b8' }}>
               <CreditCard size={16} /> מחירון העסק
+            </button>
+            <button onClick={() => setActiveTab('production')} style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', backgroundColor: activeTab === 'production' ? '#3b82f6' : 'transparent', color: activeTab === 'production' ? '#ffffff' : '#94a3b8' }}>
+              <FileSpreadsheet size={16} /> דפי ייצור
             </button>
           </div>
         )}
@@ -2622,6 +2631,221 @@ export default function App() {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            )}
+
+            {/* טאב דפי ייצור לייצור תעלות ואביזרים */}
+            {activeTab === 'production' && (
+              <div className="no-shadow" style={{ maxWidth: '1000px', margin: '0 auto' }}>
+                
+                {/* סרגל כפתורי ניהול מוסתר בהדפסה */}
+                <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '20px', backgroundColor: '#ffffff', padding: '16px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                  <button 
+                    onClick={() => window.print()} 
+                    style={{ 
+                      padding: '10px 24px', 
+                      backgroundColor: '#10b981', 
+                      color: '#ffffff', 
+                      border: 'none', 
+                      borderRadius: '6px', 
+                      cursor: 'pointer', 
+                      fontWeight: 'bold', 
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(16,185,129,0.2)'
+                    }}
+                  >
+                    🖨️ הדפס דפי ייצור / שמור כ-PDF
+                  </button>
+                </div>
+
+                {/* חלוקה לדפי A4 מותאמים להדפסה - 4 חלקים מרווחים לכל עמוד */}
+                {(() => {
+                  const itemsPerPage = 4;
+                  const pages = [];
+                  for (let i = 0; i < activeSheet.rows.length; i += itemsPerPage) {
+                    pages.push(activeSheet.rows.slice(i, i + itemsPerPage));
+                  }
+
+                  if (pages.length === 0) {
+                    return (
+                      <div style={{ backgroundColor: '#ffffff', padding: '40px', borderRadius: '8px', border: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 'bold' }}>
+                        אין נתונים להצגה. אנא הוסף חלקים בדפי המדידה תחילה.
+                      </div>
+                    );
+                  }
+
+                  return pages.map((pageRows, pageIdx) => (
+                    <div 
+                      key={pageIdx} 
+                      className="grid-bg"
+                      style={{ 
+                        backgroundColor: '#ffffff', 
+                        border: '2px solid #cbd5e1', 
+                        padding: '40px', 
+                        marginBottom: '40px', 
+                        position: 'relative', 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        minHeight: '1120px', 
+                        boxSizing: 'border-box',
+                        pageBreakAfter: 'always',
+                        backgroundImage: 'linear-gradient(rgba(100, 149, 237, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(100, 149, 237, 0.08) 1px, transparent 1px)',
+                        backgroundSize: '20px 20px'
+                      }}
+                    >
+                      {/* כותרת דף הייצור */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', borderBottom: '3px solid #0f172a', paddingBottom: '15px', marginBottom: '25px', position: 'relative' }}>
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', width: '100%' }}>
+                          <span style={{ fontSize: '16px', fontFamily: '"Times New Roman", Times, serif', color: '#1e293b', fontWeight: 'bold', letterSpacing: '1px' }}>
+                            {myCompanyDetails.engName}
+                          </span>
+                          <svg width="100" height="40" viewBox="0 0 180 70">
+                            <path d="M10 20 C 50 10, 100 30, 140 20" fill="none" stroke="#94a3b8" strokeWidth="2.5" />
+                            <path d="M10 32 C 50 22, 100 42, 140 32" fill="none" stroke="#475569" strokeWidth="2.5" />
+                            <path d="M10 44 C 50 34, 100 54, 140 44" fill="none" stroke="#d97706" strokeWidth="2.5" />
+                            <g transform="translate(140, 5)">
+                              <path d="M20 35 C 20 22, 45 22, 45 31 C 45 40, 15 37, 15 49 C 15 60, 40 60, 40 49" fill="none" stroke="#d97706" strokeWidth="5" strokeLinecap="round" />
+                              <path d="M30 18 L 15 52 M 30 18 L 45 52 M 19 40 L 41 40" fill="none" stroke="#475569" strokeWidth="4.5" strokeLinecap="round" />
+                            </g>
+                          </svg>
+                        </div>
+                        <h1 style={{ fontSize: '28px', fontWeight: '900', color: '#0f172a', margin: '4px 0 0 0', fontFamily: '"Times New Roman", Times, serif' }}>
+                          {myCompanyDetails.name}
+                        </h1>
+                        <p style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569', margin: '2px 0 0 0' }}>
+                          דף עבודה לייצור תעלות ואביזרים
+                        </p>
+                      </div>
+
+                      {/* פרטי המסמך והפרויקט בראש העמוד */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: '20px', marginBottom: '20px', fontSize: '14px', borderBottom: '1px solid #94a3b8', paddingBottom: '10px', textAlign: 'right' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <div><b>פרויקט פעיל:</b> {isNewProject ? newProjectName : selectedProject} - {isNewClient ? clientDetails.name : selectedClientKey}</div>
+                          <div><b>דף עבודה:</b> {activeSheet.name} (עמוד {pageIdx + 1} מתוך {pages.length})</div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                          <div><b>תאריך:</b> {docDate}</div>
+                          <div><b>מסמך סימוכין:</b> #{docNumber}</div>
+                        </div>
+                      </div>
+
+                      {/* גוף הדף - הצגת 4 חלקים בעימוד 2x2 */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', flexGrow: 1 }}>
+                        {pageRows.map((row, rIdx) => {
+                          const globalIdx = pageIdx * itemsPerPage + rIdx + 1;
+                          const thick = calculateThickness(row.width1, row.height1);
+                          const area = calculateArea(row);
+                          
+                          return (
+                            <div 
+                              key={row.id} 
+                              style={{ 
+                                border: '1.5px solid #1e293b', 
+                                borderRadius: '8px', 
+                                padding: '16px', 
+                                backgroundColor: 'rgba(255,255,255,0.95)', 
+                                display: 'flex', 
+                                flexDirection: 'column', 
+                                alignItems: 'center', 
+                                justifyContent: 'space-between',
+                                position: 'relative',
+                                boxShadow: '0 4px 6px rgba(0,0,0,0.02)',
+                                height: '380px'
+                              }}
+                            >
+                              {/* מספר סימון סביב עיגול בצד ימין למעלה */}
+                              <div style={{ 
+                                position: 'absolute', 
+                                top: '12px', 
+                                right: '12px', 
+                                width: '30px', 
+                                height: '30px', 
+                                borderRadius: '50%', 
+                                border: '2.5px solid #0f172a', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center', 
+                                fontWeight: 'bold', 
+                                fontSize: '15px', 
+                                color: '#0f172a',
+                                backgroundColor: '#ffffff',
+                                zIndex: 10
+                              }}>
+                                {globalIdx}
+                              </div>
+
+                              {/* שרטוט ה-SVG הדינמי */}
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexGrow: 1, marginTop: '20px' }}>
+                                {row.type === 'קטע ישר' && (
+                                  <svg width="180" height="180" viewBox="0 0 200 200" style={{ overflow: 'visible' }}>
+                                    <polygon points="40,110 40,60 110,35 110,85" fill="#f1f5f9" stroke="#0f172a" strokeWidth="2.5" />
+                                    <polygon points="110,85 110,35 155,55 155,105" fill="#cbd5e1" stroke="#0f172a" strokeWidth="2.5" />
+                                    <polygon points="40,110 110,85 155,105 85,130" fill="#94a3b8" stroke="#0f172a" strokeWidth="2.5" />
+                                    <text x="75" y="55" textAnchor="middle" fill="#0f172a" fontWeight="900" fontSize="13" fontFamily="sans-serif">{toCm(row.width1)} / {toCm(row.height1)}</text>
+                                    <text x="135" y="70" textAnchor="middle" fill="#0f172a" fontWeight="900" fontSize="13" fontFamily="sans-serif">L={toCm(row.length)}</text>
+                                    {row.notes && <text x="100" y="155" textAnchor="middle" fill="#1e3a8a" fontWeight="bold" fontSize="12">{row.notes}</text>}
+                                  </svg>
+                                )}
+
+                                {row.type === 'קשת' && (
+                                  <svg width="180" height="180" viewBox="0 0 200 200" style={{ overflow: 'visible' }}>
+                                    <path d="M30,170 A140,140 0 0,1 170,30 L135,30 A105,105 0 0,0 30,135 Z" fill="#cbd5e1" stroke="#0f172a" strokeWidth="2.5" />
+                                    <text x="110" y="85" textAnchor="middle" fill="#0f172a" fontWeight="900" fontSize="13" fontFamily="sans-serif">{toCm(row.width1)} / {toCm(row.height1)}</text>
+                                    <text x="50" y="145" textAnchor="middle" fill="#0f172a" fontWeight="900" fontSize="12" fontFamily="sans-serif">R={toCm(row.rSmall)}</text>
+                                    {row.notes && <text x="100" y="180" textAnchor="middle" fill="#1e3a8a" fontWeight="bold" fontSize="12">{row.notes}</text>}
+                                  </svg>
+                                )}
+
+                                {row.type === 'מעבר' && (
+                                  <svg width="180" height="180" viewBox="0 0 200 200" style={{ overflow: 'visible' }}>
+                                    <polygon points="40,50 160,50 130,150 70,150" fill="#cbd5e1" stroke="#0f172a" strokeWidth="2.5" />
+                                    <text x="100" y="42" textAnchor="middle" fill="#0f172a" fontWeight="900" fontSize="13" fontFamily="sans-serif">{toCm(row.width1)} / {toCm(row.height1)}</text>
+                                    <text x="100" y="165" textAnchor="middle" fill="#0f172a" fontWeight="900" fontSize="13" fontFamily="sans-serif">{toCm(row.width2)} / {toCm(row.height2)}</text>
+                                    <text x="140" y="105" textAnchor="start" fill="#0f172a" fontWeight="900" fontSize="13" fontFamily="sans-serif">L={toCm(row.length)}</text>
+                                    {row.notes && <text x="100" y="185" textAnchor="middle" fill="#1e3a8a" fontWeight="bold" fontSize="12">{row.notes}</text>}
+                                  </svg>
+                                )}
+                              </div>
+
+                              {/* מפרט טכני של החלק */}
+                              <div style={{ width: '100%', borderTop: '1px solid #e2e8f0', paddingTop: '8px', fontSize: '11px', lineHeight: '1.4', color: '#334155', textAlign: 'right' }}>
+                                <div><b>סוג חלק:</b> {row.type} | <b>פח עובי:</b> {thick.toFixed(2)} מ"מ</div>
+                                <div>
+                                  {row.shatuzar ? '✅ שתוצר עגול ' : ''}
+                                  {row.flexible > 0 ? `✅ חיבור גמיש (${row.flexible.toFixed(1)} מ"א) ` : ''}
+                                  {row.acoustic ? '✅ בידוד אקוסטי ' : ''}
+                                  {row.external ? '✅ בידוד חיצוני ' : ''}
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#1e3a8a', fontWeight: 'bold', marginTop: '3px' }}>
+                                  <span>שטח: {area.toFixed(3)} מ"ר</span>
+                                  {row.sharshuriType !== 'ללא' && <span>שרשורי: קוטר {row.sharshuriType} (L={row.sharshuriLen.toFixed(1)}מ"א)</span>}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* חלק תחתון של דף העבודה - מזהה העסק וחתימות */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px', borderTop: '2px solid #0f172a', paddingTop: '15px', fontSize: '11px', lineHeight: '1.4', textAlign: 'right', marginTop: '20px' }}>
+                        <div>
+                          <div><b>דואר למשלוח:</b> {myCompanyDetails.pobox}</div>
+                          <div><b>טלפון:</b> {myCompanyDetails.phone} | <b>פקס:</b> {myCompanyDetails.fax} | <b>נייד:</b> {myCompanyDetails.mobile}</div>
+                          <div><b>אתר:</b> {myCompanyDetails.website} | <b>מייל:</b> {myCompanyDetails.email}</div>
+                        </div>
+                        <div style={{ borderRight: '1.5px solid #cbd5e1', paddingRight: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                          <div><b>משרד ראשי ומפעל:</b> {myCompanyDetails.address}</div>
+                          <div style={{ textAlign: 'center', borderTop: '1px dashed #475569', width: '130px', marginTop: '10px', paddingTop: '3px' }}>חתימת מנהל עבודה</div>
+                        </div>
+                      </div>
+
+                    </div>
+                  ));
+                })()}
+
               </div>
             )}
           </main>
