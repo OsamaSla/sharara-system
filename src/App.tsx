@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import { Trash2, FileSpreadsheet, Layers, CreditCard, Building2, Briefcase, Upload, User, Phone, Mail, CheckCircle2, FileDown } from 'lucide-react';
+import { Trash2, FileSpreadsheet, Layers, CreditCard, Building2, Briefcase, User, Phone, Mail, CheckCircle2, FileDown } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import PrintableReport from './PrintableReport';
-import heroLogo from './assets/hero.png';
+
 
 export interface RowData {
   id: string;
@@ -120,7 +120,6 @@ export default function App() {
   // פרטי מסמך כלליים
   const [docDate, setDocDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [docNumber, setDocNumber] = useState<string>('1001');
-  const [logoUrl, setLogoUrl] = useState<string>(heroLogo);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
 
   // דפי המדידות והשורות
@@ -669,15 +668,7 @@ export default function App() {
   const vat = subtotal * 0.18;
   const finalTotal = subtotal + vat;
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) setLogoUrl(event.target.result as string);
-      };
-      reader.readAsDataURL(e.target.files[0]);
-    }
-  };
+
 
 
 
@@ -1273,10 +1264,9 @@ export default function App() {
         
         {/* לוגו באמצע הדף - מוגדל בצורה משמעותית */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
-          {logoUrl ? (
             <div style={{ position: 'relative' }}>
               <img 
-                src={logoUrl} 
+                src="/logo.png" 
                 alt="לוגו החברה" 
                 style={{ 
                   maxHeight: '160px', 
@@ -1289,40 +1279,7 @@ export default function App() {
                   border: '1px solid #334155'
                 }} 
               />
-              <button 
-                onClick={() => setLogoUrl('')} 
-                className="no-print"
-                style={{ 
-                  position: 'absolute', 
-                  top: '-10px', 
-                  right: '-10px', 
-                  backgroundColor: '#ef4444', 
-                  color: '#ffffff', 
-                  border: 'none', 
-                  borderRadius: '50%', 
-                  width: '24px', 
-                  height: '24px', 
-                  cursor: 'pointer', 
-                  fontWeight: 'bold', 
-                  fontSize: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                }}
-                title="הסר לוגו"
-              >
-                ✕
-              </button>
             </div>
-          ) : (
-            <label style={{ width: '180px', height: '80px', border: '2px dashed #475569', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', cursor: 'pointer', fontSize: '13px', transition: 'all 0.3s', backgroundColor: '#1e293b' }}>
-              <Upload size={20} style={{ marginBottom: '4px', color: '#3b82f6' }} />
-              <span style={{ fontWeight: 'bold' }}>העלה לוגו רשמי</span>
-              <span style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>לוגו רחב או מלבני</span>
-              <input type="file" accept="image/*" onChange={handleLogoUpload} style={{ display: 'none' }} />
-            </label>
-          )}
           
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
             <h1 style={{ fontSize: '32px', fontWeight: '900', color: '#ffffff', margin: 0, letterSpacing: '1px', fontFamily: 'Rubik, Assistant, sans-serif' }}>
@@ -3186,13 +3143,12 @@ export default function App() {
         <div className="preview-overlay" onClick={() => setIsPreviewMode(false)}>
           <div className="preview-container" onClick={e => e.stopPropagation()}>
             <button className="preview-close-btn" onClick={() => setIsPreviewMode(false)}>✕ סגור תצוגה מקדימה</button>
-            <PrintableReport
+              <PrintableReport
               sheets={sheets}
               clientDetails={{ name: clientDetails.name, phone: clientDetails.phone, email: clientDetails.email, contact: clientDetails.contact }}
               selectedProject={selectedProject}
               docDate={docDate}
               docNumber={docNumber}
-              logoUrl={logoUrl}
               calculateArea={calculateArea}
               calculateThickness={calculateThickness}
             />
@@ -3206,7 +3162,6 @@ export default function App() {
         selectedProject={selectedProject}
         docDate={docDate}
         docNumber={docNumber}
-        logoUrl={logoUrl}
         calculateArea={calculateArea}
         calculateThickness={calculateThickness}
       />

@@ -1,5 +1,4 @@
 import type { RowData, Sheet } from './App';
-import { Logo } from './Logo';
 
 interface PrintableReportProps {
   sheets: Sheet[];
@@ -52,7 +51,7 @@ export default function PrintableReport({
             <tr className="pt-logo-row">
               <th colSpan={headers.length}>
                   <div className="pt-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '10px', marginBottom: '15px' }}>
-                    <Logo width={250} height={100} />
+                    <img src="/logo.png" alt="לוגו" className="pt-logo" style={{ maxHeight: '100px', width: 'auto', objectFit: 'contain' }} />
                     <span className="pt-title" style={{ fontSize: '18pt', fontWeight: 'bold', color: '#1f4e79', fontFamily: 'Rubik, sans-serif', marginTop: '10px' }}>שרארה — דוח מדידות תעלות פח</span>
                   </div>
               </th>
