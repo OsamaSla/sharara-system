@@ -17,7 +17,7 @@ interface RowData {
   external: boolean;
   sharshuriType: 'ללא' | '"4' | '"6' | '"8' | '"10' | '"12' | '"14';
   sharshuriLen: number;
-  adapterType: 'ללא' | '"6 מת' | '8/8 מתאם' | '10/10 מתאם' | '12/12 נת' | '14/14 מתאם' | '16/16 מת' | '60/60 מתאם';
+  adapterType: 'ללא' | '"6 מתאם' | '8/8 מתאם' | '10/10 מתאם' | '12/12 מתאם' | '14/14 מתאם' | '16/16 מתאם' | '60/60 מתאם';
   adapterQty: number;
   notes: string;
 }
@@ -514,9 +514,9 @@ export default function App() {
         let adapterPriceKey = 'מתאם 6"6/"';
         if (row.adapterType === '8/8 מתאם') adapterPriceKey = 'מתאם 8"8/"';
         else if (row.adapterType === '10/10 מתאם') adapterPriceKey = 'מתאם 10"10/"';
-        else if (row.adapterType === '12/12 נת') adapterPriceKey = 'מתאם 12"12/"';
+        else if (row.adapterType === '12/12 מתאם') adapterPriceKey = 'מתאם 12"12/"';
         else if (row.adapterType === '14/14 מתאם') adapterPriceKey = 'מתאם 14"14/"';
-        else if (row.adapterType === '16/16 מת') adapterPriceKey = 'מתאם 16"16/"';
+        else if (row.adapterType === '16/16 מתאם') adapterPriceKey = 'מתאם 16"16/"';
         else if (row.adapterType === '60/60 מתאם') adapterPriceKey = 'מתאם 60/60';
         
         sheetMatamSum += row.adapterQty * getPrice(adapterPriceKey);
@@ -569,7 +569,7 @@ export default function App() {
     let totalAcousticArea = 0; let totalExternalArea = 0;
     
     const sharshuriTotals = { '"4': 0, '"6': 0, '"8': 0, '"10': 0, '"12': 0, '"14': 0 };
-    const adapterTotals = { '"6 מת': 0, '8/8 מתאם': 0, '10/10 מתאם': 0, '12/12 נת': 0, '14/14 מתאם': 0, '16/16 מת': 0, '60/60 מתאם': 0 };
+    const adapterTotals = { '"6 מתאם': 0, '8/8 מתאם': 0, '10/10 מתאם': 0, '12/12 מתאם': 0, '14/14 מתאם': 0, '16/16 מתאם': 0, '60/60 מתאם': 0 };
 
     sheets.forEach(sheet => {
       sheet.rows.forEach(row => {
@@ -737,7 +737,7 @@ export default function App() {
   };
 
   // פתיחת טופס להוספת חלק חדש עם ברירות מחדל בהתאם לצורה שנבחרה
-  const openAddPartForm = (type: RowData['type']) => {
+  const openAddPartForm = (type: RowData['type'], defaultNotes: string = '') => {
     setIsAddingPart(true);
     
     const defaults: RowData = {
@@ -758,7 +758,7 @@ export default function App() {
       sharshuriLen: 0,
       adapterType: 'ללא',
       adapterQty: 0,
-      notes: ''
+      notes: defaultNotes
     };
 
     if (type === 'קשת') {
@@ -1512,7 +1512,7 @@ export default function App() {
                   </div>
                   
                   {/* סרגל כפתורי צורות להוספת חלקים מהירה - בדיוק כמו בצילום המסך */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                     <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#94a3b8' }}>הוסף חלק:</span>
                     
                     {/* קטע ישר */}
@@ -1532,7 +1532,7 @@ export default function App() {
                       }}
                       title="הוסף חלק קטע ישר (טופס ויזואלי)"
                     >
-                      <svg width="20" height="20" viewBox="0 0 100 100">
+                      <svg width="18" height="18" viewBox="0 0 100 100">
                         <rect x="30" y="10" width="40" height="80" fill="#94a3b8" stroke="#ffffff" strokeWidth="6" />
                         <line x1="30" y1="35" x2="70" y2="35" stroke="#ffffff" strokeWidth="4" strokeDasharray="6,6" />
                         <line x1="30" y1="65" x2="70" y2="65" stroke="#ffffff" strokeWidth="4" strokeDasharray="6,6" />
@@ -1557,7 +1557,7 @@ export default function App() {
                       }}
                       title="הוסף חלק קשת מרפק (טופס ויזואלי)"
                     >
-                      <svg width="20" height="20" viewBox="0 0 100 100">
+                      <svg width="18" height="18" viewBox="0 0 100 100">
                         <path d="M15 85 A 70 70 0 0 1 85 15 L 85 45 A 40 40 0 0 0 45 85 Z" fill="#94a3b8" stroke="#ffffff" strokeWidth="6" />
                       </svg>
                       <span style={{ fontWeight: 'bold', fontSize: '13px' }}>קשת (מרפק)</span>
@@ -1580,10 +1580,110 @@ export default function App() {
                       }}
                       title="הוסף חלק מעבר (טופס ויזואלי)"
                     >
-                      <svg width="20" height="20" viewBox="0 0 100 100">
+                      <svg width="18" height="18" viewBox="0 0 100 100">
                         <polygon points="25,10 75,10 60,90 40,90" fill="#94a3b8" stroke="#ffffff" strokeWidth="6" />
                       </svg>
                       <span style={{ fontWeight: 'bold', fontSize: '13px' }}>מעבר</span>
+                    </button>
+
+                    {/* סטייה / שקע (S-Offset) */}
+                    <button 
+                      onClick={() => openAddPartForm('קטע ישר', 'סטייה / שקע')} 
+                      style={{ 
+                        backgroundColor: '#1e293b', 
+                        border: '2px solid #475569', 
+                        borderRadius: '6px', 
+                        padding: '6px 12px', 
+                        cursor: 'pointer', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '8px',
+                        transition: 'all 0.2s',
+                        color: '#ffffff'
+                      }}
+                      title="הוסף חלק סטייה / שקע (טופס ויזואלי)"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 100 100">
+                        <path d="M20 15 C 20 45, 80 55, 80 85" fill="none" stroke="#ffffff" strokeWidth="12" strokeLinecap="round" />
+                        <path d="M45 15 C 45 45, 105 55, 105 85" fill="none" stroke="#94a3b8" strokeWidth="12" strokeLinecap="round" />
+                      </svg>
+                      <span style={{ fontWeight: 'bold', fontSize: '13px' }}>סטייה / שקע</span>
+                    </button>
+
+                    {/* צינור עגול */}
+                    <button 
+                      onClick={() => openAddPartForm('קטע ישר', 'צינור עגול')} 
+                      style={{ 
+                        backgroundColor: '#1e293b', 
+                        border: '2px solid #475569', 
+                        borderRadius: '6px', 
+                        padding: '6px 12px', 
+                        cursor: 'pointer', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '8px',
+                        transition: 'all 0.2s',
+                        color: '#ffffff'
+                      }}
+                      title="הוסף חלק צינור עגול (טופס ויזואלי)"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 100 100">
+                        <ellipse cx="50" cy="20" rx="30" ry="10" fill="#94a3b8" stroke="#ffffff" strokeWidth="6" />
+                        <path d="M20 20 L 20 80 A 30 10 0 0 0 80 80 L 80 20" fill="none" stroke="#ffffff" strokeWidth="6" />
+                      </svg>
+                      <span style={{ fontWeight: 'bold', fontSize: '13px' }}>צינור עגול</span>
+                    </button>
+
+                    {/* קופסת פיזור */}
+                    <button 
+                      onClick={() => openAddPartForm('קטע ישר', 'קופסת פיזור')} 
+                      style={{ 
+                        backgroundColor: '#1e293b', 
+                        border: '2px solid #475569', 
+                        borderRadius: '6px', 
+                        padding: '6px 12px', 
+                        cursor: 'pointer', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '8px',
+                        transition: 'all 0.2s',
+                        color: '#ffffff'
+                      }}
+                      title="הוסף חלק קופסת פיזור (טופס ויזואלי)"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 100 100">
+                        <rect x="20" y="35" width="60" height="50" fill="#94a3b8" stroke="#ffffff" strokeWidth="6" />
+                        <ellipse cx="50" cy="20" rx="15" ry="5" fill="#94a3b8" stroke="#ffffff" strokeWidth="5" />
+                        <line x1="35" y1="20" x2="35" y2="35" stroke="#ffffff" strokeWidth="5" />
+                        <line x1="65" y1="20" x2="65" y2="35" stroke="#ffffff" strokeWidth="5" />
+                      </svg>
+                      <span style={{ fontWeight: 'bold', fontSize: '13px' }}>קופסת פיזור</span>
+                    </button>
+
+                    {/* מדף אש */}
+                    <button 
+                      onClick={() => openAddPartForm('קטע ישר', 'מדף אש')} 
+                      style={{ 
+                        backgroundColor: '#1e293b', 
+                        border: '2px solid #475569', 
+                        borderRadius: '6px', 
+                        padding: '6px 12px', 
+                        cursor: 'pointer', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '8px',
+                        transition: 'all 0.2s',
+                        color: '#ffffff'
+                      }}
+                      title="הוסף חלק מדף אש (טופס ויזואלי)"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 100 100">
+                        <rect x="20" y="20" width="60" height="60" fill="#94a3b8" stroke="#ffffff" strokeWidth="6" />
+                        <line x1="20" y1="35" x2="80" y2="35" stroke="#ffffff" strokeWidth="5" />
+                        <line x1="20" y1="50" x2="80" y2="50" stroke="#ffffff" strokeWidth="5" />
+                        <line x1="20" y1="65" x2="80" y2="65" stroke="#ffffff" strokeWidth="5" />
+                      </svg>
+                      <span style={{ fontWeight: 'bold', fontSize: '13px' }}>מדף אש</span>
                     </button>
                   </div>
                 </div>
@@ -1720,16 +1820,16 @@ export default function App() {
                             <input type="number" disabled={newPartData.sharshuriType === 'ללא'} value={newPartData.sharshuriLen || ''} onChange={(e) => setNewPartData({...newPartData, sharshuriLen: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: newPartData.sharshuriType === 'ללא' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} />
                           </div>
                           
-                          <div>
+                           <div>
                             <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>סוג מתאם:</label>
                             <select value={newPartData.adapterType} onChange={(e) => setNewPartData({...newPartData, adapterType: e.target.value as any})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: '600' }}>
                               <option value="ללא">ללא</option>
-                              <option value='"6 מת'>"6 מת'</option>
+                              <option value='"6 מתאם'>"6 מתאם'</option>
                               <option value='8/8 מתאם'>8/8 מתאם</option>
                               <option value='10/10 מתאם'>10/10 מתאם</option>
-                              <option value='12/12 נת'>12/12 נת</option>
+                              <option value='12/12 מתאם'>12/12 מתאם</option>
                               <option value='14/14 מתאם'>14/14 מתאם</option>
-                              <option value='16/16 מת'>16/16 מת</option>
+                              <option value='16/16 מתאם'>16/16 מתאם</option>
                               <option value='60/60 מתאם'>60/60 מתאם</option>
                             </select>
                           </div>
@@ -1847,7 +1947,7 @@ export default function App() {
                           
                           <td style={{ padding: '8px', backgroundColor: '#f0fdf4' }}>
                             <select value={row.adapterType} onChange={(e) => updateRow(row.id, 'adapterType', e.target.value)} style={{ padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', width: '110px', backgroundColor: '#ffffff', color: '#0f172a' }}>
-                              <option value="ללא">ללא</option><option value='"6 מת'>"6 מת'</option><option value='8/8 מתאם'>8/8 מתאם</option><option value='10/10 מתאם'>10/10 מתאם</option><option value='12/12 נת'>12/12 נת</option><option value='14/14 מתאם'>14/14 מתאם</option><option value='16/16 מת'>16/16 מת</option><option value='60/60 מתאם'>60/60 מתאם</option>
+                              <option value="ללא">ללא</option><option value='"6 מתאם'>"6 מתאם'</option><option value='8/8 מתאם'>8/8 מתאם</option><option value='10/10 מתאם'>10/10 מתאם</option><option value='12/12 מתאם'>12/12 מתאם</option><option value='14/14 מתאם'>14/14 מתאם</option><option value='16/16 מתאם'>16/16 מתאם</option><option value='60/60 מתאם'>60/60 מתאם</option>
                             </select>
                           </td>
                           <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#f0fdf4' }}><input type="number" value={row.adapterQty || ''} disabled={row.adapterType === 'ללא'} onChange={(e) => updateRow(row.id, 'adapterQty', Number(e.target.value))} style={{ width: '55px', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.adapterType === 'ללא' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} /></td>
