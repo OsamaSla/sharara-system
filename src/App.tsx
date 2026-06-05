@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, FileSpreadsheet, Layers, CreditCard, Building2, Briefcase, Upload, User, Phone, Mail, CheckCircle2 } from 'lucide-react';
+import { Trash2, FileSpreadsheet, Layers, CreditCard, Building2, Briefcase, Upload, User, Phone, Mail, CheckCircle2 } from 'lucide-react';
 
 interface RowData {
   id: string;
@@ -267,6 +267,29 @@ export default function App() {
   const [isEditingClient, setIsEditingClient] = useState<boolean>(false);
   const [isEditingProjectName, setIsEditingProjectName] = useState<boolean>(false);
   const [tempProjectName, setTempProjectName] = useState<string>('');
+
+  // סטייטים להוספת חלקים באמצעות טופס צורות ויזואלי (כמו באפליקציה המקורית)
+  const [isAddingPart, setIsAddingPart] = useState<boolean>(false);
+  const [newPartData, setNewPartData] = useState<RowData>({
+    id: '',
+    type: 'קטע ישר',
+    width1: 500,
+    height1: 400,
+    width2: 0,
+    height2: 0,
+    length: 1000,
+    rBig: 0,
+    rSmall: 150,
+    shatuzar: false,
+    flexible: 0,
+    acoustic: false,
+    external: false,
+    sharshuriType: 'ללא',
+    sharshuriLen: 0,
+    adapterType: 'ללא',
+    adapterQty: 0,
+    notes: ''
+  });
 
   // שחזור או יצירת מספר סימוכין ותאריך עבור לקוח ופרויקט ספציפיים
   const getOrCreateDocDetails = (clientName: string, projectName: string) => {
@@ -595,14 +618,7 @@ export default function App() {
     }
   };
 
-  const addRow = () => {
-    pushToHistory(sheets);
-    const newRow: RowData = {
-      id: Date.now().toString(), type: 'קטע ישר', width1: 0, height1: 0, width2: 0, height2: 0, length: 0, rBig: 0, rSmall: 150,
-      shatuzar: false, flexible: 0, acoustic: false, external: false, sharshuriType: 'ללא', sharshuriLen: 0, adapterType: 'ללא', adapterQty: 0, notes: ''
-    };
-    setSheets(sheets.map(s => s.id === activeSheetId ? { ...s, rows: [...s.rows, newRow] } : s));
-  };
+
 
   const updateRow = (id: string, field: keyof RowData, value: any) => {
     // בדיקה האם פרויקט זה כבר הופק בעבר והנתון היה קיים בזמן ההפקה
@@ -718,6 +734,74 @@ export default function App() {
     setUndoStack(prev => [...prev, current]);
     setSheets(next);
     setRedoStack(prev => prev.slice(0, -1));
+  };
+
+  // פתיחת טופס להוספת חלק חדש עם ברירות מחדל בהתאם לצורה שנבחרה
+  const openAddPartForm = (type: RowData['type']) => {
+    setIsAddingPart(true);
+    
+    const defaults: RowData = {
+      id: Date.now().toString(),
+      type,
+      width1: 500,
+      height1: 400,
+      width2: 0,
+      height2: 0,
+      length: 1000,
+      rBig: 0,
+      rSmall: 150,
+      shatuzar: false,
+      flexible: 0,
+      acoustic: false,
+      external: false,
+      sharshuriType: 'ללא',
+      sharshuriLen: 0,
+      adapterType: 'ללא',
+      adapterQty: 0,
+      notes: ''
+    };
+
+    if (type === 'קשת') {
+      defaults.length = 0;
+      defaults.rBig = 500 + 150; // width1 + rSmall
+    } else if (type === 'מעבר') {
+      defaults.width2 = 400;
+      defaults.height2 = 300;
+    }
+
+    setNewPartData(defaults);
+  };
+
+  // שמירה והוספה של החלק מטופס ההזנה אל טבלת דפי המדידה
+  const saveFormPart = () => {
+    if (newPartData.width1 <= 0 || newPartData.height1 <= 0) {
+      alert("אנא הזן מידות רוחב וגובה תקינות (גדולות מ-0)");
+      return;
+    }
+    if (newPartData.type === 'מעבר' && (newPartData.width2 <= 0 || newPartData.height2 <= 0)) {
+      alert("אנא הזן מידות רוחב 2 וגובה 2 תקינות עבור חלק מעבר");
+      return;
+    }
+    if (newPartData.type !== 'קשת' && newPartData.length <= 0) {
+      alert("אנא הזן אורך תקין לחלק (גדול מ-0)");
+      return;
+    }
+
+    // הוספת החלק להיסטוריית בטל/שחזר
+    pushToHistory(sheets);
+
+    // הוספת שורה חדשה לדף המדידה הפעיל
+    setSheets(sheets.map(s => {
+      if (s.id === activeSheetId) {
+        return {
+          ...s,
+          rows: [...s.rows, { ...newPartData, id: Date.now().toString() }]
+        };
+      }
+      return s;
+    }));
+
+    setIsAddingPart(false);
   };
 
   // חישוב ריכוז כמויות עבור דף מדידה בודד (עבור טבלת האקסל)
@@ -1426,8 +1510,282 @@ export default function App() {
                       </button>
                     </div>
                   </div>
-                  <button onClick={addRow} style={{ backgroundColor: '#2563eb', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}><Plus size={16} /> הוסף שורה</button>
+                  
+                  {/* סרגל כפתורי צורות להוספת חלקים מהירה - בדיוק כמו בצילום המסך */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#94a3b8' }}>הוסף חלק:</span>
+                    
+                    {/* קטע ישר */}
+                    <button 
+                      onClick={() => openAddPartForm('קטע ישר')} 
+                      style={{ 
+                        backgroundColor: '#1e293b', 
+                        border: '2px solid #475569', 
+                        borderRadius: '6px', 
+                        padding: '6px 12px', 
+                        cursor: 'pointer', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '8px',
+                        transition: 'all 0.2s',
+                        color: '#ffffff'
+                      }}
+                      title="הוסף חלק קטע ישר (טופס ויזואלי)"
+                    >
+                      <svg width="20" height="20" viewBox="0 0 100 100">
+                        <rect x="30" y="10" width="40" height="80" fill="#94a3b8" stroke="#ffffff" strokeWidth="6" />
+                        <line x1="30" y1="35" x2="70" y2="35" stroke="#ffffff" strokeWidth="4" strokeDasharray="6,6" />
+                        <line x1="30" y1="65" x2="70" y2="65" stroke="#ffffff" strokeWidth="4" strokeDasharray="6,6" />
+                      </svg>
+                      <span style={{ fontWeight: 'bold', fontSize: '13px' }}>קטע ישר</span>
+                    </button>
+
+                    {/* קשת מרפק */}
+                    <button 
+                      onClick={() => openAddPartForm('קשת')} 
+                      style={{ 
+                        backgroundColor: '#1e293b', 
+                        border: '2px solid #475569', 
+                        borderRadius: '6px', 
+                        padding: '6px 12px', 
+                        cursor: 'pointer', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '8px',
+                        transition: 'all 0.2s',
+                        color: '#ffffff'
+                      }}
+                      title="הוסף חלק קשת מרפק (טופס ויזואלי)"
+                    >
+                      <svg width="20" height="20" viewBox="0 0 100 100">
+                        <path d="M15 85 A 70 70 0 0 1 85 15 L 85 45 A 40 40 0 0 0 45 85 Z" fill="#94a3b8" stroke="#ffffff" strokeWidth="6" />
+                      </svg>
+                      <span style={{ fontWeight: 'bold', fontSize: '13px' }}>קשת (מרפק)</span>
+                    </button>
+
+                    {/* מעבר */}
+                    <button 
+                      onClick={() => openAddPartForm('מעבר')} 
+                      style={{ 
+                        backgroundColor: '#1e293b', 
+                        border: '2px solid #475569', 
+                        borderRadius: '6px', 
+                        padding: '6px 12px', 
+                        cursor: 'pointer', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '8px',
+                        transition: 'all 0.2s',
+                        color: '#ffffff'
+                      }}
+                      title="הוסף חלק מעבר (טופס ויזואלי)"
+                    >
+                      <svg width="20" height="20" viewBox="0 0 100 100">
+                        <polygon points="25,10 75,10 60,90 40,90" fill="#94a3b8" stroke="#ffffff" strokeWidth="6" />
+                      </svg>
+                      <span style={{ fontWeight: 'bold', fontSize: '13px' }}>מעבר</span>
+                    </button>
+                  </div>
                 </div>
+
+                {/* טופס הוספת חלק ויזואלי נוח ורחב */}
+                {isAddingPart && (
+                  <div style={{ backgroundColor: '#f8fafc', padding: '24px', borderBottom: '2.5px solid #cbd5e1', borderTop: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #334155', paddingBottom: '10px' }}>
+                      <h3 style={{ fontSize: '15px', fontWeight: 'bold', color: '#1e3a8a', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        ✨ טופס הזנת חלק חדש: <span style={{ color: '#10b981' }}>{newPartData.type}</span>
+                      </h3>
+                      <button onClick={() => setIsAddingPart(false)} style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#64748b', fontWeight: 'bold' }}>✕</button>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '20px' }}>
+                      
+                      {/* עמודה 1: מידות החלק */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', backgroundColor: '#ffffff', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <h4 style={{ margin: '0 0 6px 0', borderBottom: '1px solid #cbd5e1', paddingBottom: '4px', color: '#0f172a', fontWeight: 'bold', fontSize: '13px' }}>📏 מידות החלק (מ"מ)</h4>
+                        
+                        {/* מידות לקטע ישר */}
+                        {newPartData.type === 'קטע ישר' && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>חתך 1 (רוחב):</label>
+                              <input type="number" value={newPartData.width1 || ''} onChange={(e) => setNewPartData({...newPartData, width1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>חתך 1 (גובה):</label>
+                              <input type="number" value={newPartData.height1 || ''} onChange={(e) => setNewPartData({...newPartData, height1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>אורך (מ"מ):</label>
+                              <input type="number" value={newPartData.length || ''} onChange={(e) => setNewPartData({...newPartData, length: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* מידות לקשת */}
+                        {newPartData.type === 'קשת' && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>חתך 1 (רוחב):</label>
+                              <input type="number" value={newPartData.width1 || ''} onChange={(e) => { const w = Number(e.target.value); setNewPartData({...newPartData, width1: w, rBig: w + newPartData.rSmall}); }} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>חתך 1 (גובה):</label>
+                              <input type="number" value={newPartData.height1 || ''} onChange={(e) => setNewPartData({...newPartData, height1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>רדיוס קטן (R קטן):</label>
+                              <input type="number" value={newPartData.rSmall || ''} onChange={(e) => { const r = Number(e.target.value); setNewPartData({...newPartData, rSmall: r, rBig: newPartData.width1 + r}); }} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>רדיוס גדול (מחושב):</label>
+                              <input type="number" disabled value={newPartData.rBig || ''} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#e2e8f0', color: '#475569', fontWeight: 'bold' }} />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* מידות למעבר */}
+                        {newPartData.type === 'מעבר' && (
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>רוחב 1:</label>
+                              <input type="number" value={newPartData.width1 || ''} onChange={(e) => setNewPartData({...newPartData, width1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>גובה 1:</label>
+                              <input type="number" value={newPartData.height1 || ''} onChange={(e) => setNewPartData({...newPartData, height1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>רוחב 2:</label>
+                              <input type="number" value={newPartData.width2 || ''} onChange={(e) => setNewPartData({...newPartData, width2: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>גובה 2:</label>
+                              <input type="number" value={newPartData.height2 || ''} onChange={(e) => setNewPartData({...newPartData, height2: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                            </div>
+                            <div style={{ gridColumn: 'span 2' }}>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>אורך (מ"מ):</label>
+                              <input type="number" value={newPartData.length || ''} onChange={(e) => setNewPartData({...newPartData, length: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* עמודה 2: אביזרים ובידוד */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', backgroundColor: '#ffffff', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <h4 style={{ margin: '0 0 6px 0', borderBottom: '1px solid #cbd5e1', paddingBottom: '4px', color: '#0f172a', fontWeight: 'bold', fontSize: '13px' }}>🛠️ אביזרים ובידוד החלק</h4>
+                        
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '10px' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>
+                            <input type="checkbox" checked={newPartData.shatuzar} onChange={(e) => setNewPartData({...newPartData, shatuzar: e.target.checked})} />
+                            <span>שתוצר (עגול לתעלות)</span>
+                          </label>
+                          
+                          <div>
+                            <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>חיבור גמיש (מ"א):</label>
+                            <input type="number" value={newPartData.flexible || ''} onChange={(e) => setNewPartData({...newPartData, flexible: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                          </div>
+
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', marginTop: '4px' }}>
+                            <input type="checkbox" checked={newPartData.acoustic} onChange={(e) => setNewPartData({...newPartData, acoustic: e.target.checked})} />
+                            <span>בידוד פנימי אקוסטי</span>
+                          </label>
+
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>
+                            <input type="checkbox" checked={newPartData.external} onChange={(e) => setNewPartData({...newPartData, external: e.target.checked})} />
+                            <span>בידוד חיצוני תרמי</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* עמודה 3: שרשורי ומתאמים + הערות */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', backgroundColor: '#ffffff', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <h4 style={{ margin: '0 0 6px 0', borderBottom: '1px solid #cbd5e1', paddingBottom: '4px', color: '#0f172a', fontWeight: 'bold', fontSize: '13px' }}>🔌 צינור שרשורי ומתאמים</h4>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '8px' }}>
+                          <div>
+                            <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>קוטר שרשורי:</label>
+                            <select value={newPartData.sharshuriType} onChange={(e) => setNewPartData({...newPartData, sharshuriType: e.target.value as any})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: '600' }}>
+                              <option value="ללא">ללא</option>
+                              <option value='"4'>"4</option>
+                              <option value='"6'>"6</option>
+                              <option value='"8'>"8</option>
+                              <option value='"10'>"10</option>
+                              <option value='"12'>"12</option>
+                              <option value='"14'>"14</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>שרשורי (מ"א):</label>
+                            <input type="number" disabled={newPartData.sharshuriType === 'ללא'} value={newPartData.sharshuriLen || ''} onChange={(e) => setNewPartData({...newPartData, sharshuriLen: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: newPartData.sharshuriType === 'ללא' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} />
+                          </div>
+                          
+                          <div>
+                            <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>סוג מתאם:</label>
+                            <select value={newPartData.adapterType} onChange={(e) => setNewPartData({...newPartData, adapterType: e.target.value as any})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: '600' }}>
+                              <option value="ללא">ללא</option>
+                              <option value='"6 מת'>"6 מת'</option>
+                              <option value='8/8 מתאם'>8/8 מתאם</option>
+                              <option value='10/10 מתאם'>10/10 מתאם</option>
+                              <option value='12/12 נת'>12/12 נת</option>
+                              <option value='14/14 מתאם'>14/14 מתאם</option>
+                              <option value='16/16 מת'>16/16 מת</option>
+                              <option value='60/60 מתאם'>60/60 מתאם</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>מתאם (כמות):</label>
+                            <input type="number" disabled={newPartData.adapterType === 'ללא'} value={newPartData.adapterQty || ''} onChange={(e) => setNewPartData({...newPartData, adapterQty: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: newPartData.adapterType === 'ללא' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} />
+                          </div>
+
+                          <div style={{ gridColumn: 'span 2', marginTop: '4px' }}>
+                            <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>הערות לחלק זה:</label>
+                            <input type="text" value={newPartData.notes} onChange={(e) => setNewPartData({...newPartData, notes: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} placeholder="כתוב הערה..." />
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+
+                    {/* כפתורי שמירה וביטול */}
+                    <div style={{ display: 'flex', justifyContent: 'flex-start', gap: '10px', borderTop: '1px solid #cbd5e1', paddingTop: '15px' }}>
+                      <button 
+                        onClick={saveFormPart} 
+                        style={{ 
+                          padding: '10px 24px', 
+                          backgroundColor: '#10b981', 
+                          color: '#ffffff', 
+                          border: 'none', 
+                          borderRadius: '6px', 
+                          cursor: 'pointer', 
+                          fontWeight: 'bold', 
+                          fontSize: '14px',
+                          boxShadow: '0 4px 6px -1px rgba(16,185,129,0.2)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}
+                      >
+                        ✅ שמור והוסף לטבלה
+                      </button>
+                      <button 
+                        onClick={() => setIsAddingPart(false)} 
+                        style={{ 
+                          padding: '10px 20px', 
+                          backgroundColor: '#64748b', 
+                          color: '#ffffff', 
+                          border: 'none', 
+                          borderRadius: '6px', 
+                          cursor: 'pointer', 
+                          fontWeight: 'bold', 
+                          fontSize: '14px'
+                        }}
+                      >
+                        בטל
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <div style={{ overflowX: 'auto', width: '100%', backgroundColor: '#ffffff' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '13px', minWidth: '1650px' }}>
