@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, FileSpreadsheet, Layers, CreditCard, Building2, Briefcase, Upload, User, Phone, Mail, CheckCircle2 } from 'lucide-react';
 
 interface RowData {
@@ -55,14 +55,17 @@ export default function App() {
   // שלבי עבודה: false = מסך הגדרת לקוח/פרויקט, true = כניסה לעבודה על הטבלאות
   const [isSessionInitialized, setIsSessionInitialized] = useState<boolean>(false);
 
-  // בסיס נתונים של לקוחות ופרויקטים קיימים במערכת
+  // בסיס נתונים של לקוחות ופרויקטים קיימים במערכת (טעינה מ-localStorage אם קיים)
   const [clientsData, setClientsData] = useState<Record<string, {
     phone: string;
     email: string;
     contact: string;
     regDate: string;
     projects: string[];
-  }>>(EXISTING_DATA);
+  }>>(() => {
+    const saved = localStorage.getItem('sharara_clientsData');
+    return saved ? JSON.parse(saved) : EXISTING_DATA;
+  });
 
   // סטייט ניהול לקוח
   const [isNewClient, setIsNewClient] = useState<boolean>(false);
@@ -102,78 +105,154 @@ export default function App() {
   const [activeSheetId, setActiveSheetId] = useState<string>('1');
   const [activeTab, setActiveTab] = useState<'measure' | 'summary' | 'invoice' | 'pricelist'>('measure');
 
-  // מחירון מעודכן הניתן לעריכה בכל עת
-  const [pricesList, setPricesList] = useState<PriceItem[]>([
-    { id: "1", detail: 'פח 0.7', unit: 'מ"ר', price: 100 },
-    { id: "2", detail: 'פח 0.8', unit: 'מ"ר', price: 105 },
-    { id: "3", detail: 'פח 0.9', unit: 'מ"ר', price: 110 },
-    { id: "4", detail: 'פח 1.0', unit: 'מ"ר', price: 140 },
-    { id: "5", detail: 'פח 1.25', unit: 'מ"ר', price: 160 },
-    { id: "6", detail: 'פח שחור 2מ"מ', unit: 'מ"ר', price: 420 },
-    { id: "7", detail: 'התקנת פתח גישה', unit: 'יחידה', price: 200 },
-    { id: "8", detail: 'בידוד פנימי 1"', unit: 'מ"ר', price: 45 },
-    { id: "9", detail: 'בידוד פנימי 2"', unit: 'מ"ר', price: 90 },
-    { id: "10", detail: 'בידוד חיצוני 1"', unit: 'מ"ר', price: 45 },
-    { id: "11", detail: 'בידוד חיצוני 2"', unit: 'מ"ר', price: 90 },
-    { id: "12", detail: 'בידוד קרמי', unit: 'מ"ר', price: 450 },
-    { id: "13", detail: 'חיבור גמיש', unit: 'מ"א', price: 90 },
-    { id: "14", detail: 'שתוצר עגול', unit: 'יחידה', price: 50 },
-    { id: "15", detail: 'שרשורי 4"', unit: 'מ"א', price: 50 },
-    { id: "16", detail: 'שרשורי 6"', unit: 'מ"א', price: 60 },
-    { id: "17", detail: 'שרשורי 8"', unit: 'מ"א', price: 70 },
-    { id: "18", detail: 'שרשורי 10"', unit: 'מ"א', price: 80 },
-    { id: "19", detail: 'שרשורי 12"', unit: 'מ"א', price: 90 },
-    { id: "20", detail: 'שרשורי 14"', unit: 'מ"א', price: 100 },
-    { id: "21", detail: 'דמפר עגול עד 10"', unit: 'יחידה', price: 125 },
-    { id: "22", detail: 'קופסת ניפוח', unit: 'יחידה', price: 250 },
-    { id: "23", detail: 'חיבור אוגנים', unit: 'מ"ר', price: 25 },
-    { id: "24", detail: 'תעלות ספירקל', unit: 'מ"ר', price: 205 },
-    { id: "25", detail: 'צבע', unit: 'מ"ר', price: 50 },
-    { id: "26", detail: 'איטום', unit: 'מ"ר', price: 20 },
-    { id: "27", detail: 'התקנת דמפר אש/ווסות', unit: 'יחידה', price: 200 },
-    { id: "28", detail: 'מתאם 6"6/"', unit: 'יחידה', price: 60 },
-    { id: "29", detail: 'מתאם 8"8/"', unit: 'יחידה', price: 80 },
-    { id: "30", detail: 'מתאם 10"10/"', unit: 'יחידה', price: 100 },
-    { id: "31", detail: 'מתאם 12"12/"', unit: 'יחידה', price: 110 },
-    { id: "32", detail: 'מתאם 14"14/"', unit: 'יחידה', price: 120 },
-    { id: "33", detail: 'מתאם 16"16/"', unit: 'יחידה', price: 140 },
-    { id: "34", detail: 'מתאם 60/60', unit: 'יחידה', price: 180 },
-    { id: "35", detail: 'התקנת מפוח', unit: 'יחידה', price: 400 },
-    { id: "36", detail: 'התקנת משתיק', unit: 'יחידה', price: 250 }
-  ]);
+  // מחירון מעודכן הניתן לעריכה בכל עת (טעינה מ-localStorage)
+  const [pricesList, setPricesList] = useState<PriceItem[]>(() => {
+    const saved = localStorage.getItem('sharara_pricesList');
+    return saved ? JSON.parse(saved) : [
+      { id: "1", detail: 'פח 0.7', unit: 'מ"ר', price: 100 },
+      { id: "2", detail: 'פח 0.8', unit: 'מ"ר', price: 105 },
+      { id: "3", detail: 'פח 0.9', unit: 'מ"ר', price: 110 },
+      { id: "4", detail: 'פח 1.0', unit: 'מ"ר', price: 140 },
+      { id: "5", detail: 'פח 1.25', unit: 'מ"ר', price: 160 },
+      { id: "6", detail: 'פח שחור 2מ"מ', unit: 'מ"ר', price: 420 },
+      { id: "7", detail: 'התקנת פתח גישה', unit: 'יחידה', price: 200 },
+      { id: "8", detail: 'בידוד פנימי 1"', unit: 'מ"ר', price: 45 },
+      { id: "9", detail: 'בידוד פנימי 2"', unit: 'מ"ר', price: 90 },
+      { id: "10", detail: 'בידוד חיצוני 1"', unit: 'מ"ר', price: 45 },
+      { id: "11", detail: 'בידוד חיצוני 2"', unit: 'מ"ר', price: 90 },
+      { id: "12", detail: 'בידוד קרמי', unit: 'מ"ר', price: 450 },
+      { id: "13", detail: 'חיבור גמיש', unit: 'מ"א', price: 90 },
+      { id: "14", detail: 'שתוצר עגול', unit: 'יחידה', price: 50 },
+      { id: "15", detail: 'שרשורי 4"', unit: 'מ"א', price: 50 },
+      { id: "16", detail: 'שרשורי 6"', unit: 'מ"א', price: 60 },
+      { id: "17", detail: 'שרשורי 8"', unit: 'מ"א', price: 70 },
+      { id: "18", detail: 'שרשורי 10"', unit: 'מ"א', price: 80 },
+      { id: "19", detail: 'שרשורי 12"', unit: 'מ"א', price: 90 },
+      { id: "20", detail: 'שרשורי 14"', unit: 'מ"א', price: 100 },
+      { id: "21", detail: 'דמפר עגול עד 10"', unit: 'יחידה', price: 125 },
+      { id: "22", unit: 'יחידה', detail: 'קופסת ניפוח', price: 250 },
+      { id: "23", unit: 'מ"ר', detail: 'חיבור אוגנים', price: 25 },
+      { id: "24", unit: 'מ"ר', detail: 'תעלות ספירקל', price: 205 },
+      { id: "25", unit: 'מ"ר', detail: 'צבע', price: 50 },
+      { id: "26", unit: 'מ"ר', detail: 'איטום', price: 20 },
+      { id: "27", unit: 'יחידה', detail: 'התקנת דמפר אש/ווסות', price: 200 },
+      { id: "28", unit: 'יחידה', detail: 'מתאם 6"6/"', price: 60 },
+      { id: "29", unit: 'יחידה', detail: 'מתאם 8"8/"', price: 80 },
+      { id: "30", unit: 'יחידה', detail: 'מתאם 10"10/"', price: 100 },
+      { id: "31", unit: 'יחידה', detail: 'מתאם 12"12/"', price: 110 },
+      { id: "32", unit: 'יחידה', detail: 'מתאם 14"14/"', price: 120 },
+      { id: "33", unit: 'יחידה', detail: 'מתאם 16"16/"', price: 140 },
+      { id: "34", unit: 'יחידה', detail: 'מתאם 60/60', price: 180 },
+      { id: "35", unit: 'יחידה', detail: 'התקנת מפוח', price: 400 },
+      { id: "36", unit: 'יחידה', detail: 'התקנת משתיק', price: 250 }
+    ];
+  });
 
   // פרטי העסק שלי (עלי שרארה בע"מ) עבור הלוגו ונייר המכתבים הרשמי
-  const [myCompanyDetails, setMyCompanyDetails] = useState({
-    name: "עלי שרארה בע\"מ",
-    engName: "Sharara 1970",
-    subtitle: "תעשיות פח ומערכות אוורור ומיזוג אוויר",
-    website: "www.sharara.co.il",
-    email: "sh_ali@netvision.net.il",
-    address: "אזור תעשייה, נצרת עילית (ריינה) ת.ד. 4174",
-    phone: "04-6082264",
-    fax: "04-6082263",
-    mobile: "050-5215192",
-    pobox: "4040/4 שכ' מזרחית מיקוד 16000",
-    services: [
-      "תכנון וביצוע מערכות מיזוג אוויר ואוורור",
-      "פינוי עשן",
-      "ייצור תעלות פח",
-      "צינורות \"ספיראל\" ואביזרים",
-      "תעלות נירוסטה ומנדפים",
-      "תעלות פח שחור",
-      "חיתוך וכיפוף פחים",
-      "מכירה והתקנת כל סוגי המזגנים"
-    ]
+  const [myCompanyDetails, setMyCompanyDetails] = useState(() => {
+    const saved = localStorage.getItem('sharara_myCompanyDetails');
+    return saved ? JSON.parse(saved) : {
+      name: "עלי שרארה בע\"מ",
+      engName: "Sharara 1970",
+      subtitle: "תעשיות פח ומערכות אוורור ומיזוג אוויר",
+      website: "www.sharara.co.il",
+      email: "sh_ali@netvision.net.il",
+      address: "אזור תעשייה, נצרת עילית (ריינה) ת.ד. 4174",
+      phone: "04-6082264",
+      fax: "04-6082263",
+      mobile: "050-5215192",
+      pobox: "4040/4 שכ' מזרחית מיקוד 16000",
+      services: [
+        "תכנון וביצוע מערכות מיזוג אוויר ואוורור",
+        "פינוי עשן",
+        "ייצור תעלות פח",
+        "צינורות \"ספיראל\" ואביזרים",
+        "תעלות נירוסטה ומנדפים",
+        "תעלות פח שחור",
+        "חיתוך וכיפוף פחים",
+        "מכירה והתקנת כל סוגי המזגנים"
+      ]
+    };
   });
   const [isEditingMyCompany, setIsEditingMyCompany] = useState<boolean>(false);
 
   // שמירת מספרי סימוכין ותאריכים ייחודיים לכל שילוב פרויקט ולקוח, כדי לזכור אותם במעבר חוזר
-  const [projectDocNumbers, setProjectDocNumbers] = useState<Record<string, string>>({
-    "אלקטרה מיזוג אוויר-מגדלי עזריאלי קומה 4": "1001"
+  const [projectDocNumbers, setProjectDocNumbers] = useState<Record<string, string>>(() => {
+    const saved = localStorage.getItem('sharara_projectDocNumbers');
+    return saved ? JSON.parse(saved) : {
+      "אלקטרה מיזוג אוויר-מגדלי עזריאלי קומה 4": "1001"
+    };
   });
-  const [projectDocDates, setProjectDocDates] = useState<Record<string, string>>({
-    "אלקטרה מיזוג אוויר-מגדלי עזריאלי קומה 4": new Date().toISOString().split('T')[0]
+  const [projectDocDates, setProjectDocDates] = useState<Record<string, string>>(() => {
+    const saved = localStorage.getItem('sharara_projectDocDates');
+    return saved ? JSON.parse(saved) : {
+      "אלקטרה מיזוג אוויר-מגדלי עזריאלי קומה 4": new Date().toISOString().split('T')[0]
+    };
   });
+
+  // מעקב אחר פרויקטים שהופקו וננעלו
+  const [producedProjects, setProducedProjects] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem('sharara_producedProjects');
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  // שמירת סנאפשוט של דפי המדידות ברגע ההפקה
+  const [producedSnapshots, setProducedSnapshots] = useState<Record<string, Sheet[]>>(() => {
+    const saved = localStorage.getItem('sharara_producedSnapshots');
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  // מחסניות לטובת ביצוע UNDO ו-REDO
+  const [undoStack, setUndoStack] = useState<Sheet[][]>([]);
+  const [redoStack, setRedoStack] = useState<Sheet[][]>([]);
+
+  // אפקטים לשמירה אוטומטית ב-localStorage
+  useEffect(() => {
+    localStorage.setItem('sharara_clientsData', JSON.stringify(clientsData));
+  }, [clientsData]);
+
+  useEffect(() => {
+    localStorage.setItem('sharara_pricesList', JSON.stringify(pricesList));
+  }, [pricesList]);
+
+  useEffect(() => {
+    localStorage.setItem('sharara_myCompanyDetails', JSON.stringify(myCompanyDetails));
+  }, [myCompanyDetails]);
+
+  useEffect(() => {
+    localStorage.setItem('sharara_projectDocNumbers', JSON.stringify(projectDocNumbers));
+  }, [projectDocNumbers]);
+
+  useEffect(() => {
+    localStorage.setItem('sharara_projectDocDates', JSON.stringify(projectDocDates));
+  }, [projectDocDates]);
+
+  useEffect(() => {
+    localStorage.setItem('sharara_producedProjects', JSON.stringify(producedProjects));
+  }, [producedProjects]);
+
+  useEffect(() => {
+    localStorage.setItem('sharara_producedSnapshots', JSON.stringify(producedSnapshots));
+  }, [producedSnapshots]);
+
+  // מאזין גלובלי למקשי מקלדת Ctrl+Z ו-Ctrl+Y לביצוע UNDO/REDO בזמן עריכה
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isSessionInitialized || activeTab !== 'measure') return;
+      
+      if (e.ctrlKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        handleUndo();
+      }
+      if (e.ctrlKey && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undoStack, redoStack, sheets, isSessionInitialized, activeTab]);
 
   // מעקב אחר החברה והפרויקט הפעילים כרגע בטבלה כדי לזהות מתי הם הוחלפו ולתחול דפים מחדש
   const [loadedClientProject, setLoadedClientProject] = useState({
@@ -513,6 +592,7 @@ export default function App() {
   };
 
   const addRow = () => {
+    pushToHistory(sheets);
     const newRow: RowData = {
       id: Date.now().toString(), type: 'קטע ישר', width1: 0, height1: 0, width2: 0, height2: 0, length: 0, rBig: 0, rSmall: 150,
       shatuzar: false, flexible: 0, acoustic: false, external: false, sharshuriType: 'ללא', sharshuriLen: 0, adapterType: 'ללא', adapterQty: 0, notes: ''
@@ -521,6 +601,21 @@ export default function App() {
   };
 
   const updateRow = (id: string, field: keyof RowData, value: any) => {
+    // בדיקה האם פרויקט זה כבר הופק בעבר והנתון היה קיים בזמן ההפקה
+    const currentClient = isNewClient ? clientDetails.name : selectedClientKey;
+    const currentProject = isNewProject ? newProjectName : selectedProject;
+    const key = `${currentClient}-${currentProject}`;
+    
+    if (producedProjects[key]) {
+      const snapshot = producedSnapshots[key];
+      const existedBeforeProduction = snapshot?.some(s => s.rows.some(r => r.id === id));
+      if (existedBeforeProduction) {
+        const confirmEdit = window.confirm("שים לב! נתון זה כבר הופק בעבר. האם אתה בטוח שברצונך לבצע שינויים?");
+        if (!confirmEdit) return;
+      }
+    }
+
+    pushToHistory(sheets);
     setSheets(sheets.map(s => {
       if (s.id === activeSheetId) {
         return {
@@ -542,10 +637,26 @@ export default function App() {
   };
 
   const deleteRow = (id: string) => {
+    // בדיקה האם פרויקט זה כבר הופק בעבר והנתון היה קיים בזמן ההפקה
+    const currentClient = isNewClient ? clientDetails.name : selectedClientKey;
+    const currentProject = isNewProject ? newProjectName : selectedProject;
+    const key = `${currentClient}-${currentProject}`;
+    
+    if (producedProjects[key]) {
+      const snapshot = producedSnapshots[key];
+      const existedBeforeProduction = snapshot?.some(s => s.rows.some(r => r.id === id));
+      if (existedBeforeProduction) {
+        const confirmDelete = window.confirm("שים לב! נתון זה כבר הופק בעבר. האם אתה בטוח שברצונך למחוק אותו?");
+        if (!confirmDelete) return;
+      }
+    }
+
+    pushToHistory(sheets);
     setSheets(sheets.map(s => s.id === activeSheetId ? { ...s, rows: s.rows.filter(r => r.id !== id) } : s));
   };
 
   const addSheet = () => {
+    pushToHistory(sheets);
     let maxNum = 0;
     sheets.forEach(s => {
       const match = s.name.match(/#(\d+)/);
@@ -568,11 +679,41 @@ export default function App() {
     const confirmDelete = window.confirm("האם אתה בטוח שברצונך למחוק את דף המדידה הנוכחי וכל שורותיו?");
     if (!confirmDelete) return;
 
+    pushToHistory(sheets);
     const remainingSheets = sheets.filter(s => s.id !== sheetIdToDelete);
     setSheets(remainingSheets);
     if (activeSheetId === sheetIdToDelete) {
       setActiveSheetId(remainingSheets[0].id);
     }
+  };
+
+  // שמירת מצב נוכחי בהיסטוריית הצעדים (בטל/בצע שוב)
+  const pushToHistory = (currentSheets: Sheet[]) => {
+    const snapshot = JSON.parse(JSON.stringify(currentSheets));
+    setUndoStack(prev => [...prev.slice(-49), snapshot]); // גבול של 50 צעדים
+    setRedoStack([]); // איפוס ה-redo בעת פעולה חדשה
+  };
+
+  // פעולת בטל (Undo)
+  const handleUndo = () => {
+    if (undoStack.length === 0) return;
+    const previous = undoStack[undoStack.length - 1];
+    const current = JSON.parse(JSON.stringify(sheets));
+
+    setRedoStack(prev => [...prev, current]);
+    setSheets(previous);
+    setUndoStack(prev => prev.slice(0, -1));
+  };
+
+  // פעולת בצע שוב (Redo)
+  const handleRedo = () => {
+    if (redoStack.length === 0) return;
+    const next = redoStack[redoStack.length - 1];
+    const current = JSON.parse(JSON.stringify(sheets));
+
+    setUndoStack(prev => [...prev, current]);
+    setSheets(next);
+    setRedoStack(prev => prev.slice(0, -1));
   };
 
   // חישוב ריכוז כמויות עבור דף מדידה בודד (עבור טבלת האקסל)
@@ -974,8 +1115,81 @@ export default function App() {
                 return;
               }
               
-              const currentClient = isNewClient ? clientDetails.name : selectedClientKey;
-              const currentProject = isNewProject ? newProjectName : selectedProject;
+              let currentClient = (isNewClient ? clientDetails.name : selectedClientKey).trim();
+              let currentProject = (isNewProject ? newProjectName : selectedProject).trim();
+              
+              // 1. בדיקת כפילות חברה בעת יצירת חדש
+              if (isNewClient) {
+                const existingClientMatch = Object.keys(clientsData).find(c => c.toLowerCase() === currentClient.toLowerCase());
+                if (existingClientMatch) {
+                  const useExisting = window.confirm(`שים לב: לקוח בשם "${existingClientMatch}" כבר קיים במערכת.\nהאם ברצונך להשתמש בפרטי הלקוח הקיים ולעבור אליו?`);
+                  if (useExisting) {
+                    currentClient = existingClientMatch;
+                    setIsNewClient(false);
+                    setSelectedClientKey(existingClientMatch);
+                    const clientData = clientsData[existingClientMatch];
+                    setClientDetails({
+                      name: existingClientMatch,
+                      phone: clientData.phone,
+                      email: clientData.email,
+                      contact: clientData.contact,
+                      regDate: clientData.regDate
+                    });
+                  } else {
+                    return; // ביטול ומניעת כניסה לשורות
+                  }
+                }
+              }
+
+              // 2. בדיקת כפילות פרויקט בעת יצירת פרויקט חדש
+              if (isNewProject || isNewClient) {
+                const clientObj = clientsData[currentClient];
+                if (clientObj) {
+                  const existingProjMatch = clientObj.projects.find(p => p.toLowerCase() === currentProject.toLowerCase());
+                  if (existingProjMatch) {
+                    // פרויקט כבר קיים - הצעת שם סדרתי אוטומטי
+                    let seqName = currentProject;
+                    let counter = 2;
+                    while (clientObj.projects.includes(seqName)) {
+                      seqName = `${currentProject} - ${counter}`;
+                      counter++;
+                    }
+                    const createSeq = window.confirm(`פרויקט בשם "${currentProject}" כבר קיים עבור הלקוח "${currentClient}".\nהאם ברצונך ליצור פרויקט חדש בשם הסדרתי הבא: "${seqName}"?`);
+                    if (createSeq) {
+                      currentProject = seqName;
+                      const updated = { ...clientsData };
+                      updated[currentClient].projects.push(seqName);
+                      setClientsData(updated);
+                      setIsNewProject(false);
+                      setSelectedProject(seqName);
+                    } else {
+                      return; // ביטול ומניעת כניסה לשורות
+                    }
+                  } else {
+                    // הוספת פרויקט חדש לחברה קיימת
+                    const updated = { ...clientsData };
+                    updated[currentClient].projects.push(currentProject);
+                    setClientsData(updated);
+                    setIsNewProject(false);
+                    setSelectedProject(currentProject);
+                  }
+                } else {
+                  // החברה וגם הפרויקט חדשים לגמרי - שמירה בבסיס הנתונים
+                  const updated = { ...clientsData };
+                  updated[currentClient] = {
+                    phone: clientDetails.phone,
+                    email: clientDetails.email,
+                    contact: clientDetails.contact,
+                    regDate: clientDetails.regDate,
+                    projects: [currentProject]
+                  };
+                  setClientsData(updated);
+                  setIsNewClient(false);
+                  setSelectedClientKey(currentClient);
+                  setIsNewProject(false);
+                  setSelectedProject(currentProject);
+                }
+              }
               
               if (loadedClientProject.client !== currentClient || loadedClientProject.project !== currentProject) {
                 setSheets([
@@ -1095,6 +1309,50 @@ export default function App() {
                         <Trash2 size={14} /> מחק דף
                       </button>
                     )}
+                    
+                    {/* כפתורי בטל / בצע שוב (Undo/Redo) */}
+                    <div style={{ display: 'flex', gap: '4px', borderLeft: '1.5px solid #475569', paddingLeft: '10px', marginLeft: '6px' }}>
+                      <button 
+                        onClick={handleUndo} 
+                        disabled={undoStack.length === 0}
+                        style={{ 
+                          backgroundColor: undoStack.length === 0 ? '#334155' : '#475569', 
+                          color: undoStack.length === 0 ? '#64748b' : '#ffffff', 
+                          border: 'none', 
+                          padding: '6px 12px', 
+                          borderRadius: '4px', 
+                          cursor: undoStack.length === 0 ? 'not-allowed' : 'pointer', 
+                          fontSize: '12px', 
+                          fontWeight: 'bold',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                        title="בטל פעולה (Ctrl+Z)"
+                      >
+                        ↩ בטל
+                      </button>
+                      <button 
+                        onClick={handleRedo} 
+                        disabled={redoStack.length === 0}
+                        style={{ 
+                          backgroundColor: redoStack.length === 0 ? '#334155' : '#475569', 
+                          color: redoStack.length === 0 ? '#64748b' : '#ffffff', 
+                          border: 'none', 
+                          padding: '6px 12px', 
+                          borderRadius: '4px', 
+                          cursor: redoStack.length === 0 ? 'not-allowed' : 'pointer', 
+                          fontSize: '12px', 
+                          fontWeight: 'bold',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                        title="בצע שוב (Ctrl+Y)"
+                      >
+                        שחזר ↪
+                      </button>
+                    </div>
                   </div>
                   <button onClick={addRow} style={{ backgroundColor: '#2563eb', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}><Plus size={16} /> הוסף שורה</button>
                 </div>
@@ -1410,7 +1668,7 @@ export default function App() {
               <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #cbd5e1', padding: '32px', maxWidth: '750px', margin: '0 auto', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' }}>
                 
                 {/* סרגל כפתורי ניהול נייר המכתבים - מוסתר בהדפסה */}
-                <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '1px solid #cbd5e1', paddingBottom: '10px' }}>
+                <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '1px solid #cbd5e1', paddingBottom: '10px', gap: '8px' }}>
                   <button 
                     onClick={() => setIsEditingMyCompany(!isEditingMyCompany)} 
                     style={{ 
@@ -1427,21 +1685,48 @@ export default function App() {
                     {isEditingMyCompany ? "סגור עריכת פרטי לוגו" : "ערוך פרטי לוגו וטלפונים/מיילים של העסק"}
                   </button>
                   
-                  <button 
-                    onClick={() => window.print()} 
-                    style={{ 
-                      padding: '8px 16px', 
-                      backgroundColor: '#2563eb', 
-                      color: '#ffffff', 
-                      border: 'none', 
-                      borderRadius: '6px', 
-                      cursor: 'pointer', 
-                      fontWeight: 'bold', 
-                      fontSize: '13px'
-                    }}
-                  >
-                    הדפס חשבון / שמור כ-PDF
-                  </button>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {/* כפתור הפקה ונעילת שינויים */}
+                    <button 
+                      onClick={() => {
+                        const currentClient = isNewClient ? clientDetails.name : selectedClientKey;
+                        const currentProject = isNewProject ? newProjectName : selectedProject;
+                        const key = `${currentClient}-${currentProject}`;
+                        
+                        setProducedProjects(prev => ({ ...prev, [key]: true }));
+                        setProducedSnapshots(prev => ({ ...prev, [key]: JSON.parse(JSON.stringify(sheets)) }));
+                        alert("החשבון והמדידות לפרויקט זה הופקו וננעלו בהצלחה!\nמעתה, כל ניסיון לשנות או למחוק שורות שהופקו יציג התראה.");
+                      }} 
+                      style={{ 
+                        padding: '8px 16px', 
+                        backgroundColor: producedProjects[`${isNewClient ? clientDetails.name : selectedClientKey}-${isNewProject ? newProjectName : selectedProject}`] ? '#10b981' : '#1e3a8a', 
+                        color: '#ffffff', 
+                        border: 'none', 
+                        borderRadius: '6px', 
+                        cursor: 'pointer', 
+                        fontWeight: 'bold', 
+                        fontSize: '13px'
+                      }}
+                    >
+                      {producedProjects[`${isNewClient ? clientDetails.name : selectedClientKey}-${isNewProject ? newProjectName : selectedProject}`] ? "✅ הופק וננעל" : "⚡ הפק מסמך ונעל"}
+                    </button>
+
+                    <button 
+                      onClick={() => window.print()} 
+                      style={{ 
+                        padding: '8px 16px', 
+                        backgroundColor: '#2563eb', 
+                        color: '#ffffff', 
+                        border: 'none', 
+                        borderRadius: '6px', 
+                        cursor: 'pointer', 
+                        fontWeight: 'bold', 
+                        fontSize: '13px'
+                      }}
+                    >
+                      הדפס חשבון / שמור כ-PDF
+                    </button>
+                  </div>
                 </div>
 
                 {isEditingMyCompany && (
@@ -1544,7 +1829,7 @@ export default function App() {
                     {/* עמודה ימנית: תחומי פעילות */}
                     <div style={{ paddingRight: '5px' }}>
                       <div style={{ display: 'flex', flexWrap: 'wrap', rowGap: '4px', columnGap: '8px', color: '#475569', fontWeight: 'bold' }}>
-                        {myCompanyDetails.services.map((service, index) => (
+                        {myCompanyDetails.services.map((service: string, index: number) => (
                           <span key={index}>
                             {service} {index < myCompanyDetails.services.length - 1 ? ' | ' : ''}
                           </span>
