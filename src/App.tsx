@@ -59,6 +59,30 @@ const EXISTING_DATA = {
 };
 
 export default function App() {
+  // סטייטים של אבטחה וכניסה לאתר (sessionStorage לשמירת החיבור)
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => sessionStorage.getItem('sharara_isLoggedIn') === 'true');
+  const [loginUsername, setLoginUsername] = useState<string>('');
+  const [loginPassword, setLoginPassword] = useState<string>('');
+  const [loginError, setLoginError] = useState<string>('');
+
+  const handleLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loginUsername.trim().toLowerCase() === 'sharara' && loginPassword === '1970') {
+      setIsLoggedIn(true);
+      sessionStorage.setItem('sharara_isLoggedIn', 'true');
+      setLoginError('');
+    } else {
+      setLoginError('שם משתמש או סיסמה שגויים. אנא נסה שוב.');
+    }
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    sessionStorage.removeItem('sharara_isLoggedIn');
+    setLoginUsername('');
+    setLoginPassword('');
+  };
+
   // שלבי עבודה: false = מסך הגדרת לקוח/פרויקט, true = כניסה לעבודה על הטבלאות
   const [isSessionInitialized, setIsSessionInitialized] = useState<boolean>(false);
 
@@ -1137,12 +1161,114 @@ export default function App() {
     downloadWorkbook(wb, `sharara_pricelist_${dateStr}.xlsx`);
   }
 
+  if (!isLoggedIn) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a', fontFamily: 'Assistant, Rubik, sans-serif', direction: 'rtl', padding: '20px', boxSizing: 'border-box' }}>
+        <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #334155', padding: '40px 32px', width: '100%', maxWidth: '420px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', alignItems: 'center', boxSizing: 'border-box' }}>
+          
+          {/* לוגו החברה הרשמי בראש דף ההתחברות */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginBottom: '24px', textAlign: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', width: '100%' }}>
+              <span style={{ fontSize: '13px', fontFamily: '"Times New Roman", Times, serif', color: '#64748b', fontWeight: 'bold' }}>
+                Sharara 1970
+              </span>
+              <svg width="120" height="45" viewBox="0 0 180 70">
+                <path d="M10 20 C 50 10, 100 30, 140 20" fill="none" stroke="#94a3b8" strokeWidth="2.5" />
+                <path d="M10 32 C 50 22, 100 42, 140 32" fill="none" stroke="#475569" strokeWidth="2.5" />
+                <path d="M10 44 C 50 34, 100 54, 140 44" fill="none" stroke="#d97706" strokeWidth="2.5" />
+                <g transform="translate(140, 5)">
+                  <path d="M20 35 C 20 22, 45 22, 45 31 C 45 40, 15 37, 15 49 C 15 60, 40 60, 40 49" fill="none" stroke="#d97706" strokeWidth="5.5" strokeLinecap="round" />
+                  <path d="M30 18 L 15 52 M 30 18 L 45 52 M 19 40 L 41 40" fill="none" stroke="#475569" strokeWidth="4.5" strokeLinecap="round" />
+                </g>
+              </svg>
+            </div>
+            <h1 style={{ fontSize: '26px', fontWeight: '950', color: '#0f172a', margin: '6px 0 0 0', fontFamily: 'Rubik, sans-serif' }}>עלי שרארה בע"מ</h1>
+            <p style={{ fontSize: '13px', color: '#64748b', margin: 0, fontWeight: '500' }}>מערכת ייצור וחישוב כמויות תעלות פח</p>
+          </div>
+
+          {/* טופס התחברות */}
+          <form onSubmit={handleLoginSubmit} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div>
+              <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '4px' }}>שם משתמש:</label>
+              <input 
+                type="text" 
+                value={loginUsername} 
+                onChange={(e) => setLoginUsername(e.target.value)} 
+                placeholder="הזן שם משתמש..." 
+                required 
+                style={{ width: '100%', padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '14px', backgroundColor: '#ffffff', color: '#0f172a', boxSizing: 'border-box', outline: 'none' }} 
+              />
+            </div>
+
+            <div>
+              <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '4px' }}>סיסמה:</label>
+              <input 
+                type="password" 
+                value={loginPassword} 
+                onChange={(e) => setLoginPassword(e.target.value)} 
+                placeholder="הזן סיסמה..." 
+                required 
+                style={{ width: '100%', padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '14px', backgroundColor: '#ffffff', color: '#0f172a', boxSizing: 'border-box', outline: 'none' }} 
+              />
+            </div>
+
+            {loginError && (
+              <div style={{ color: '#ef4444', fontSize: '12px', fontWeight: 'bold', textAlign: 'center', backgroundColor: '#fef2f2', padding: '8px', borderRadius: '4px', border: '1px solid #fca5a5' }}>
+                {loginError}
+              </div>
+            )}
+
+            <button 
+              type="submit" 
+              style={{ width: '100%', padding: '12px', backgroundColor: '#2563eb', color: '#ffffff', border: 'none', borderRadius: '6px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(37,99,235,0.2)', transition: 'all 0.2s', marginTop: '8px' }}
+            >
+              🔐 התחבר למערכת
+            </button>
+          </form>
+
+          {/* פרטי משתמש ברירת מחדל לטובת נוחות הכניסה */}
+          <div style={{ marginTop: '24px', backgroundColor: '#f1f5f9', padding: '10px 14px', borderRadius: '6px', fontSize: '11px', color: '#475569', width: '100%', textAlign: 'center', boxSizing: 'border-box' }}>
+            <b>כניסה מהירה:</b> שם משתמש: <code style={{ fontWeight: 'bold', color: '#1e3a8a' }}>sharara</code> | סיסמה: <code style={{ fontWeight: 'bold', color: '#1e3a8a' }}>1970</code>
+          </div>
+
+          <div style={{ marginTop: '30px', fontSize: '10px', color: '#94a3b8', borderTop: '1px solid #e2e8f0', width: '100%', paddingTop: '12px', textAlign: 'center' }}>
+            מערכת עלי שרארה בע"מ © {new Date().getFullYear()}
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`active-tab-${activeTab}`} style={{ direction: 'rtl', backgroundColor: '#f8fafc', minHeight: '100vh', fontFamily: 'Assistant, Rubik, sans-serif', color: '#1e293b', width: '100%', letterSpacing: '0.2px' }}>
       <div className="no-print" style={{ width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       
       {/* כותרת עליונה קבועה */}
-      <header style={{ backgroundColor: '#0f172a', borderBottom: '4px solid #475569', padding: '30px 24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '20px' }}>
+      <header style={{ backgroundColor: '#0f172a', borderBottom: '4px solid #475569', padding: '30px 24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '20px', position: 'relative' }}>
+        
+        {/* כפתור התנתקות מוסתר בהדפסה */}
+        <button 
+          onClick={handleLogout} 
+          className="no-print"
+          style={{ 
+            position: 'absolute', 
+            top: '20px', 
+            left: '20px', 
+            backgroundColor: 'transparent', 
+            color: '#ef4444', 
+            border: '1px solid #ef4444', 
+            borderRadius: '4px', 
+            padding: '6px 12px', 
+            cursor: 'pointer', 
+            fontSize: '11px', 
+            fontWeight: 'bold',
+            transition: 'all 0.2s'
+          }}
+          title="יציאה מהמערכת (נעילת גישה)"
+        >
+          🔑 התנתק
+        </button>
         
         {/* לוגו באמצע הדף - מוגדל בצורה משמעותית */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
