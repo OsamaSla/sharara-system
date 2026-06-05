@@ -159,16 +159,26 @@ export default function App() {
   // פרטי העסק שלי (עלי שרארה בע"מ) עבור הלוגו ונייר המכתבים הרשמי
   const [myCompanyDetails, setMyCompanyDetails] = useState(() => {
     const saved = localStorage.getItem('sharara_myCompanyDetails');
-    return saved ? JSON.parse(saved) : {
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.email === "sh_ali@netvision.net.il") {
+        parsed.email = "info@sharara.co.il";
+      }
+      if (parsed.mobile === "050-5215192") {
+        parsed.mobile = "053-5819466";
+      }
+      return parsed;
+    }
+    return {
       name: "עלי שרארה בע\"מ",
       engName: "Sharara 1970",
       subtitle: "תעשיות פח ומערכות אוורור ומיזוג אוויר",
       website: "www.sharara.co.il",
-      email: "sh_ali@netvision.net.il",
+      email: "info@sharara.co.il",
       address: "אזור תעשייה, נצרת עילית (ריינה) ת.ד. 4174",
       phone: "04-6082264",
       fax: "04-6082263",
-      mobile: "050-5215192",
+      mobile: "053-5819466",
       pobox: "4040/4 שכ' מזרחית מיקוד 16000",
       services: [
         "תכנון וביצוע מערכות מיזוג אוויר ואוורור",

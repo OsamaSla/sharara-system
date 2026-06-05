@@ -56,9 +56,27 @@ export default function PrintableReport({
                     {logoUrl ? (
                       <img src={logoUrl} alt="לוגו" className="pt-logo" style={{ maxHeight: '70px', width: 'auto', objectFit: 'contain' }} />
                     ) : (
-                      <div style={{ fontSize: '16px', fontWeight: 'bold' }}>עלי שרארה בע"מ</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+                        {/* סמל הלוגו הרשמי של עלי שרארה */}
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', width: '100%', position: 'relative' }}>
+                          <span style={{ fontSize: '15px', fontFamily: '"Times New Roman", Times, serif', color: '#1e293b', fontWeight: 'bold' }}>
+                            Sharara 1970
+                          </span>
+                          <svg width="150" height="55" viewBox="0 0 180 70">
+                            <path d="M10 20 C 50 10, 100 30, 140 20" fill="none" stroke="#94a3b8" strokeWidth="2.5" />
+                            <path d="M10 32 C 50 22, 100 42, 140 32" fill="none" stroke="#475569" strokeWidth="2.5" />
+                            <path d="M10 44 C 50 34, 100 54, 140 44" fill="none" stroke="#d97706" strokeWidth="2.5" />
+                            <g transform="translate(140, 5)">
+                              <path d="M20 35 C 20 22, 45 22, 45 31 C 45 40, 15 37, 15 49 C 15 60, 40 60, 40 49" fill="none" stroke="#d97706" strokeWidth="5.5" strokeLinecap="round" />
+                              <path d="M30 18 L 15 52 M 30 18 L 45 52 M 19 40 L 41 40" fill="none" stroke="#475569" strokeWidth="4.5" strokeLinecap="round" />
+                            </g>
+                          </svg>
+                        </div>
+                        <h2 style={{ fontSize: '24px', fontWeight: '900', color: '#1e293b', margin: '4px 0 0 0', fontFamily: '"Times New Roman", Times, serif' }}>עלי שרארה בע"מ</h2>
+                        <p style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569', margin: '2px 0 0 0' }}>תעשיות פח ומערכות אוורור ומיזוג אוויר</p>
+                      </div>
                     )}
-                    <span className="pt-title" style={{ fontSize: '18pt', fontWeight: 'bold', color: '#1f4e79', fontFamily: 'Rubik, sans-serif' }}>שרארה — דוח מדידות תעלות פח</span>
+                    <span className="pt-title" style={{ fontSize: '16pt', fontWeight: 'bold', color: '#1f4e79', fontFamily: 'Rubik, sans-serif', marginTop: '10px' }}>שרארה — דוח מדידות תעלות פח</span>
                   </div>
               </th>
             </tr>
