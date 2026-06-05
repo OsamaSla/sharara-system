@@ -52,6 +52,15 @@
   .landscape-print {
     page: landscape-page;
   }
+
+  .print-table-wrapper {
+    overflow: visible !important;
+    width: 100% !important;
+  }
+  .print-table-wrapper table {
+    min-width: 100% !important;
+    width: 100% !important;
+  }
   
   * {
     -webkit-print-color-adjust: exact !important;

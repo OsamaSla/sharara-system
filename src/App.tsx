@@ -2249,7 +2249,7 @@ export default function App() {
                   const shTotals = getSheetTotals(sheet);
                   
                   return (
-                    <div key={sheet.id} style={{ marginBottom: '50px', paddingBottom: '30px', borderBottom: sIdx < sheets.length - 1 ? '2px dashed #cbd5e1' : 'none', pageBreakAfter: 'always' }}>
+                    <div key={sheet.id} style={{ marginBottom: '50px', paddingBottom: '30px', borderBottom: sIdx < sheets.length - 1 ? '2px dashed #cbd5e1' : 'none', pageBreakAfter: sIdx < sheets.length - 1 ? 'always' : 'auto' }}>
                       
                       {/* כותרת דף הריכוז עבור הדף הנוכחי */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
@@ -2262,7 +2262,7 @@ export default function App() {
                       </div>
 
                       {/* טבלת הריכוז המפורטת לכל שורה בדף המדידה */}
-                      <div style={{ overflowX: 'auto', width: '100%', backgroundColor: '#ffffff', marginBottom: '15px' }}>
+                      <div className="print-table-wrapper" style={{ overflowX: 'auto', width: '100%', backgroundColor: '#ffffff', marginBottom: '15px' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '11px', border: '1.5px solid #cbd5e1', minWidth: '1100px' }}>
                           <thead style={{ backgroundColor: '#f1f5f9', borderBottom: '2px solid #475569' }}>
                             <tr style={{ color: '#0f172a', fontWeight: 'bold' }}>
@@ -2866,7 +2866,7 @@ export default function App() {
                         flexDirection: 'column', 
                         minHeight: '1120px', 
                         boxSizing: 'border-box',
-                        pageBreakAfter: 'always',
+                        pageBreakAfter: pageIdx < pages.length - 1 ? 'always' : 'auto',
                         backgroundImage: 'linear-gradient(rgba(100, 149, 237, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(100, 149, 237, 0.08) 1px, transparent 1px)',
                         backgroundSize: '20px 20px'
                       }}
