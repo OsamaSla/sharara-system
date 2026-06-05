@@ -465,7 +465,13 @@ export default function App() {
   };
 
   const calculateArea = (row: RowData): number => {
-    const { type, width1, height1, width2, height2, length, rBig, rSmall } = row;
+    const { type, width1, height1, width2, height2, length, rBig, rSmall, notes } = row;
+    
+    // חישוב שטח לצינור פח עגול: pi * diameter * length
+    if (notes && notes.includes('צינור עגול')) {
+      return (Math.PI * width1 * length) / 1000000;
+    }
+
     if (type === 'קטע ישר') return (2 * (width1 + height1) * length) / 1000000;
     if (type === 'קשת') return (2 * (width1 + height1) * (rBig + rSmall)) / 1000000;
     if (type === 'מעבר') return (((width1 + width2) + (height1 + height2)) * length) / 1000000;
@@ -1595,9 +1601,9 @@ export default function App() {
                       <span style={{ fontWeight: 'bold', fontSize: '13px' }}>מעבר</span>
                     </button>
 
-                    {/* סטייה / שקע (S-Offset) */}
+                    {/* לאמד S (S-Offset) */}
                     <button 
-                      onClick={() => openAddPartForm('קטע ישר', 'סטייה / שקע')} 
+                      onClick={() => openAddPartForm('קטע ישר', 'לאמד S')} 
                       style={{ 
                         backgroundColor: '#1e293b', 
                         border: '2px solid #475569', 
@@ -1610,13 +1616,13 @@ export default function App() {
                         transition: 'all 0.2s',
                         color: '#ffffff'
                       }}
-                      title="הוסף חלק סטייה / שקע (טופס ויזואלי)"
+                      title="הוסף חלק לאמד S (טופס ויזואלי)"
                     >
                       <svg width="18" height="18" viewBox="0 0 100 100">
                         <path d="M20 15 C 20 45, 80 55, 80 85" fill="none" stroke="#ffffff" strokeWidth="12" strokeLinecap="round" />
                         <path d="M45 15 C 45 45, 105 55, 105 85" fill="none" stroke="#94a3b8" strokeWidth="12" strokeLinecap="round" />
                       </svg>
-                      <span style={{ fontWeight: 'bold', fontSize: '13px' }}>סטייה / שקע</span>
+                      <span style={{ fontWeight: 'bold', fontSize: '13px' }}>לאמד S</span>
                     </button>
 
                     {/* צינור עגול */}
@@ -1713,69 +1719,138 @@ export default function App() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', backgroundColor: '#ffffff', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                         <h4 style={{ margin: '0 0 6px 0', borderBottom: '1px solid #cbd5e1', paddingBottom: '4px', color: '#0f172a', fontWeight: 'bold', fontSize: '13px' }}>📏 מידות החלק (מ"מ)</h4>
                         
-                        {/* מידות לקטע ישר */}
-                        {newPartData.type === 'קטע ישר' && (
+                        {/* 1. מידות לצינור עגול */}
+                        {newPartData.notes === 'צינור עגול' ? (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             <div>
-                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>חתך 1 (רוחב):</label>
-                              <input type="number" value={newPartData.width1 || ''} onChange={(e) => setNewPartData({...newPartData, width1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>קוטר הצינור (Diameter):</label>
+                              <input type="number" value={newPartData.width1 || ''} onChange={(e) => setNewPartData({...newPartData, width1: Number(e.target.value), height1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
                             </div>
                             <div>
-                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>חתך 1 (גובה):</label>
-                              <input type="number" value={newPartData.height1 || ''} onChange={(e) => setNewPartData({...newPartData, height1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
-                            </div>
-                            <div>
-                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>אורך (מ"מ):</label>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>אורך צינור (מ"מ):</label>
                               <input type="number" value={newPartData.length || ''} onChange={(e) => setNewPartData({...newPartData, length: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
                             </div>
                           </div>
-                        )}
-
-                        {/* מידות לקשת */}
-                        {newPartData.type === 'קשת' && (
+                        ) : newPartData.notes === 'לאמד S' ? (
+                          /* 2. מידות ללאמד S */
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             <div>
-                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>חתך 1 (רוחב):</label>
-                              <input type="number" value={newPartData.width1 || ''} onChange={(e) => { const w = Number(e.target.value); setNewPartData({...newPartData, width1: w, rBig: w + newPartData.rSmall}); }} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
-                            </div>
-                            <div>
-                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>חתך 1 (גובה):</label>
-                              <input type="number" value={newPartData.height1 || ''} onChange={(e) => setNewPartData({...newPartData, height1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
-                            </div>
-                            <div>
-                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>רדיוס קטן (R קטן):</label>
-                              <input type="number" value={newPartData.rSmall || ''} onChange={(e) => { const r = Number(e.target.value); setNewPartData({...newPartData, rSmall: r, rBig: newPartData.width1 + r}); }} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
-                            </div>
-                            <div>
-                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>רדיוס גדול (מחושב):</label>
-                              <input type="number" disabled value={newPartData.rBig || ''} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#e2e8f0', color: '#475569', fontWeight: 'bold' }} />
-                            </div>
-                          </div>
-                        )}
-
-                        {/* מידות למעבר */}
-                        {newPartData.type === 'מעבר' && (
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                            <div>
-                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>רוחב 1:</label>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>רוחב תעלה (Width):</label>
                               <input type="number" value={newPartData.width1 || ''} onChange={(e) => setNewPartData({...newPartData, width1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
                             </div>
                             <div>
-                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>גובה 1:</label>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>גובה תעלה (Height):</label>
                               <input type="number" value={newPartData.height1 || ''} onChange={(e) => setNewPartData({...newPartData, height1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
                             </div>
                             <div>
-                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>רוחב 2:</label>
-                              <input type="number" value={newPartData.width2 || ''} onChange={(e) => setNewPartData({...newPartData, width2: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
-                            </div>
-                            <div>
-                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>גובה 2:</label>
-                              <input type="number" value={newPartData.height2 || ''} onChange={(e) => setNewPartData({...newPartData, height2: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
-                            </div>
-                            <div style={{ gridColumn: 'span 2' }}>
-                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>אורך (מ"מ):</label>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>אורך לאמד (מ"מ):</label>
                               <input type="number" value={newPartData.length || ''} onChange={(e) => setNewPartData({...newPartData, length: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
                             </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>מידת סטייה S (מ"מ):</label>
+                              <input type="number" value={newPartData.rSmall || ''} onChange={(e) => setNewPartData({...newPartData, rSmall: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                            </div>
+                          </div>
+                        ) : newPartData.notes === 'קופסת פיזור' ? (
+                          /* 3. מידות לקופסת פיזור */
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>רוחב קופסה (מ"מ):</label>
+                              <input type="number" value={newPartData.width1 || ''} onChange={(e) => setNewPartData({...newPartData, width1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>גובה קופסה (מ"מ):</label>
+                              <input type="number" value={newPartData.height1 || ''} onChange={(e) => setNewPartData({...newPartData, height1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>עומק קופסה (מ"מ):</label>
+                              <input type="number" value={newPartData.length || ''} onChange={(e) => setNewPartData({...newPartData, length: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                            </div>
+                          </div>
+                        ) : newPartData.notes === 'מדף אש' ? (
+                          /* 4. מידות למדף אש */
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>רוחב מדף (Width):</label>
+                              <input type="number" value={newPartData.width1 || ''} onChange={(e) => setNewPartData({...newPartData, width1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>גובה מדף (Height):</label>
+                              <input type="number" value={newPartData.height1 || ''} onChange={(e) => setNewPartData({...newPartData, height1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>עומק מדף (מ"מ):</label>
+                              <input type="number" value={newPartData.length || ''} onChange={(e) => setNewPartData({...newPartData, length: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                            </div>
+                          </div>
+                        ) : (
+                          /* 5. מידות סטנדרטיות (קטע ישר, קשת, מעבר) */
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {/* מידות לקטע ישר */}
+                            {newPartData.type === 'קטע ישר' && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div>
+                                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>חתך 1 (רוחב):</label>
+                                  <input type="number" value={newPartData.width1 || ''} onChange={(e) => setNewPartData({...newPartData, width1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                                </div>
+                                <div>
+                                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>חתך 1 (גובה):</label>
+                                  <input type="number" value={newPartData.height1 || ''} onChange={(e) => setNewPartData({...newPartData, height1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                                </div>
+                                <div>
+                                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>אורך (מ"מ):</label>
+                                  <input type="number" value={newPartData.length || ''} onChange={(e) => setNewPartData({...newPartData, length: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                                </div>
+                              </div>
+                            )}
+
+                            {/* מידות לקשת */}
+                            {newPartData.type === 'קשת' && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div>
+                                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>חתך 1 (רוחב):</label>
+                                  <input type="number" value={newPartData.width1 || ''} onChange={(e) => { const w = Number(e.target.value); setNewPartData({...newPartData, width1: w, rBig: w + newPartData.rSmall}); }} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                                </div>
+                                <div>
+                                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>חתך 1 (גובה):</label>
+                                  <input type="number" value={newPartData.height1 || ''} onChange={(e) => setNewPartData({...newPartData, height1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                                </div>
+                                <div>
+                                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>רדיוס קטן (R קטן):</label>
+                                  <input type="number" value={newPartData.rSmall || ''} onChange={(e) => { const r = Number(e.target.value); setNewPartData({...newPartData, rSmall: r, rBig: newPartData.width1 + r}); }} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                                </div>
+                                <div>
+                                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>רדיוס גדול (מחושב):</label>
+                                  <input type="number" disabled value={newPartData.rBig || ''} style={{ width: '100%', padding: '6px 10px', border: '1px solid #e2e8f0', borderRadius: '4px', backgroundColor: '#e2e8f0', color: '#475569', fontWeight: 'bold' }} />
+                                </div>
+                              </div>
+                            )}
+
+                            {/* מידות למעבר */}
+                            {newPartData.type === 'מעבר' && (
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                <div>
+                                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>רוחב 1:</label>
+                                  <input type="number" value={newPartData.width1 || ''} onChange={(e) => setNewPartData({...newPartData, width1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                                </div>
+                                <div>
+                                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>גובה 1:</label>
+                                  <input type="number" value={newPartData.height1 || ''} onChange={(e) => setNewPartData({...newPartData, height1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                                </div>
+                                <div>
+                                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>רוחב 2:</label>
+                                  <input type="number" value={newPartData.width2 || ''} onChange={(e) => setNewPartData({...newPartData, width2: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                                </div>
+                                <div>
+                                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>גובה 2:</label>
+                                  <input type="number" value={newPartData.height2 || ''} onChange={(e) => setNewPartData({...newPartData, height2: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                                </div>
+                                <div style={{ gridColumn: 'span 2' }}>
+                                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>אורך (מ"מ):</label>
+                                  <input type="number" value={newPartData.length || ''} onChange={(e) => setNewPartData({...newPartData, length: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -2780,14 +2855,53 @@ export default function App() {
                               {/* שרטוט ה-SVG הדינמי */}
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexGrow: 1, marginTop: '20px' }}>
                                 {row.type === 'קטע ישר' && (
-                                  <svg width="180" height="180" viewBox="0 0 200 200" style={{ overflow: 'visible' }}>
-                                    <polygon points="40,110 40,60 110,35 110,85" fill="#f1f5f9" stroke="#0f172a" strokeWidth="2.5" />
-                                    <polygon points="110,85 110,35 155,55 155,105" fill="#cbd5e1" stroke="#0f172a" strokeWidth="2.5" />
-                                    <polygon points="40,110 110,85 155,105 85,130" fill="#94a3b8" stroke="#0f172a" strokeWidth="2.5" />
-                                    <text x="75" y="55" textAnchor="middle" fill="#0f172a" fontWeight="900" fontSize="13" fontFamily="sans-serif">{toCm(row.width1)} / {toCm(row.height1)}</text>
-                                    <text x="135" y="70" textAnchor="middle" fill="#0f172a" fontWeight="900" fontSize="13" fontFamily="sans-serif">L={toCm(row.length)}</text>
-                                    {row.notes && <text x="100" y="155" textAnchor="middle" fill="#1e3a8a" fontWeight="bold" fontSize="12">{row.notes}</text>}
-                                  </svg>
+                                  row.notes === 'צינור עגול' ? (
+                                    <svg width="180" height="180" viewBox="0 0 200 200" style={{ overflow: 'visible' }}>
+                                      <ellipse cx="100" cy="50" rx="45" ry="15" fill="#f1f5f9" stroke="#0f172a" strokeWidth="2.5" />
+                                      <path d="M55 50 L 55 140 A 45 15 0 0 0 145 140 L 145 50" fill="none" stroke="#0f172a" strokeWidth="2.5" />
+                                      <ellipse cx="100" cy="140" rx="45" ry="15" fill="#cbd5e1" stroke="#0f172a" strokeWidth="2.5" />
+                                      <text x="100" y="30" textAnchor="middle" fill="#0f172a" fontWeight="900" fontSize="13" fontFamily="sans-serif">קוטר {toCm(row.width1)}</text>
+                                      <text x="155" y="100" textAnchor="start" fill="#0f172a" fontWeight="900" fontSize="13" fontFamily="sans-serif">L={toCm(row.length)}</text>
+                                      <text x="100" y="180" textAnchor="middle" fill="#1e3a8a" fontWeight="bold" fontSize="12">צינור עגול</text>
+                                    </svg>
+                                  ) : row.notes === 'לאמד S' ? (
+                                    <svg width="180" height="180" viewBox="0 0 200 200" style={{ overflow: 'visible' }}>
+                                      <path d="M40 40 C 40 100, 160 100, 160 160" fill="none" stroke="#cbd5e1" strokeWidth="30" />
+                                      <path d="M40 40 C 40 100, 160 100, 160 160" fill="none" stroke="#0f172a" strokeWidth="30" strokeDasharray="5,5" />
+                                      <text x="100" y="30" textAnchor="middle" fill="#0f172a" fontWeight="900" fontSize="13" fontFamily="sans-serif">{toCm(row.width1)} / {toCm(row.height1)}</text>
+                                      <text x="100" y="100" textAnchor="middle" fill="#0f172a" fontWeight="900" fontSize="13" fontFamily="sans-serif">L={toCm(row.length)}</text>
+                                      <text x="100" y="180" textAnchor="middle" fill="#1e3a8a" fontWeight="bold" fontSize="12">לאמד S (סטייה={toCm(row.rSmall)})</text>
+                                    </svg>
+                                  ) : row.notes === 'קופסת פיזור' ? (
+                                    <svg width="180" height="180" viewBox="0 0 200 200" style={{ overflow: 'visible' }}>
+                                      <rect x="40" y="60" width="120" height="80" fill="#cbd5e1" stroke="#0f172a" strokeWidth="2.5" />
+                                      <ellipse cx="100" cy="40" rx="25" ry="10" fill="#f1f5f9" stroke="#0f172a" strokeWidth="2.5" />
+                                      <line x1="75" y1="40" x2="75" y2="60" stroke="#0f172a" strokeWidth="2.5" />
+                                      <line x1="125" y1="40" x2="125" y2="60" stroke="#0f172a" strokeWidth="2.5" />
+                                      <text x="100" y="100" textAnchor="middle" fill="#0f172a" fontWeight="900" fontSize="13" fontFamily="sans-serif">{toCm(row.width1)} x {toCm(row.height1)}</text>
+                                      <text x="100" y="125" textAnchor="middle" fill="#0f172a" fontWeight="900" fontSize="12" fontFamily="sans-serif">עומק={toCm(row.length)}</text>
+                                      <text x="100" y="175" textAnchor="middle" fill="#1e3a8a" fontWeight="bold" fontSize="12">קופסת פיזור</text>
+                                    </svg>
+                                  ) : row.notes === 'מדף אש' ? (
+                                    <svg width="180" height="180" viewBox="0 0 200 200" style={{ overflow: 'visible' }}>
+                                      <rect x="40" y="40" width="120" height="110" fill="#cbd5e1" stroke="#0f172a" strokeWidth="2.5" />
+                                      <line x1="40" y1="65" x2="160" y2="65" stroke="#0f172a" strokeWidth="2" />
+                                      <line x1="40" y1="95" x2="160" y2="95" stroke="#0f172a" strokeWidth="2.5" />
+                                      <line x1="40" y1="125" x2="160" y2="125" stroke="#0f172a" strokeWidth="2" />
+                                      <rect x="25" y="75" width="15" height="40" fill="#d97706" stroke="#0f172a" strokeWidth="2" />
+                                      <text x="100" y="32" textAnchor="middle" fill="#0f172a" fontWeight="900" fontSize="13" fontFamily="sans-serif">{toCm(row.width1)} / {toCm(row.height1)}</text>
+                                      <text x="100" y="180" textAnchor="middle" fill="#1e3a8a" fontWeight="bold" fontSize="12">מדף אש</text>
+                                    </svg>
+                                  ) : (
+                                    <svg width="180" height="180" viewBox="0 0 200 200" style={{ overflow: 'visible' }}>
+                                      <polygon points="40,110 40,60 110,35 110,85" fill="#f1f5f9" stroke="#0f172a" strokeWidth="2.5" />
+                                      <polygon points="110,85 110,35 155,55 155,105" fill="#cbd5e1" stroke="#0f172a" strokeWidth="2.5" />
+                                      <polygon points="40,110 110,85 155,105 85,130" fill="#94a3b8" stroke="#0f172a" strokeWidth="2.5" />
+                                      <text x="75" y="55" textAnchor="middle" fill="#0f172a" fontWeight="900" fontSize="13" fontFamily="sans-serif">{toCm(row.width1)} / {toCm(row.height1)}</text>
+                                      <text x="135" y="70" textAnchor="middle" fill="#0f172a" fontWeight="900" fontSize="13" fontFamily="sans-serif">L={toCm(row.length)}</text>
+                                      {row.notes && <text x="100" y="155" textAnchor="middle" fill="#1e3a8a" fontWeight="bold" fontSize="12">{row.notes}</text>}
+                                    </svg>
+                                  )
                                 )}
 
                                 {row.type === 'קשת' && (
