@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import { Trash2, FileSpreadsheet, Layers, CreditCard, Building2, Briefcase, Upload, User, Phone, Mail, CheckCircle2, FileDown } from 'lucide-react';
+import { Trash2, FileSpreadsheet, Layers, CreditCard, Building2, Briefcase, Upload, User, Phone, Mail, CheckCircle2, FileDown, Printer } from 'lucide-react';
 import ExcelJS from 'exceljs';
+import PrintableReport from './PrintableReport';
 
-interface RowData {
+export interface RowData {
   id: string;
   partNumber: string;
   type: 'קטע ישר' | 'קשת' | 'מעבר';
@@ -28,13 +29,13 @@ interface RowData {
   rBig2: number;
 }
 
-interface Sheet {
+export interface Sheet {
   id: string;
   name: string;
   rows: RowData[];
 }
 
-interface PriceItem {
+export interface PriceItem {
   id: string;
   detail: string;
   unit: string;
@@ -1126,7 +1127,7 @@ export default function App() {
   }
 
   return (
-    <div style={{ direction: 'rtl', backgroundColor: '#f8fafc', minHeight: '100vh', fontFamily: 'Assistant, Rubik, sans-serif', color: '#1e293b', width: '100%', letterSpacing: '0.2px' }}>
+    <div className="no-print" style={{ direction: 'rtl', backgroundColor: '#f8fafc', minHeight: '100vh', fontFamily: 'Assistant, Rubik, sans-serif', color: '#1e293b', width: '100%', letterSpacing: '0.2px' }}>
       
       {/* כותרת עליונה קבועה */}
       <header style={{ backgroundColor: '#0f172a', borderBottom: '4px solid #475569', padding: '30px 24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '20px' }}>
@@ -1743,6 +1744,11 @@ export default function App() {
                     {/* ייצוא לאקסל */}
                     <button onClick={exportToExcel} style={{ backgroundColor: '#16a34a', color: '#ffffff', border: 'none', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', marginRight: '10px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <FileDown size={14} /> Excel
+                    </button>
+                    
+                    {/* הדפס דוח מקצועי */}
+                    <button onClick={() => window.print()} style={{ backgroundColor: '#475569', color: '#ffffff', border: 'none', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', marginRight: '10px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Printer size={14} /> הדפס דוח מקצועי
                     </button>
                     
                     {/* כפתורי בטל / בצע שוב (Undo/Redo) */}
@@ -3087,6 +3093,16 @@ export default function App() {
           </main>
         </div>
       )}
+      <PrintableReport
+        sheets={sheets}
+        clientDetails={{ name: clientDetails.name, phone: clientDetails.phone, email: clientDetails.email, contact: clientDetails.contact }}
+        selectedProject={selectedProject}
+        docDate={docDate}
+        docNumber={docNumber}
+        logoUrl={logoUrl}
+        calculateArea={calculateArea}
+        calculateThickness={calculateThickness}
+      />
     </div>
   );
 }
