@@ -1092,7 +1092,7 @@ export default function App() {
             </label>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
             
             {/* פרטי הלקוח */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: '#f8fafc' }}>
@@ -1353,39 +1353,40 @@ export default function App() {
                 </div>
               )}
 
-              <div style={{ marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid #e2e8f0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <div>
-                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#64748b', display: 'block', marginBottom: '2px' }}>תאריך מסמך:</label>
-                  <input 
-                    type="date" 
-                    value={docDate} 
-                    onChange={(e) => {
-                      setDocDate(e.target.value);
-                      const currentClient = isNewClient ? clientDetails.name : selectedClientKey;
-                      const currentProject = isNewProject ? newProjectName : selectedProject;
-                      const key = `${currentClient}-${currentProject}`;
-                      setProjectDocDates(prev => ({ ...prev, [key]: e.target.value }));
-                    }} 
-                    style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center', boxSizing: 'border-box' }} 
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#64748b', display: 'block', marginBottom: '2px' }}>מספר סימוכין:</label>
-                  <input 
-                    type="text" 
-                    value={docNumber} 
-                    onChange={(e) => {
-                      setDocNumber(e.target.value);
-                      const currentClient = isNewClient ? clientDetails.name : selectedClientKey;
-                      const currentProject = isNewProject ? newProjectName : selectedProject;
-                      const key = `${currentClient}-${currentProject}`;
-                      setProjectDocNumbers(prev => ({ ...prev, [key]: e.target.value }));
-                    }} 
-                    style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', textAlign: 'center', fontWeight: 'bold', backgroundColor: '#ffffff', color: '#0f172a' }} 
-                  />
-                </div>
-              </div>
+            </div>
+          </div>
 
+          {/* תאריך מסמך ומספר סימוכין - ממורכזים מתחת לשתי המשבצות */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '32px', marginBottom: '32px', padding: '16px 20px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569' }}>תאריך מסמך:</label>
+              <input 
+                type="date" 
+                value={docDate} 
+                onChange={(e) => {
+                  setDocDate(e.target.value);
+                  const currentClient = isNewClient ? clientDetails.name : selectedClientKey;
+                  const currentProject = isNewProject ? newProjectName : selectedProject;
+                  const key = `${currentClient}-${currentProject}`;
+                  setProjectDocDates(prev => ({ ...prev, [key]: e.target.value }));
+                }} 
+                style={{ padding: '8px 16px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '14px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center', minWidth: '160px' }} 
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569' }}>מספר סימוכין:</label>
+              <input 
+                type="text" 
+                value={docNumber} 
+                onChange={(e) => {
+                  setDocNumber(e.target.value);
+                  const currentClient = isNewClient ? clientDetails.name : selectedClientKey;
+                  const currentProject = isNewProject ? newProjectName : selectedProject;
+                  const key = `${currentClient}-${currentProject}`;
+                  setProjectDocNumbers(prev => ({ ...prev, [key]: e.target.value }));
+                }} 
+                style={{ padding: '8px 16px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '14px', textAlign: 'center', fontWeight: 'bold', backgroundColor: '#ffffff', color: '#0f172a', minWidth: '120px' }} 
+              />
             </div>
           </div>
 
