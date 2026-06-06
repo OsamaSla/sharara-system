@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "מערכת שרארה — תעלות פח"
+version = "1.0.0"
+id = "artifacts/sharara"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25643
+
+[services.development]
+run = "pnpm --filter @workspace/sharara run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/sharara", "run", "build" ]
+publicDir = "artifacts/sharara/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25643"
+BASE_PATH = "/"
