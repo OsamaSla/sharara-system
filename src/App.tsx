@@ -1266,7 +1266,7 @@ export default function App() {
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
             <div style={{ position: 'relative' }}>
               <img 
-                src="/logo.png" 
+                src="logo.png" 
                 alt="לוגו החברה" 
                 style={{ 
                   maxHeight: '160px', 

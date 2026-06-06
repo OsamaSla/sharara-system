@@ -107,20 +107,26 @@
 
 .pt-header {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6mm;
+  text-align: center;
+  gap: 10px;
+  margin-bottom: 15px;
 }
 
 .pt-logo {
-  max-height: 40px;
+  max-height: 100px;
   width: auto;
+  object-fit: contain;
 }
 
 .pt-title {
-  font-size: 14pt;
+  font-size: 18pt;
   font-weight: bold;
   color: #1f4e79;
+  font-family: 'Rubik', sans-serif;
+  margin-top: 10px;
 }
 
 .pt-info-row th {
@@ -145,7 +151,7 @@
   font-weight: bold;
   padding: 2mm 0 1mm;
   border: none;
-  text-align: right;
+  text-align: start;
   color: #1f4e79;
 }
 
@@ -175,7 +181,7 @@
 }
 
 .pt-detail {
-  text-align: right;
+  text-align: start;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -254,7 +260,7 @@
 .preview-close-btn {
   position: sticky;
   top: 10px;
-  float: left;
+  float: inline-start;
   z-index: 10;
   padding: 6px 16px;
   background: #dc2626;

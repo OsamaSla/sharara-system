@@ -44,27 +44,27 @@ export default function PrintableReport({
   ];
 
   return (
-    <div className="printable-report landscape-print">
+    <div className="printable-report landscape-print" dir="rtl" lang="he">
       {sheets.map((sheet, si) => (
         <table key={sheet.id} className="print-table">
           <thead>
             <tr className="pt-logo-row">
               <th colSpan={headers.length}>
-                  <div className="pt-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '10px', marginBottom: '15px' }}>
-                    <img src="/logo.png" alt="לוגו" className="pt-logo" style={{ maxHeight: '100px', width: 'auto', objectFit: 'contain' }} />
-                    <span className="pt-title" style={{ fontSize: '18pt', fontWeight: 'bold', color: '#1f4e79', fontFamily: 'Rubik, sans-serif', marginTop: '10px' }}>שרארה — דוח מדידות תעלות פח</span>
-                  </div>
+                <div className="pt-header">
+                  <img src="logo.png" alt="לוגו" className="pt-logo" />
+                  <span className="pt-title">שרארה — דוח מדידות תעלות פח</span>
+                </div>
               </th>
             </tr>
             <tr className="pt-info-row">
               <th colSpan={headers.length}>
                 <div className="pt-info">
                   <span>לקוח: {clientDetails.name}</span>
-                  <span>טל: {clientDetails.phone}</span>
+                  <span>טל: <span dir="ltr">{clientDetails.phone}</span></span>
                   <span>איש קשר: {clientDetails.contact}</span>
                   <span>פרויקט: {selectedProject}</span>
                   <span>תאריך: {docDate}</span>
-                  <span>מס\': {docNumber}</span>
+                  <span>מס\': <span dir="ltr">{docNumber}</span></span>
                 </div>
               </th>
             </tr>
@@ -94,8 +94,8 @@ export default function PrintableReport({
               return (
                 <tr key={row.id} className={idx % 2 === 0 ? 'pt-even' : 'pt-odd'}>
                   <td>{idx + 1}</td>
-                  <td>{row.partNumber}</td>
-                  <td className="pt-detail">{detail}</td>
+                  <td><span dir="ltr">{row.partNumber}</span></td>
+                  <td className="pt-detail"><bdi>{detail}</bdi></td>
                   <td>{row.width1}</td>
                   <td>{row.height1}</td>
                   <td>{row.width2 || '–'}</td>
@@ -121,8 +121,8 @@ export default function PrintableReport({
             <tr className="pt-footer-row">
               <td colSpan={headers.length}>
                 <div className="pt-footer">
-                  <span className="pt-footer-date">תאריך הפקה: {today}</span>
                   <span className="pt-footer-sign">חתימת מנהל עבודה: _________________________</span>
+                  <span className="pt-footer-date">תאריך הפקה: {today}</span>
                 </div>
               </td>
             </tr>
