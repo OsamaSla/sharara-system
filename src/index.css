@@ -64,6 +64,20 @@
   box-sizing: border-box;
 }
 
+@media print {
+  #root {
+    width: 100% !important;
+    max-width: none !important;
+    border: none !important;
+    min-height: auto !important;
+  }
+
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
+
 body {
   margin: 0;
 }

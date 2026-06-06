@@ -70,6 +70,225 @@
     background: #ffffff !important;
     color: #000000 !important;
   }
+
+  /* ── ריכוז כמויות / ייצור: A4 landscape ── */
+  .print-orientation-spacer {
+    display: none;
+  }
+
+  .print-orientation-spacer.landscape-print {
+    display: block;
+    height: 0;
+    line-height: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    page: landscape-page;
+  }
+
+  .print-orientation-spacer.portrait-print {
+    display: block;
+    height: 0;
+    line-height: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    page: portrait-page;
+  }
+
+  .active-tab-summary,
+  .active-tab-production {
+    page: landscape-page;
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .active-tab-invoice,
+  .active-tab-pricelist {
+    page: portrait-page;
+  }
+
+  html:has(.active-tab-summary),
+  html:has(.active-tab-production) {
+    width: 100% !important;
+  }
+
+  .active-tab-summary .no-print,
+  .active-tab-production .no-print,
+  .active-tab-invoice .no-print,
+  .active-tab-pricelist .no-print {
+    min-height: auto !important;
+  }
+
+  .active-tab-summary main,
+  .active-tab-production main,
+  .active-tab-invoice main,
+  .active-tab-pricelist main {
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  .print-document {
+    max-width: none !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .summary-print-page,
+  .production-print-document {
+    page: landscape-page;
+  }
+
+  .invoice-print-page,
+  .pricelist-print-page {
+    page: portrait-page;
+  }
+
+  /* נייר מכתבים מוקטן להדפסה */
+  .company-letterhead {
+    margin-bottom: 6px !important;
+    padding-bottom: 6px !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .company-letterhead .cl-name {
+    font-size: 20px !important;
+    margin-top: 2px !important;
+  }
+
+  .company-letterhead .cl-subtitle {
+    font-size: 10px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .company-letterhead .cl-eng-name {
+    font-size: 14px !important;
+  }
+
+  .company-letterhead .cl-links {
+    font-size: 9px !important;
+    gap: 24px !important;
+    padding: 3px 0 !important;
+  }
+
+  .company-letterhead .cl-bottom {
+    font-size: 7.5px !important;
+    gap: 8px !important;
+    padding-top: 4px !important;
+    line-height: 1.35 !important;
+  }
+
+  .company-letterhead .cl-logo-img {
+    max-height: 40px !important;
+    max-width: 100px !important;
+  }
+
+  .active-tab-summary .summary-project-info {
+    margin-bottom: 8px !important;
+    padding-bottom: 4px !important;
+    font-size: 11px !important;
+  }
+
+  .active-tab-summary .summary-sheet-block {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    border-bottom: none !important;
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  .active-tab-summary .summary-sheet-block:not(:last-child) {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .active-tab-summary .summary-sheet-block:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .active-tab-summary .print-table-wrapper table {
+    min-width: 0 !important;
+    width: 100% !important;
+    font-size: 8px !important;
+    table-layout: auto !important;
+  }
+
+  .active-tab-summary .print-table-wrapper th,
+  .active-tab-summary .print-table-wrapper td {
+    padding: 3px 4px !important;
+    white-space: nowrap;
+    word-wrap: normal !important;
+    overflow-wrap: normal !important;
+  }
+
+  .active-tab-summary .print-table-wrapper td:nth-child(3),
+  .active-tab-summary .print-table-wrapper th:nth-child(3) {
+    white-space: normal;
+    min-width: 90px;
+  }
+
+  .active-tab-summary .print-table-wrapper td:last-child,
+  .active-tab-summary .print-table-wrapper th:last-child {
+    white-space: normal;
+    min-width: 70px;
+  }
+
+  .active-tab-summary .summary-footer {
+    margin-top: 6px !important;
+    padding-top: 4px !important;
+    font-size: 9px !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* דפי ייצור */
+  .active-tab-production .production-print-page {
+    min-height: auto !important;
+    padding: 8mm !important;
+    margin-bottom: 0 !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .active-tab-production .production-print-page:not(:last-child) {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .active-tab-production .production-print-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .active-tab-production .production-page-footer {
+    margin-top: 10px !important;
+    padding-top: 8px !important;
+  }
+
+  /* תצוגה מקדימה – הדפסה */
+  .preview-mode::before,
+  .preview-toolbar,
+  .preview-toolbar-inline {
+    display: none !important;
+  }
+
+  .preview-mode .print-document {
+    position: static !important;
+    transform: none !important;
+    width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
 }
 
 /* ── PrintableReport ── */
@@ -253,8 +472,90 @@
   border-radius: 2px;
 }
 
+.preview-container--landscape {
+  max-width: 297mm;
+}
+
 .preview-container .printable-report {
   display: block !important;
+}
+
+.preview-toolbar {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100001;
+  display: flex;
+  gap: 8px;
+  direction: rtl;
+}
+
+.preview-toolbar-inline {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  direction: rtl;
+}
+
+.preview-action-btn {
+  padding: 6px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 13px;
+  color: #fff;
+}
+
+.preview-action-btn--close {
+  background: #dc2626;
+}
+
+.preview-action-btn--close:hover {
+  background: #b91c1c;
+}
+
+.preview-action-btn--print {
+  background: #2563eb;
+}
+
+.preview-action-btn--print:hover {
+  background: #1d4ed8;
+}
+
+.preview-mode::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 99998;
+}
+
+.preview-mode .print-document {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100000;
+  max-height: calc(100vh - 80px);
+  overflow: auto;
+  background: #ffffff;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  padding: 16mm;
+  box-sizing: border-box;
+}
+
+.preview-mode .print-document.landscape-print,
+.preview-mode .summary-print-page,
+.preview-mode .production-print-document {
+  width: min(297mm, 96vw);
+}
+
+.preview-mode .print-document.portrait-print,
+.preview-mode .invoice-print-page,
+.preview-mode .pricelist-print-page {
+  width: min(210mm, 96vw);
 }
 
 .preview-close-btn {
@@ -278,4 +579,337 @@
 
 .preview-close-btn:hover {
   background: #b91c1c;
+}
+
+/* ── Company Letterhead (Picture1 style) ── */
+.company-letterhead {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-bottom: 3px double #0f172a;
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+  width: 100%;
+  text-align: center;
+}
+
+.cl-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.cl-brand-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 30px;
+  width: 100%;
+}
+
+.cl-eng-name {
+  font-size: 18px;
+  font-family: 'Times New Roman', Times, serif;
+  color: #1e293b;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.cl-logo-img {
+  max-height: 60px;
+  max-width: 150px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.cl-name {
+  font-size: 38px;
+  font-weight: 900;
+  color: #1e293b;
+  margin: 5px 0 0 0;
+  letter-spacing: 1px;
+  font-family: 'Times New Roman', Times, serif;
+}
+
+.cl-subtitle {
+  font-size: 16px;
+  font-weight: bold;
+  color: #475569;
+  margin: 2px 0 10px 0;
+  letter-spacing: 0.5px;
+}
+
+.cl-links {
+  display: flex;
+  justify-content: center;
+  gap: 60px;
+  width: 100%;
+  border-top: 1px solid #cbd5e1;
+  padding: 6px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.cl-links a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.cl-bottom {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 15px;
+  width: 100%;
+  border-top: 1.5px solid #0f172a;
+  padding-top: 10px;
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: start;
+}
+
+.cl-services {
+  padding-inline-start: 5px;
+}
+
+.cl-service-line {
+  color: #4338ca;
+  font-weight: bold;
+  margin-bottom: 2px;
+}
+
+.cl-service-sep {
+  color: #d97706;
+}
+
+.cl-contact {
+  border-inline-start: 1.5px solid #cbd5e1;
+  padding-inline-start: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: #1e293b;
+  text-align: start;
+}
+
+@media print {
+  .company-letterhead {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
+.company-letterhead--production {
+  border-bottom-width: 3px;
+  border-bottom-style: solid;
+  margin-bottom: 25px;
+}
+
+.company-letterhead--production .cl-name {
+  font-size: 28px;
+}
+
+.company-letterhead--production .cl-subtitle {
+  font-size: 13px;
+  margin-bottom: 0;
+}
+
+.company-letterhead--production .cl-logo-img {
+  max-height: 50px;
+  max-width: 125px;
+}
+
+/* ── Production Worksheet ── */
+.production-empty {
+  background: #ffffff;
+  padding: 40px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  text-align: center;
+  font-weight: bold;
+}
+
+.production-print-page {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  padding: 12mm;
+  margin-bottom: 24px;
+  box-sizing: border-box;
+}
+
+.production-meta {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr;
+  gap: 16px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #94a3b8;
+  font-size: 12px;
+  text-align: start;
+}
+
+.production-meta-dates {
+  text-align: end;
+}
+
+.production-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+  text-align: start;
+  table-layout: fixed;
+}
+
+.production-table thead th {
+  background: #f1f5f9;
+  border: 1px solid #475569;
+  padding: 6px 5px;
+  font-weight: bold;
+  color: #0f172a;
+}
+
+.production-table-row td {
+  border: 1px solid #cbd5e1;
+  padding: 6px 5px;
+  vertical-align: top;
+}
+
+.production-table-row:nth-child(even) td {
+  background: #fafafa;
+}
+
+.prod-col-num {
+  width: 28px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.prod-col-part {
+  width: 72px;
+}
+
+.prod-col-sketch {
+  width: 140px;
+  text-align: center;
+}
+
+.prod-col-dims {
+  width: auto;
+}
+
+.prod-col-notes {
+  width: 110px;
+}
+
+.prod-part-number {
+  font-weight: 700;
+  font-size: 11px;
+  color: #0f172a;
+}
+
+.prod-part-type {
+  font-size: 9px;
+  color: #475569;
+  margin-top: 2px;
+}
+
+.prod-sketch {
+  display: block;
+  margin: 0 auto;
+}
+
+.prod-dims-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.prod-dim-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.prod-dim-label {
+  font-weight: 600;
+  color: #334155;
+  white-space: nowrap;
+  font-size: 9px;
+}
+
+.prod-dim-ref {
+  font-size: 8px;
+  color: #64748b;
+}
+
+.prod-dim-line {
+  flex: 1;
+  min-width: 40px;
+  border-bottom: 1px solid #475569;
+  height: 12px;
+}
+
+.prod-notes-box {
+  min-height: 48px;
+  border: 1px dashed #94a3b8;
+  border-radius: 3px;
+  padding: 4px;
+  font-size: 9px;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.prod-sign-line {
+  font-size: 8px;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.production-page-footer {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 16px;
+  border-top: 2px solid #0f172a;
+  padding-top: 10px;
+  margin-top: 12px;
+  font-size: 10px;
+  line-height: 1.4;
+  text-align: start;
+}
+
+.production-footer-sign {
+  border-inline-start: 1.5px solid #cbd5e1;
+  padding-inline-start: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.production-sign-box {
+  text-align: center;
+  border-top: 1px dashed #475569;
+  width: 130px;
+  margin-top: 8px;
+  padding-top: 3px;
+}
+
+@media print {
+  .production-print-page {
+    border: none;
+    padding: 0;
+    margin-bottom: 0;
+  }
+
+  .production-table {
+    font-size: 9px;
+  }
+
+  .production-table-row {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
 }

@@ -3,6 +3,8 @@ import './App.css';
 import { Trash2, FileSpreadsheet, Layers, CreditCard, Building2, Briefcase, User, Phone, Mail, CheckCircle2, FileDown } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import PrintableReport from './PrintableReport';
+import CompanyLetterhead from './CompanyLetterhead';
+import ProductionWorksheet from './ProductionWorksheet';
 
 
 export interface RowData {
@@ -182,6 +184,11 @@ export default function App() {
 
   // פרטי העסק שלי (עלי שרארה בע"מ) עבור הלוגו ונייר המכתבים הרשמי
   const [myCompanyDetails, setMyCompanyDetails] = useState(() => {
+    const defaultServiceLines = [
+      'תכנון וביצוע מערכות מיזוג אוויר ואוורור * פינוי עשן * ייצור תעלות פח',
+      'צינורות "ספיראל" ואביזרים * תעלות נירוסטה ומנדפים * תעלות',
+      'פח שחור * חיתוך וכיפוף פחים * מכירה והתקנת כל סוגי המזגנים',
+    ];
     const saved = localStorage.getItem('sharara_myCompanyDetails');
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -190,6 +197,9 @@ export default function App() {
       }
       if (parsed.mobile === "050-5215192") {
         parsed.mobile = "053-5819466";
+      }
+      if (!parsed.serviceLines) {
+        parsed.serviceLines = defaultServiceLines;
       }
       return parsed;
     }
@@ -213,7 +223,8 @@ export default function App() {
         "תעלות פח שחור",
         "חיתוך וכיפוף פחים",
         "מכירה והתקנת כל סוגי המזגנים"
-      ]
+      ],
+      serviceLines: defaultServiceLines,
     };
   });
   const [isEditingMyCompany, setIsEditingMyCompany] = useState<boolean>(false);
@@ -276,6 +287,17 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('sharara_producedSnapshots', JSON.stringify(producedSnapshots));
   }, [producedSnapshots]);
+
+  useEffect(() => {
+    const clearPrintTab = () => document.documentElement.removeAttribute('data-print-tab');
+    window.addEventListener('afterprint', clearPrintTab);
+    return () => window.removeEventListener('afterprint', clearPrintTab);
+  }, []);
+
+  const handlePrint = () => {
+    document.documentElement.setAttribute('data-print-tab', activeTab);
+    window.print();
+  };
 
   // מאזין גלובלי למקשי מקלדת Ctrl+Z ו-Ctrl+Y לביצוע UNDO/REDO בזמן עריכה
   useEffect(() => {
@@ -1233,7 +1255,7 @@ export default function App() {
   }
 
   return (
-    <div className={`active-tab-${activeTab}`} style={{ direction: 'rtl', backgroundColor: '#f8fafc', minHeight: '100vh', fontFamily: 'Assistant, Rubik, sans-serif', color: '#1e293b', width: '100%', letterSpacing: '0.2px' }}>
+    <div className={`active-tab-${activeTab}${isPreviewMode && activeTab !== 'measure' ? ' preview-mode' : ''}`} style={{ direction: 'rtl', backgroundColor: '#f8fafc', minHeight: '100vh', fontFamily: 'Assistant, Rubik, sans-serif', color: '#1e293b', width: '100%', letterSpacing: '0.2px' }}>
       <div className="no-print" style={{ width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       
       {/* כותרת עליונה קבועה */}
@@ -1872,7 +1894,7 @@ export default function App() {
                     <div style={{ display: 'flex', gap: '6px' }}>
                       <button onClick={exportToExcel} style={{ backgroundColor: '#16a34a', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>Excel</button>
                       <button onClick={() => setIsPreviewMode(true)} style={{ backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>תצוגה מקדימה</button>
-                      <button onClick={() => { try { window.print(); } catch (e) {} }} style={{ backgroundColor: '#475569', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>הדפס דוח</button>
+                      <button onClick={handlePrint} style={{ backgroundColor: '#475569', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>הדפס דוח</button>
                     </div>
                   </div>
                 </div>
@@ -2278,12 +2300,28 @@ export default function App() {
 
             {/* טאב ריכוז כמויות */}
             {activeTab === 'summary' && (
-              <div className="landscape-print" style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #cbd5e1', padding: '32px', maxWidth: '1400px', margin: '0 auto', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' }}>
+              <div className="landscape-print summary-print-page print-document" style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #cbd5e1', padding: '32px', maxWidth: '1400px', margin: '0 auto', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' }}>
+                <div className="print-orientation-spacer landscape-print" aria-hidden="true" />
                 
                 {/* סרגל כפתורי ניהול נייר המכתבים - מוסתר בהדפסה */}
                   <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '20px', borderBottom: '1px solid #cbd5e1', paddingBottom: '10px', gap: '8px' }}>
+                  <button
+                    onClick={() => setIsPreviewMode(true)}
+                    style={{
+                      padding: '8px 16px',
+                      backgroundColor: '#7c3aed',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      fontSize: '13px',
+                    }}
+                  >
+                    תצוגה מקדימה
+                  </button>
                   <button 
-                    onClick={() => window.print()} 
+                    onClick={handlePrint}
                     style={{ 
                       padding: '8px 16px', 
                       backgroundColor: '#2563eb', 
@@ -2301,34 +2339,10 @@ export default function App() {
                 </div>
 
                 {/* כותרת רשמית של החברה בריכוז כמויות */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', borderBottom: '3px double #0f172a', paddingBottom: '15px', marginBottom: '20px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', width: '100%', position: 'relative' }}>
-                    <span style={{ fontSize: '15px', fontFamily: '"Times New Roman", Times, serif', color: '#1e293b', fontWeight: 'bold' }}>
-                      {myCompanyDetails.engName}
-                    </span>
-                    <svg width="100" height="40" viewBox="0 0 180 70">
-                      <path d="M10 20 C 50 10, 100 30, 140 20" fill="none" stroke="#94a3b8" strokeWidth="2.5" />
-                      <path d="M10 32 C 50 22, 100 42, 140 32" fill="none" stroke="#475569" strokeWidth="2.5" />
-                      <path d="M10 44 C 50 34, 100 54, 140 44" fill="none" stroke="#d97706" strokeWidth="2.5" />
-                      <g transform="translate(140, 5)">
-                        <path d="M20 35 C 20 22, 45 22, 45 31 C 45 40, 15 37, 15 49 C 15 60, 40 60, 40 49" fill="none" stroke="#d97706" strokeWidth="5" strokeLinecap="round" />
-                        <path d="M30 18 L 15 52 M 30 18 L 45 52 M 19 40 L 41 40" fill="none" stroke="#475569" strokeWidth="4.5" strokeLinecap="round" />
-                      </g>
-                    </svg>
-                  </div>
-                  <h1 style={{ fontSize: '28px', fontWeight: '900', color: '#1e293b', margin: '4px 0 0 0', fontFamily: '"Times New Roman", Times, serif' }}>
-                    {myCompanyDetails.name}
-                  </h1>
-                  <p style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569', margin: '2px 0 6px 0' }}>
-                    {myCompanyDetails.subtitle}
-                  </p>
-                  <div style={{ fontSize: '10px', color: '#475569' }}>
-                    <b>משרד ראשי ומפעל:</b> {myCompanyDetails.address} | <b>טל:</b> {myCompanyDetails.phone} | <b>פקס:</b> {myCompanyDetails.fax} | <b>נייד:</b> {myCompanyDetails.mobile} | <b>דוא"ל:</b> {myCompanyDetails.email}
-                  </div>
-                </div>
+                <CompanyLetterhead details={myCompanyDetails} />
 
                 {/* פרטי הפרויקט והריכוז */}
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', marginBottom: '25px', paddingBottom: '10px', borderBottom: '1px solid #cbd5e1', fontSize: '14px', textAlign: 'right' }}>
+                <div className="summary-project-info" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', marginBottom: '25px', paddingBottom: '10px', borderBottom: '1px solid #cbd5e1', fontSize: '14px', textAlign: 'right' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <div><b>פרויקט:</b> {isNewProject ? newProjectName : selectedProject} - {isNewClient ? clientDetails.name : selectedClientKey}</div>
                     <div><b>ריכוז:</b> ריכוז מס' - {docNumber}</div>
@@ -2343,7 +2357,7 @@ export default function App() {
                   const shTotals = getSheetTotals(sheet);
                   
                   return (
-                    <div key={sheet.id} style={{ marginBottom: '50px', paddingBottom: '30px', borderBottom: sIdx < sheets.length - 1 ? '2px dashed #cbd5e1' : 'none', pageBreakAfter: sIdx < sheets.length - 1 ? 'always' : 'auto' }}>
+                    <div key={sheet.id} className="summary-sheet-block" style={{ marginBottom: '50px', paddingBottom: '30px', borderBottom: sIdx < sheets.length - 1 ? '2px dashed #cbd5e1' : 'none', pageBreakAfter: sIdx < sheets.length - 1 ? 'always' : 'auto' }}>
                       
                       {/* כותרת דף הריכוז עבור הדף הנוכחי */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
@@ -2459,7 +2473,7 @@ export default function App() {
                 })}
 
                 {/* הערה חוקית קבועה למטה בתחתית הדף */}
-                <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10px', color: '#64748b', paddingTop: '10px', borderTop: '1px solid #cbd5e1' }}>
+                <div className="summary-footer" style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10px', color: '#64748b', paddingTop: '10px', borderTop: '1px solid #cbd5e1' }}>
                   <span>הופק באמצעות מערכת עלי שרארה בע"מ - ממוחשב</span>
                   <span>חתימת העסק ומבצע הריכוז</span>
                 </div>
@@ -2469,7 +2483,8 @@ export default function App() {
 
             {/* טאב חשבון פרופורמה */}
             {activeTab === 'invoice' && (
-              <div className="portrait-print" style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #cbd5e1', padding: '32px', maxWidth: '750px', margin: '0 auto', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' }}>
+              <div className="portrait-print print-document invoice-print-page" style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #cbd5e1', padding: '32px', maxWidth: '750px', margin: '0 auto', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' }}>
+                <div className="print-orientation-spacer portrait-print" aria-hidden="true" />
                 
                 {/* סרגל כפתורי ניהול נייר המכתבים - מוסתר בהדפסה */}
                 <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '1px solid #cbd5e1', paddingBottom: '10px', gap: '8px' }}>
@@ -2516,7 +2531,23 @@ export default function App() {
                     </button>
 
                     <button 
-                      onClick={() => window.print()} 
+                      onClick={() => setIsPreviewMode(true)}
+                      style={{ 
+                        padding: '8px 16px', 
+                        backgroundColor: '#7c3aed', 
+                        color: '#ffffff', 
+                        border: 'none', 
+                        borderRadius: '6px', 
+                        cursor: 'pointer', 
+                        fontWeight: 'bold', 
+                        fontSize: '13px'
+                      }}
+                    >
+                      תצוגה מקדימה
+                    </button>
+
+                    <button 
+                      onClick={handlePrint} 
                       style={{ 
                         padding: '8px 16px', 
                         backgroundColor: '#2563eb', 
@@ -2578,82 +2609,26 @@ export default function App() {
                         <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>דואר למשלוחים:</label>
                         <input type="text" value={myCompanyDetails.pobox} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, pobox: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
                       </div>
+                      {(myCompanyDetails.serviceLines ?? []).map((line: string, index: number) => (
+                        <div key={index} style={{ gridColumn: 'span 2' }}>
+                          <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>{`שורת שירותים ${index + 1} (הפרד ב-*):`}</label>
+                          <input
+                            type="text"
+                            value={line}
+                            onChange={(e) => {
+                              const nextLines = [...(myCompanyDetails.serviceLines ?? ['', '', ''])];
+                              nextLines[index] = e.target.value;
+                              setMyCompanyDetails({ ...myCompanyDetails, serviceLines: nextLines });
+                            }}
+                            style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }}
+                          />
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
 
-                {/* לוגו ומכתב רשמי מרוכז וממורכז */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', borderBottom: '3px double #0f172a', paddingBottom: '20px', marginBottom: '24px' }}>
-                  
-                  {/* לוגו מרכזי מוגדל פי 2.5 */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', textAlign: 'center', marginBottom: '10px' }}>
-                    
-                    {/* כותרת משנה באנגלית למעלה מצד שמאל, לוגו מצד ימין */}
-                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '30px', width: '100%', position: 'relative' }}>
-                      
-                      {/* כיתוב אנגלי */}
-                      <span style={{ fontSize: '18px', fontFamily: '"Times New Roman", Times, serif', color: '#1e293b', fontWeight: 'bold', letterSpacing: '1px' }}>
-                        {myCompanyDetails.engName}
-                      </span>
-                      
-                      {/* סמל הלוגו - שחזור SVG מרשים של הלוגו המקורי */}
-                      <svg width="150" height="60" viewBox="0 0 180 70">
-                        {/* Wavy lines for ventilation/airflow */}
-                        <path d="M10 20 C 50 10, 100 30, 140 20" fill="none" stroke="#94a3b8" strokeWidth="2.5" />
-                        <path d="M10 32 C 50 22, 100 42, 140 32" fill="none" stroke="#475569" strokeWidth="2.5" />
-                        <path d="M10 44 C 50 34, 100 54, 140 44" fill="none" stroke="#d97706" strokeWidth="2.5" />
-                        
-                        {/* Monogram */}
-                        <g transform="translate(140, 5)">
-                          <path d="M20 35 C 20 22, 45 22, 45 31 C 45 40, 15 37, 15 49 C 15 60, 40 60, 40 49" fill="none" stroke="#d97706" strokeWidth="5" strokeLinecap="round" />
-                          <path d="M30 18 L 15 52 M 30 18 L 45 52 M 19 40 L 41 40" fill="none" stroke="#475569" strokeWidth="4.5" strokeLinecap="round" />
-                        </g>
-                      </svg>
-                    </div>
-
-                    {/* כותרת ראשית עברית ענקית ומכובדת */}
-                    <h1 style={{ fontSize: '38px', fontWeight: '900', color: '#1e293b', margin: '5px 0 0 0', letterSpacing: '1px', fontFamily: '"Times New Roman", Times, serif' }}>
-                      {myCompanyDetails.name}
-                    </h1>
-                    
-                    {/* תיאור העסק */}
-                    <p style={{ fontSize: '16px', fontWeight: 'bold', color: '#475569', margin: '2px 0 10px 0', letterSpacing: '0.5px' }}>
-                      {myCompanyDetails.subtitle}
-                    </p>
-                  </div>
-
-                  {/* קישורים: אתר ומייל */}
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: '60px', width: '100%', borderTop: '1px solid #cbd5e1', paddingTop: '6px', paddingBottom: '6px', fontSize: '14px', fontWeight: '600' }}>
-                    <span style={{ color: '#1e293b', fontFamily: 'sans-serif' }}>{myCompanyDetails.website}</span>
-                    <span style={{ color: '#1e293b', fontFamily: 'sans-serif' }}>E-mail: <a href={`mailto:${myCompanyDetails.email}`} style={{ color: '#2563eb', textDecoration: 'none' }}>{myCompanyDetails.email}</a></span>
-                  </div>
-
-                  {/* בלוק תחתון דו-עמודתי מופרד בקו אנכי */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '15px', width: '100%', borderTop: '1.5px solid #0f172a', paddingTop: '10px', fontSize: '11px', lineHeight: '1.5', textAlign: 'right' }}>
-                    
-                    {/* עמודה ימנית: תחומי פעילות */}
-                    <div style={{ paddingRight: '5px' }}>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', rowGap: '4px', columnGap: '8px', color: '#475569', fontWeight: 'bold' }}>
-                        {myCompanyDetails.services.map((service: string, index: number) => (
-                          <span key={index}>
-                            {service} {index < myCompanyDetails.services.length - 1 ? ' | ' : ''}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* עמודה שמאלית: פרטי התקשרות וכתובת */}
-                    <div style={{ borderRight: '1.5px solid #cbd5e1', paddingRight: '15px', display: 'flex', flexDirection: 'column', gap: '3px', color: '#1e293b' }}>
-                      <div><b>משרד ראשי ומפעל:</b> {myCompanyDetails.address}</div>
-                      <div>
-                        <b>טל:</b> {myCompanyDetails.phone} | <b>פקס:</b> {myCompanyDetails.fax} | <b>נייד:</b> {myCompanyDetails.mobile}
-                      </div>
-                      <div><b>דואר למשלוחים:</b> {myCompanyDetails.pobox}</div>
-                    </div>
-
-                  </div>
-
-                </div>
+                <CompanyLetterhead details={myCompanyDetails} />
 
                 {/* פרטי המסמך עצמו - קטן ומכובד למטה */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', fontSize: '14px', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px' }}>
@@ -2822,15 +2797,32 @@ export default function App() {
 
             {/* טאב מחירון העסק */}
             {activeTab === 'pricelist' && (
-              <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #cbd5e1', padding: '32px', maxWidth: '800px', margin: '0 auto', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' }}>
+              <div className="portrait-print print-document pricelist-print-page" style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #cbd5e1', padding: '32px', maxWidth: '800px', margin: '0 auto', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' }}>
+                <div className="print-orientation-spacer portrait-print" aria-hidden="true" />
                 <div style={{ borderBottom: '3px solid #0f172a', paddingBottom: '16px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', margin: 0 }}>מחירון העסק</h2>
                     <p style={{ fontSize: '13px', color: '#64748b', margin: '4px 0 0 0' }}>מחירון מעודכן הניתן לעדכון ועריכה בכל עת. השינויים משפיעים ישירות על כל הדוחות והחישובים במערכת.</p>
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      onClick={() => setIsPreviewMode(true)}
+                      className="no-print"
+                      style={{
+                        padding: '8px 16px',
+                        backgroundColor: '#7c3aed',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        fontSize: '13px',
+                      }}
+                    >
+                      תצוגה מקדימה
+                    </button>
                     <button 
-                      onClick={() => window.print()} 
+                      onClick={handlePrint} 
                       className="no-print"
                       style={{ 
                         padding: '8px 16px', 
@@ -2905,12 +2897,28 @@ export default function App() {
 
             {/* טאב דפי ייצור לייצור תעלות ואביזרים */}
             {activeTab === 'production' && (
-              <div className="no-shadow landscape-print" style={{ maxWidth: '1000px', margin: '0 auto' }}>
+              <div className="no-shadow landscape-print print-document production-print-document" style={{ maxWidth: '1100px', margin: '0 auto' }}>
+                <div className="print-orientation-spacer landscape-print" aria-hidden="true" />
                 
                 {/* סרגל כפתורי ניהול מוסתר בהדפסה */}
-                <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '20px', backgroundColor: '#ffffff', padding: '16px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '20px', backgroundColor: '#ffffff', padding: '16px', borderRadius: '8px', border: '1px solid #cbd5e1', gap: '8px' }}>
+                  <button
+                    onClick={() => setIsPreviewMode(true)}
+                    style={{
+                      padding: '10px 24px',
+                      backgroundColor: '#7c3aed',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      fontSize: '14px',
+                    }}
+                  >
+                    תצוגה מקדימה
+                  </button>
                   <button 
-                    onClick={() => window.print()} 
+                    onClick={handlePrint}
                     style={{ 
                       padding: '10px 24px', 
                       backgroundColor: '#10b981', 
@@ -2930,220 +2938,34 @@ export default function App() {
                   </button>
                 </div>
 
-                {/* חלוקה לדפי A4 מותאמים להדפסה - 4 חלקים מרווחים לכל עמוד */}
-                {(() => {
-                  const itemsPerPage = 4;
-                  const pages = [];
-                  for (let i = 0; i < activeSheet.rows.length; i += itemsPerPage) {
-                    pages.push(activeSheet.rows.slice(i, i + itemsPerPage));
-                  }
-
-                  if (pages.length === 0) {
-                    return (
-                      <div style={{ backgroundColor: '#ffffff', padding: '40px', borderRadius: '8px', border: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 'bold' }}>
-                        אין נתונים להצגה. אנא הוסף חלקים בדפי המדידה תחילה.
-                      </div>
-                    );
-                  }
-
-                  return pages.map((pageRows, pageIdx) => (
-                    <div 
-                      key={pageIdx} 
-                      className="grid-bg"
-                      style={{ 
-                        backgroundColor: '#ffffff', 
-                        border: '2px solid #cbd5e1', 
-                        padding: '40px', 
-                        marginBottom: '40px', 
-                        position: 'relative', 
-                        display: 'flex', 
-                        flexDirection: 'column', 
-                        minHeight: '1120px', 
-                        boxSizing: 'border-box',
-                        pageBreakAfter: pageIdx < pages.length - 1 ? 'always' : 'auto',
-                        backgroundImage: 'linear-gradient(rgba(100, 149, 237, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(100, 149, 237, 0.08) 1px, transparent 1px)',
-                        backgroundSize: '20px 20px'
-                      }}
-                    >
-                      {/* כותרת דף הייצור */}
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', borderBottom: '3px solid #0f172a', paddingBottom: '15px', marginBottom: '25px', position: 'relative' }}>
-                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', width: '100%' }}>
-                          <span style={{ fontSize: '16px', fontFamily: '"Times New Roman", Times, serif', color: '#1e293b', fontWeight: 'bold', letterSpacing: '1px' }}>
-                            {myCompanyDetails.engName}
-                          </span>
-                          <svg width="100" height="40" viewBox="0 0 180 70">
-                            <path d="M10 20 C 50 10, 100 30, 140 20" fill="none" stroke="#94a3b8" strokeWidth="2.5" />
-                            <path d="M10 32 C 50 22, 100 42, 140 32" fill="none" stroke="#475569" strokeWidth="2.5" />
-                            <path d="M10 44 C 50 34, 100 54, 140 44" fill="none" stroke="#d97706" strokeWidth="2.5" />
-                            <g transform="translate(140, 5)">
-                              <path d="M20 35 C 20 22, 45 22, 45 31 C 45 40, 15 37, 15 49 C 15 60, 40 60, 40 49" fill="none" stroke="#d97706" strokeWidth="5" strokeLinecap="round" />
-                              <path d="M30 18 L 15 52 M 30 18 L 45 52 M 19 40 L 41 40" fill="none" stroke="#475569" strokeWidth="4.5" strokeLinecap="round" />
-                            </g>
-                          </svg>
-                        </div>
-                        <h1 style={{ fontSize: '28px', fontWeight: '900', color: '#0f172a', margin: '4px 0 0 0', fontFamily: '"Times New Roman", Times, serif' }}>
-                          {myCompanyDetails.name}
-                        </h1>
-                        <p style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569', margin: '2px 0 0 0' }}>
-                          דף עבודה לייצור תעלות ואביזרים
-                        </p>
-                      </div>
-
-                      {/* פרטי המסמך והפרויקט בראש העמוד */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: '20px', marginBottom: '20px', fontSize: '14px', borderBottom: '1px solid #94a3b8', paddingBottom: '10px', textAlign: 'right' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          <div><b>פרויקט פעיל:</b> {isNewProject ? newProjectName : selectedProject} - {isNewClient ? clientDetails.name : selectedClientKey}</div>
-                          <div><b>דף עבודה:</b> {activeSheet.name} (עמוד {pageIdx + 1} מתוך {pages.length})</div>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
-                          <div><b>תאריך:</b> {docDate}</div>
-                          <div><b>מסמך סימוכין:</b> #{docNumber}</div>
-                        </div>
-                      </div>
-
-                      {/* גוף הדף - הצגת 4 חלקים בעימוד 2x2 */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', flexGrow: 1 }}>
-                        {pageRows.map((row, rIdx) => {
-                          const globalIdx = pageIdx * itemsPerPage + rIdx + 1;
-                          const thick = calculateThickness(row.width1, row.height1, row.manualThickness);
-                          const area = calculateArea(row);
-                          
-                          return (
-                            <div 
-                              key={row.id} 
-                              style={{ 
-                                border: '1.5px solid #1e293b', 
-                                borderRadius: '8px', 
-                                padding: '14px', 
-                                backgroundColor: 'rgba(255,255,255,0.95)', 
-                                display: 'flex', 
-                                flexDirection: 'column',
-                                position: 'relative',
-                                boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                              }}
-                            >
-                              {/* מספר סימון סביב עיגול בצד ימין למעלה */}
-                              <div style={{ 
-                                position: 'absolute', 
-                                top: '12px', 
-                                right: '12px', 
-                                width: '30px', 
-                                height: '30px', 
-                                borderRadius: '50%', 
-                                border: '2.5px solid #0f172a', 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                justifyContent: 'center', 
-                                fontWeight: 'bold', 
-                                fontSize: '15px', 
-                                color: '#0f172a',
-                                backgroundColor: '#ffffff',
-                                zIndex: 10
-                              }}>
-                                {globalIdx}
-                              </div>
-
-                              {/* טבלת ייצור פרקטית במקום SVG */}
-                              <div style={{ width: '100%', padding: '10px', flexGrow: 1 }}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', textAlign: 'right' }}>
-                                  <tbody>
-                                    <tr>
-                                      <td style={{ padding: '4px 6px', fontWeight: 'bold', color: '#475569', borderBottom: '1px solid #e2e8f0', width: '40%' }}>סוג:</td>
-                                      <td style={{ padding: '4px 6px', fontWeight: 700, color: '#0f172a', borderBottom: '1px solid #e2e8f0' }}>
-                                        {row.notes && ['לאמד S','צינור עגול','קופסת פיזור','מדף אש'].includes(row.notes) ? row.notes : row.type}
-                                      </td>
-                                    </tr>
-                                    <tr>
-                                      <td style={{ padding: '4px 6px', fontWeight: 'bold', color: '#475569', borderBottom: '1px solid #e2e8f0' }}>מס' חלק:</td>
-                                      <td style={{ padding: '4px 6px', fontWeight: 700, color: '#0f172a', borderBottom: '1px solid #e2e8f0' }}>{row.partNumber}</td>
-                                    </tr>
-                                    {row.notes === 'צינור עגול' ? (
-                                      <tr><td style={{ padding: '4px 6px', fontWeight: 'bold', color: '#475569', borderBottom: '1px solid #e2e8f0' }}>קוטר:</td><td style={{ padding: '4px 6px', fontWeight: 700, color: '#0f172a', borderBottom: '1px solid #e2e8f0' }}>{row.width1} מ"מ</td></tr>
-                                    ) : (
-                                      <tr><td style={{ padding: '4px 6px', fontWeight: 'bold', color: '#475569', borderBottom: '1px solid #e2e8f0' }}>חתך 1:</td><td style={{ padding: '4px 6px', fontWeight: 700, color: '#0f172a', borderBottom: '1px solid #e2e8f0' }}>{row.width1} × {row.height1} מ"מ</td></tr>
-                                    )}
-                                    {row.type === 'מעבר' && (
-                                      <tr><td style={{ padding: '4px 6px', fontWeight: 'bold', color: '#475569', borderBottom: '1px solid #e2e8f0' }}>חתך 2:</td><td style={{ padding: '4px 6px', fontWeight: 700, color: '#0f172a', borderBottom: '1px solid #e2e8f0' }}>{row.width2} × {row.height2} מ"מ</td></tr>
-                                    )}
-                                    {row.type !== 'קשת' && (
-                                      <tr><td style={{ padding: '4px 6px', fontWeight: 'bold', color: '#475569', borderBottom: '1px solid #e2e8f0' }}>אורך:</td><td style={{ padding: '4px 6px', fontWeight: 700, color: '#0f172a', borderBottom: '1px solid #e2e8f0' }}>{row.length} מ"מ</td></tr>
-                                    )}
-                                    {row.type === 'קשת' && (
-                                      <>
-                                        <tr><td style={{ padding: '4px 6px', fontWeight: 'bold', color: '#475569', borderBottom: '1px solid #e2e8f0' }}>R קטן:</td><td style={{ padding: '4px 6px', fontWeight: 700, color: '#0f172a', borderBottom: '1px solid #e2e8f0' }}>{row.rSmall} מ"מ</td></tr>
-                                        <tr><td style={{ padding: '4px 6px', fontWeight: 'bold', color: '#475569', borderBottom: '1px solid #e2e8f0' }}>R גדול:</td><td style={{ padding: '4px 6px', fontWeight: 700, color: '#0f172a', borderBottom: '1px solid #e2e8f0' }}>{row.rBig} מ"מ</td></tr>
-                                      </>
-                                    )}
-                                    {row.notes === 'לאמד S' && (
-                                      <>
-                                        <tr><td style={{ padding: '4px 6px', fontWeight: 'bold', color: '#475569', borderBottom: '1px solid #e2e8f0' }}>סטייה עליונה:</td><td style={{ padding: '4px 6px', fontWeight: 700, color: '#0f172a', borderBottom: '1px solid #e2e8f0' }}>{row.rSmall} מ"מ</td></tr>
-                                        <tr><td style={{ padding: '4px 6px', fontWeight: 'bold', color: '#475569', borderBottom: '1px solid #e2e8f0' }}>סטייה תחתונה:</td><td style={{ padding: '4px 6px', fontWeight: 700, color: '#0f172a', borderBottom: '1px solid #e2e8f0' }}>{(row.rBig2 || row.rSmall)} מ"מ</td></tr>
-                                      </>
-                                    )}
-                                    <tr>
-                                      <td style={{ padding: '4px 6px', fontWeight: 'bold', color: '#475569', borderBottom: '1px solid #e2e8f0' }}>עובי פח:</td>
-                                      <td style={{ padding: '4px 6px', fontWeight: 700, color: '#0f172a', borderBottom: '1px solid #e2e8f0' }}>{thick.toFixed(2)} מ"מ</td>
-                                    </tr>
-                                    {row.panels > 0 && (
-                                      <tr>
-                                        <td style={{ padding: '4px 6px', fontWeight: 'bold', color: '#475569', borderBottom: '1px solid #e2e8f0' }}>דופן:</td>
-                                        <td style={{ padding: '4px 6px', fontWeight: 700, color: '#854d0e', borderBottom: '1px solid #e2e8f0' }}>{row.panels} יח'</td>
-                                      </tr>
-                                    )}
-                                    <tr>
-                                      <td style={{ padding: '4px 6px', fontWeight: 'bold', color: '#475569' }}>שטח:</td>
-                                      <td style={{ padding: '4px 6px', fontWeight: 700, color: '#1d4ed8' }}>{area.toFixed(3)} מ"ר</td>
-                                    </tr>
-                                  </tbody>
-                                </table>
-                              </div>
-
-                              {/* מפרט טכני של החלק */}
-                              <div style={{ width: '100%', borderTop: '1px solid #e2e8f0', paddingTop: '8px', fontSize: '11px', lineHeight: '1.4', color: '#334155', textAlign: 'right' }}>
-                                <div><b>סוג חלק:</b> {row.notes && ['לאמד S','צינור עגול','קופסת פיזור','מדף אש'].includes(row.notes) ? row.notes : row.type} | <b>פח עובי:</b> {thick.toFixed(2)} מ"מ</div>
-                                <div>
-                                  {row.shatuzar ? '✅ שתוצר עגול ' : ''}
-                                  {row.flexible > 0 ? `✅ חיבור גמיש (${row.flexible.toFixed(1)} מ"א) ` : ''}
-                                  {row.acoustic ? '✅ בידוד אקוסטי ' : ''}
-                                  {row.external ? '✅ בידוד חיצוני ' : ''}
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#1e3a8a', fontWeight: 'bold', marginTop: '3px' }}>
-                                  <span>שטח: {area.toFixed(3)} מ"ר</span>
-                                  {row.sharshuriType !== 'ללא' && <span>שרשורי: קוטר {row.sharshuriType} (L={row.sharshuriLen.toFixed(1)}מ"א)</span>}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* חלק תחתון של דף העבודה - מזהה העסק וחתימות */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px', borderTop: '2px solid #0f172a', paddingTop: '15px', fontSize: '11px', lineHeight: '1.4', textAlign: 'right', marginTop: '20px' }}>
-                        <div>
-                          <div><b>דואר למשלוח:</b> {myCompanyDetails.pobox}</div>
-                          <div><b>טלפון:</b> {myCompanyDetails.phone} | <b>פקס:</b> {myCompanyDetails.fax} | <b>נייד:</b> {myCompanyDetails.mobile}</div>
-                          <div><b>אתר:</b> {myCompanyDetails.website} | <b>מייל:</b> {myCompanyDetails.email}</div>
-                        </div>
-                        <div style={{ borderRight: '1.5px solid #cbd5e1', paddingRight: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                          <div><b>משרד ראשי ומפעל:</b> {myCompanyDetails.address}</div>
-                          <div style={{ textAlign: 'center', borderTop: '1px dashed #475569', width: '130px', marginTop: '10px', paddingTop: '3px' }}>חתימת מנהל עבודה</div>
-                        </div>
-                      </div>
-
-                    </div>
-                  ));
-                })()}
-
+                <ProductionWorksheet
+                  rows={activeSheet.rows}
+                  sheetName={activeSheet.name}
+                  projectLabel={`${isNewProject ? newProjectName : selectedProject} - ${isNewClient ? clientDetails.name : selectedClientKey}`}
+                  docDate={docDate}
+                  docNumber={docNumber}
+                  companyDetails={myCompanyDetails}
+                  calculateThickness={calculateThickness}
+                />
               </div>
             )}
           </main>
         </div>
       )}
-      {isPreviewMode && (
+      {isPreviewMode && activeTab !== 'measure' && (
+        <div className="preview-toolbar no-print">
+          <button className="preview-action-btn preview-action-btn--close" onClick={() => setIsPreviewMode(false)}>✕ סגור תצוגה מקדימה</button>
+          <button className="preview-action-btn preview-action-btn--print" onClick={handlePrint}>🖨️ הדפס</button>
+        </div>
+      )}
+      {isPreviewMode && activeTab === 'measure' && (
         <div className="preview-overlay" onClick={() => setIsPreviewMode(false)}>
-          <div className="preview-container" onClick={e => e.stopPropagation()}>
-            <button className="preview-close-btn" onClick={() => setIsPreviewMode(false)}>✕ סגור תצוגה מקדימה</button>
-              <PrintableReport
+          <div className="preview-container preview-container--landscape" onClick={e => e.stopPropagation()}>
+            <div className="preview-toolbar-inline no-print">
+              <button className="preview-action-btn preview-action-btn--close" onClick={() => setIsPreviewMode(false)}>✕ סגור תצוגה מקדימה</button>
+              <button className="preview-action-btn preview-action-btn--print" onClick={handlePrint}>🖨️ הדפס</button>
+            </div>
+            <PrintableReport
               sheets={sheets}
               clientDetails={{ name: clientDetails.name, phone: clientDetails.phone, email: clientDetails.email, contact: clientDetails.contact }}
               selectedProject={selectedProject}
