@@ -1219,7 +1219,7 @@ export default function App() {
                 backgroundColor: '#ffffff'
               }} 
             />
-            <h1 style={{ fontSize: '26px', fontWeight: '950', color: '#0f172a', margin: '6px 0 0 0', fontFamily: 'Rubik, sans-serif' }}>עלי שרארה בע"מ</h1>
+            <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: '#1e293b', margin: '12px 0 0 0', fontFamily: "'David Libre', 'Frank Ruhl Libre', serif", letterSpacing: '4px' }}>עלי שרארה בע"מ</h1>
             <p style={{ fontSize: '13px', color: '#64748b', margin: 0, fontWeight: '500' }}>מערכת ייצור וחישוב כמויות תעלות פח</p>
           </div>
 
