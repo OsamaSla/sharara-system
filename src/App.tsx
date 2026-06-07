@@ -96,9 +96,8 @@ export default function App() {
   }, []);
 
   // הצגת מסך טעינה
-  if (isLoading) {
-    return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>טוען נתונים מהענן...</div>;
-  }
+  // (הועבר למטה אחרי כל ה-Hooks)
+
 
 
   const handleLoginSubmit = (e: React.FormEvent) => {
@@ -380,6 +379,11 @@ export default function App() {
     rBig2: 0,
     panels: 0
   });
+
+  // הצגת מסך טעינה - ממוקם אחרי כל ה-useState וה-useEffect כדי למנוע חריגה מחוקי ה-Hooks
+  if (isLoading) {
+    return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>טוען נתונים מהענן...</div>;
+  }
 
   // שחזור או יצירת מספר סימוכין ותאריך עבור לקוח ופרויקט ספציפיים
   const getOrCreateDocDetails = (clientName: string, projectName: string) => {
