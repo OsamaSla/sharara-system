@@ -2451,10 +2451,11 @@ export default function App() {
                           {/* רגל הטבלה - סה"כ כמויות */}
                           <tfoot>
                             <tr style={{ backgroundColor: '#f1f5f9', fontWeight: 'bold', borderTop: '2px solid #cbd5e1' }}>
-                              <td style={{ padding: '8px 6px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }} colSpan={2}>סה"כ כמות:</td>
+                              <td style={{ padding: '8px 6px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }} colSpan={3}>סה"כ כמות:</td>
                               <td style={{ padding: '8px 6px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{(shTotals.t08 + shTotals.t10) > 0 ? (shTotals.t08 + shTotals.t10).toFixed(2) : ''}</td>
                               <td style={{ padding: '8px 6px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{(shTotals.acoustic + shTotals.external) > 0 ? (shTotals.acoustic + shTotals.external).toFixed(2) : ''}</td>
                               <td style={{ padding: '8px 6px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{shTotals.adapterQty > 0 ? shTotals.adapterQty : ''}</td>
+                              <td style={{ padding: '8px 6px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{''}</td>
                               <td style={{ padding: '8px 6px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{shTotals.shatuzar > 0 ? shTotals.shatuzar : ''}</td>
                               <td style={{ padding: '8px 6px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{shTotals.flexible > 0 ? shTotals.flexible.toFixed(2) : ''}</td>
                               <td style={{ padding: '8px 6px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{(shTotals.sharshuri6 + shTotals.sharshuri8 + shTotals.sharshuri10) > 0 ? (shTotals.sharshuri6 + shTotals.sharshuri8 + shTotals.sharshuri10).toFixed(2) : ''}</td>
