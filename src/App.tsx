@@ -70,13 +70,10 @@ export default function App() {
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (loginUsername.trim().toLowerCase() === 'sharara' && loginPassword === '1970') {
-      setIsLoggedIn(true);
-      sessionStorage.setItem('sharara_isLoggedIn', 'true');
-      setLoginError('');
-    } else {
-      setLoginError('שם משתמש או סיסמה שגויים. אנא נסה שוב.');
-    }
+    // Bypass authentication check
+    setIsLoggedIn(true);
+    sessionStorage.setItem('sharara_isLoggedIn', 'true');
+    setLoginError('');
   };
 
   const handleLogout = () => {
