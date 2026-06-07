@@ -1263,10 +1263,6 @@ export default function App() {
             </button>
           </form>
 
-          {/* פרטי משתמש ברירת מחדל לטובת נוחות הכניסה */}
-          <div style={{ marginTop: '24px', backgroundColor: '#f1f5f9', padding: '10px 14px', borderRadius: '6px', fontSize: '11px', color: '#475569', width: '100%', textAlign: 'center', boxSizing: 'border-box' }}>
-            <b>כניסה מהירה:</b> שם משתמש: <code style={{ fontWeight: 'bold', color: '#1e3a8a' }}>sharara</code> | סיסמה: <code style={{ fontWeight: 'bold', color: '#1e3a8a' }}>1970</code>
-          </div>
 
           <div style={{ marginTop: '30px', fontSize: '10px', color: '#94a3b8', borderTop: '1px solid #e2e8f0', width: '100%', paddingTop: '12px', textAlign: 'center' }}>
             מערכת עלי שרארה בע"מ © {new Date().getFullYear()}
