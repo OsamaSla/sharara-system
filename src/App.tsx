@@ -1208,20 +1208,17 @@ export default function App() {
           
           {/* לוגו החברה הרשמי בראש דף ההתחברות */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginBottom: '24px', textAlign: 'center' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', width: '100%' }}>
-              <span style={{ fontSize: '13px', fontFamily: '"Times New Roman", Times, serif', color: '#64748b', fontWeight: 'bold' }}>
-                Sharara 1970
-              </span>
-              <svg width="120" height="45" viewBox="0 0 180 70">
-                <path d="M10 20 C 50 10, 100 30, 140 20" fill="none" stroke="#94a3b8" strokeWidth="2.5" />
-                <path d="M10 32 C 50 22, 100 42, 140 32" fill="none" stroke="#475569" strokeWidth="2.5" />
-                <path d="M10 44 C 50 34, 100 54, 140 44" fill="none" stroke="#d97706" strokeWidth="2.5" />
-                <g transform="translate(140, 5)">
-                  <path d="M20 35 C 20 22, 45 22, 45 31 C 45 40, 15 37, 15 49 C 15 60, 40 60, 40 49" fill="none" stroke="#d97706" strokeWidth="5.5" strokeLinecap="round" />
-                  <path d="M30 18 L 15 52 M 30 18 L 45 52 M 19 40 L 41 40" fill="none" stroke="#475569" strokeWidth="4.5" strokeLinecap="round" />
-                </g>
-              </svg>
-            </div>
+            <img 
+              src="logo.png" 
+              alt="לוגו החברה" 
+              style={{ 
+                maxHeight: '120px', 
+                maxWidth: '100%', 
+                objectFit: 'contain', 
+                borderRadius: '8px', 
+                backgroundColor: '#ffffff'
+              }} 
+            />
             <h1 style={{ fontSize: '26px', fontWeight: '950', color: '#0f172a', margin: '6px 0 0 0', fontFamily: 'Rubik, sans-serif' }}>עלי שרארה בע"מ</h1>
             <p style={{ fontSize: '13px', color: '#64748b', margin: 0, fontWeight: '500' }}>מערכת ייצור וחישוב כמויות תעלות פח</p>
           </div>
