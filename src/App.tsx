@@ -65,6 +65,12 @@ const EXISTING_DATA = {
 
 export default function App() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  // סטייטים של אבטחה וכניסה לאתר (sessionStorage לשמירת החיבור)
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => sessionStorage.getItem('sharara_isLoggedIn') === 'true');
+  const [loginUsername, setLoginUsername] = useState<string>('');
+  const [loginPassword, setLoginPassword] = useState<string>('');
+  const [loginError, setLoginError] = useState<string>('');
+
   // טעינת נתונים מ-Firestore
   useEffect(() => {
     const loadData = async () => {
@@ -93,9 +99,7 @@ export default function App() {
   if (isLoading) {
     return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>טוען נתונים מהענן...</div>;
   }
-  const [loginUsername, setLoginUsername] = useState<string>('');
-  const [loginPassword, setLoginPassword] = useState<string>('');
-  const [loginError, setLoginError] = useState<string>('');
+
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
