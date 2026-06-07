@@ -5,6 +5,8 @@ import ExcelJS from 'exceljs';
 import PrintableReport from './PrintableReport';
 import CompanyLetterhead from './CompanyLetterhead';
 import ProductionWorksheet from './ProductionWorksheet';
+import { db } from './firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 
 export interface RowData {
@@ -62,8 +64,35 @@ const EXISTING_DATA = {
 };
 
 export default function App() {
-  // סטייטים של אבטחה וכניסה לאתר (sessionStorage לשמירת החיבור)
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => sessionStorage.getItem('sharara_isLoggedIn') === 'true');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  // טעינת נתונים מ-Firestore
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const docRef = doc(db, 'appData', 'mainData');
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          // עדכון הסטייטים מהענן
+          if (data.clientsData) setClientsData(data.clientsData);
+          if (data.pricesList) setPricesList(data.pricesList);
+          if (data.myCompanyDetails) setMyCompanyDetails(data.myCompanyDetails);
+          // וכן הלאה לכל השאר...
+        }
+      } catch (error) {
+        console.error("Error loading from Firestore: ", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  // הצגת מסך טעינה
+  if (isLoading) {
+    return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>טוען נתונים מהענן...</div>;
+  }
   const [loginUsername, setLoginUsername] = useState<string>('');
   const [loginPassword, setLoginPassword] = useState<string>('');
   const [loginError, setLoginError] = useState<string>('');
@@ -256,34 +285,26 @@ export default function App() {
   const [undoStack, setUndoStack] = useState<Sheet[][]>([]);
   const [redoStack, setRedoStack] = useState<Sheet[][]>([]);
 
-  // אפקטים לשמירה אוטומטית ב-localStorage
+  // אפקטים לשמירה אוטומטית בענן (Firestore)
   useEffect(() => {
-    localStorage.setItem('sharara_clientsData', JSON.stringify(clientsData));
-  }, [clientsData]);
-
-  useEffect(() => {
-    localStorage.setItem('sharara_pricesList', JSON.stringify(pricesList));
-  }, [pricesList]);
-
-  useEffect(() => {
-    localStorage.setItem('sharara_myCompanyDetails', JSON.stringify(myCompanyDetails));
-  }, [myCompanyDetails]);
-
-  useEffect(() => {
-    localStorage.setItem('sharara_projectDocNumbers', JSON.stringify(projectDocNumbers));
-  }, [projectDocNumbers]);
-
-  useEffect(() => {
-    localStorage.setItem('sharara_projectDocDates', JSON.stringify(projectDocDates));
-  }, [projectDocDates]);
-
-  useEffect(() => {
-    localStorage.setItem('sharara_producedProjects', JSON.stringify(producedProjects));
-  }, [producedProjects]);
-
-  useEffect(() => {
-    localStorage.setItem('sharara_producedSnapshots', JSON.stringify(producedSnapshots));
-  }, [producedSnapshots]);
+    if (isLoading) return;
+    const saveData = async () => {
+      try {
+        await setDoc(doc(db, 'appData', 'mainData'), {
+          clientsData,
+          pricesList,
+          myCompanyDetails,
+          projectDocNumbers,
+          projectDocDates,
+          producedProjects,
+          producedSnapshots
+        });
+      } catch (error) {
+        console.error("Error saving to Firestore: ", error);
+      }
+    };
+    saveData();
+  }, [clientsData, pricesList, myCompanyDetails, projectDocNumbers, projectDocDates, producedProjects, producedSnapshots, isLoading]);
 
   useEffect(() => {
     const clearPrintTab = () => document.documentElement.removeAttribute('data-print-tab');
