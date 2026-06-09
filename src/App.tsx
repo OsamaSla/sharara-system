@@ -1209,7 +1209,7 @@ export default function App() {
           {/* לוגו החברה הרשמי בראש דף ההתחברות */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginBottom: '24px', textAlign: 'center' }}>
             <img 
-              src="/logo.png" 
+              src="./logo.png" 
               alt="לוגו החברה" 
               style={{ 
                 maxHeight: '120px', 
@@ -1307,7 +1307,7 @@ export default function App() {
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
             <div style={{ position: 'relative' }}>
               <img 
-                src="/logo.png" 
+                src="./logo.png" 
                 alt="לוגו החברה" 
                 style={{ 
                   maxHeight: '160px', 
