@@ -10,7 +10,7 @@ Internal production/quoting tool for Ali Sharara Ltd (עלי שרארה בע"מ)
 
 ```bash
 npm run dev       # Vite dev server
-npm run build     # tsc -b (typecheck, project refs) then vite build → dist/
+npm run build     # vite build → dist/
 npm run lint      # eslint .
 npm run preview   # serve the production build
 npm run deploy    # gh-pages -d dist  (predeploy runs build first)
@@ -18,13 +18,14 @@ npm run deploy    # gh-pages -d dist  (predeploy runs build first)
 
 Deploy target is GitHub Pages: `https://OsamaSla.github.io/sharara-system/`. Because of this, `vite.config.ts` sets `base: './'` — keep asset references relative. There are **no tests** in this project.
 
-## Repository layout — important
+## Repository layout
 
-**The active, deployed application is the repo root** (`package.json`, `src/`, `index.html`, npm scripts). Work here.
+The active, deployed application is the repo root (`package.json`, `src/`, `index.html`, npm scripts). Work here.
 
-`artifacts/`, `lib/`, `scripts/`, and `pnpm-workspace.yaml` are leftover Replit workspace scaffolding (an api-server, a mockup-sandbox, generated API clients). They are **not part of the deployed app** and are not wired into the root build. Ignore them unless explicitly asked.
-
-`replit.md` is partly **stale**: it describes an older `artifacts/sharara/` layout, `pnpm --filter` commands, and "100% localStorage / hardcoded login" — none of which match the current root app (which uses npm, Firestore, and a bypassed login). Treat the current code as authoritative over `replit.md`. Its "User preferences" / company-contact notes are still useful, though.
+Supporting files:
+- `public/` — static assets served at root (`logo.png`, `favicon.svg`, `icons.svg`)
+- `src/firebase.ts` — Firestore configuration and initialization
+- `.github/workflows/deploy.yml` — GitHub Pages deployment via GitHub Actions
 
 ## Architecture
 
@@ -34,9 +35,9 @@ Almost the entire app is **`src/App.tsx` (~3000 lines)** — one default-exporte
 
 Supporting components (all rendered from within `App.tsx`):
 - `PrintableReport.tsx` — A4 measurement report
-- `CompanyLetterhead.tsx` — header block for invoices/quotes
+- `CompanyLetterhead.tsx` — header block for invoices/quotes (imports `Logo.tsx`)
 - `ProductionWorksheet.tsx` + `ProductionPartSketch.tsx` — the production tab's printable sheet and per-part SVG sketch
-- `Logo.tsx` — original SVG logo, **kept but intentionally not imported anywhere**. Don't wire it back in. Logos use the `logoDataUrl || "/logo.png"` pattern (uploaded base64 takes priority, else the PNG).
+- `Logo.tsx` — original SVG logo, imported by `CompanyLetterhead.tsx` for invoices and production worksheets
 
 ### The five tabs
 
@@ -65,6 +66,6 @@ So the whole app shares one cloud blob — there is no per-user or per-document 
 
 ## Conventions
 
-- React 19 + TypeScript, Vite, no Tailwind in the deployed app — styling is inline styles + `App.css`/`index.css`. Fonts are Assistant/Rubik (Hebrew).
+- React 19 + TypeScript, Vite — styling is inline styles + `App.css`/`index.css`. Fonts are Assistant/Rubik (Hebrew).
 - Keep all UI strings Hebrew and the layout RTL (`direction: 'rtl'`).
-- TypeScript is strict-ish (`noUnusedLocals`, `noUnusedParameters`); `npm run build` will fail on unused symbols, so clean them up.
+- TypeScript has `noUnusedLocals: false` and `noUnusedParameters: false` in `tsconfig.app.json` — unused symbols won't block the build.

@@ -1,1 +1,0 @@
-- [Sharara app architecture](sharara-app.md) — large React client-side app; logo, print, and localStorage patterns worth knowing before editing
