@@ -1,3 +1,5 @@
+import { Logo } from './Logo';
+
 export interface CompanyDetails {
   name: string;
   engName: string;
@@ -56,7 +58,7 @@ export default function CompanyLetterhead({
       <div className="cl-top">
         <div className="cl-brand-row">
           <span className="cl-eng-name" dir="ltr">{details.engName}</span>
-          <img src="logo.png" alt="לוגו החברה" className="cl-logo-img" />
+          <Logo width={100} height={40} />
         </div>
         <h1 className="cl-name">{details.name}</h1>
         <p className="cl-subtitle">{subtitle}</p>

@@ -1209,7 +1209,7 @@ export default function App() {
           {/* לוגו החברה הרשמי בראש דף ההתחברות */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginBottom: '24px', textAlign: 'center' }}>
             <img 
-              src="logo.png" 
+              src="/logo.png" 
               alt="לוגו החברה" 
               style={{ 
                 maxHeight: '120px', 
@@ -1307,7 +1307,7 @@ export default function App() {
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
             <div style={{ position: 'relative' }}>
               <img 
-                src="logo.png" 
+                src="/logo.png" 
                 alt="לוגו החברה" 
                 style={{ 
                   maxHeight: '160px', 
@@ -1872,42 +1872,42 @@ export default function App() {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, auto)', gap: '6px' }}>
                       {/* קטע ישר */}
                       <button onClick={() => openAddPartForm('קטע ישר')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff' }}>
-<<<<<<< HEAD
-=======
+
+
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <rect x="3" y="8" width="18" height="8" rx="1" />
                           <line x1="3" y1="12" x2="21" y2="12" strokeDasharray="2 2" opacity="0.5" />
                         </svg>
->>>>>>> fc3a4a198e2c91c9d3be0a80426eaae17fcb4ec1
+
                         <span style={{ fontWeight: 'bold', fontSize: '12px' }}>קטע ישר</span>
                       </button>
                       {/* קשת */}
                       <button onClick={() => openAddPartForm('קשת')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff' }}>
-<<<<<<< HEAD
-=======
+
+
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M4 21v-9a8 8 0 0 1 8-8h9" />
                           <path d="M11 21v-6a4 4 0 0 1 4-4h6" />
                           <line x1="4" y1="21" x2="11" y2="21" />
                           <line x1="21" y1="4" x2="21" y2="11" />
                         </svg>
->>>>>>> fc3a4a198e2c91c9d3be0a80426eaae17fcb4ec1
+
                         <span style={{ fontWeight: 'bold', fontSize: '12px' }}>קשת (מרפק)</span>
                       </button>
                       {/* מעבר */}
                       <button onClick={() => openAddPartForm('מעבר')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff' }}>
-<<<<<<< HEAD
-=======
+
+
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <polygon points="4,5 20,5 17,19 7,17" />
                         </svg>
->>>>>>> fc3a4a198e2c91c9d3be0a80426eaae17fcb4ec1
+
                         <span style={{ fontWeight: 'bold', fontSize: '12px' }}>מעבר</span>
                       </button>
                       {/* לאמד S */}
                       <button onClick={() => openAddPartForm('קטע ישר', 'לאמד S')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff' }}>
-<<<<<<< HEAD
-=======
+
+
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M3 5h5c3 0 5 6 8 6h5" />
                           <path d="M3 11h5c3 0 5 6 8 6h5" />
@@ -1915,46 +1915,46 @@ export default function App() {
                           <line x1="21" y1="11" x2="21" y2="17" />
                           <path d="M3 8h5c3 0 5 6 8 6h5" strokeDasharray="2 2" opacity="0.5" />
                         </svg>
->>>>>>> fc3a4a198e2c91c9d3be0a80426eaae17fcb4ec1
+
                         <span style={{ fontWeight: 'bold', fontSize: '12px' }}>לאמד S</span>
                       </button>
                       {/* צינור עגול */}
                       <button onClick={() => openAddPartForm('קטע ישר', 'צינור עגול')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff' }}>
-<<<<<<< HEAD
-=======
+
+
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <ellipse cx="12" cy="6" rx="6" ry="3" />
                           <line x1="6" y1="6" x2="6" y2="18" />
                           <line x1="18" y1="6" x2="18" y2="18" />
                           <ellipse cx="12" cy="18" rx="6" ry="3" />
                         </svg>
->>>>>>> fc3a4a198e2c91c9d3be0a80426eaae17fcb4ec1
+
                         <span style={{ fontWeight: 'bold', fontSize: '12px' }}>צינור עגול</span>
                       </button>
                       {/* קופסת פיזור */}
                       <button onClick={() => openAddPartForm('קטע ישר', 'קופסת פיזור')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff' }}>
-<<<<<<< HEAD
-=======
+
+
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <rect x="4" y="10" width="16" height="11" rx="1" />
                           <ellipse cx="12" cy="6" rx="5" ry="2" />
                           <line x1="7" y1="6" x2="7" y2="10" />
                           <line x1="17" y1="6" x2="17" y2="10" />
                         </svg>
->>>>>>> fc3a4a198e2c91c9d3be0a80426eaae17fcb4ec1
+
                         <span style={{ fontWeight: 'bold', fontSize: '12px' }}>קופסת פיזור</span>
                       </button>
                       {/* מדף אש */}
                       <button onClick={() => openAddPartForm('קטע ישר', 'מדף אש')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff', gridColumn: 'span 2', justifyContent: 'center' }}>
-<<<<<<< HEAD
-=======
+
+
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <rect x="4" y="4" width="16" height="16" rx="1" />
                           <line x1="4" y1="8" x2="20" y2="8" />
                           <line x1="4" y1="16" x2="20" y2="16" />
                           <circle cx="12" cy="12" r="2" fill="currentColor" />
                         </svg>
->>>>>>> fc3a4a198e2c91c9d3be0a80426eaae17fcb4ec1
+
                         <span style={{ fontWeight: 'bold', fontSize: '12px' }}>מדף אש</span>
                       </button>
                     </div>

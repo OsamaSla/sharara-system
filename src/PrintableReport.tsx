@@ -51,7 +51,7 @@ export default function PrintableReport({
             <tr className="pt-logo-row">
               <th colSpan={headers.length}>
                 <div className="pt-header">
-                  <img src="logo.png" alt="לוגו" className="pt-logo" />
+                    <img src="/logo.png" alt="לוגו" className="pt-logo" />
                   <span className="pt-title">שרארה — דוח מדידות תעלות פח</span>
                 </div>
               </th>

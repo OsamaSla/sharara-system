@@ -35,17 +35,12 @@ export default function ProductionPartSketch({ row, width = 130, height = 95 }: 
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
-<<<<<<< HEAD
       {key === 'straight' && (
-=======
-            {key === 'straight' && (
->>>>>>> fc3a4a198e2c91c9d3be0a80426eaae17fcb4ec1
         <>
           <rect x="18" y="22" width="52" height="38" fill="none" stroke="#111" strokeWidth="1.8" />
           <line x1="18" y1="60" x2="10" y2="68" stroke="#111" strokeWidth="1.8" />
           <line x1="70" y1="60" x2="78" y2="68" stroke="#111" strokeWidth="1.8" />
           <line x1="10" y1="68" x2="78" y2="68" stroke="#111" strokeWidth="1.8" />
-<<<<<<< HEAD
           <line x1="45" y1="12" x2="45" y2="22" stroke="#111" strokeWidth="1" />
           <line x1="38" y1="12" x2="52" y2="12" stroke="#111" strokeWidth="1" />
           <line x1="45" y1="68" x2="45" y2="82" stroke="#111" strokeWidth="1" />
@@ -56,20 +51,7 @@ export default function ProductionPartSketch({ row, width = 130, height = 95 }: 
         <>
           <path d="M22 78 L22 38 L78 38" fill="none" stroke="#111" strokeWidth="1.8" />
           <path d="M22 78 L22 70 L78 70 L78 38" fill="none" stroke="#111" strokeWidth="6" strokeLinecap="square" opacity="0.15" />
-          <path d="M22 78 A 40 40 0 0 0 78 38" fill="none" stroke="#111" strokeWidth="1.8" />
-=======
-          <line x1="44" y1="22" x2="44" y2="10" stroke="#111" strokeWidth="1" />
-          <line x1="36" y1="10" x2="52" y2="10" stroke="#111" strokeWidth="1" />
-          <line x1="44" y1="68" x2="44" y2="80" stroke="#111" strokeWidth="1" />
-          <line x1="36" y1="80" x2="52" y2="80" stroke="#111" strokeWidth="1" />
-        </>
-      )}
-            {key === 'elbow' && (
-        <>
-          <path d="M22 78 L22 38 L78 38" fill="none" stroke="#111" strokeWidth="1.8" />
-          <path d="M22 78 L22 70 L78 70 L78 38" fill="none" stroke="#111" strokeWidth="6" strokeLinecap="square" opacity="0.15" />
           <path d="M22 70 A 48 48 0 0 0 78 38" fill="none" stroke="#111" strokeWidth="1.8" />
->>>>>>> fc3a4a198e2c91c9d3be0a80426eaae17fcb4ec1
           <line x1="14" y1="58" x2="22" y2="58" stroke="#111" strokeWidth="1" />
           <line x1="48" y1="30" x2="78" y2="30" stroke="#111" strokeWidth="1" />
         </>
@@ -86,17 +68,10 @@ export default function ProductionPartSketch({ row, width = 130, height = 95 }: 
           <line x1="112" y1="48" x2="118" y2="48" stroke="#111" strokeWidth="1" />
         </>
       )}
-<<<<<<< HEAD
       {key === 'lamed-s' && (
-        <>
-          <path d="M20 24 L20 48 L110 48 L110 72" fill="none" stroke="#111" strokeWidth="1.8" />
-          <path d="M20 24 L20 48 L110 48 L110 72" fill="none" stroke="#111" strokeWidth="8" opacity="0.12" />
-=======
-            {key === 'lamed-s' && (
         <>
           <path d="M20 22 L20 48 L110 48 L110 74" fill="none" stroke="#111" strokeWidth="1.8" />
           <path d="M30 22 L30 38 L100 38 L100 74" fill="none" stroke="#111" strokeWidth="1.8" />
->>>>>>> fc3a4a198e2c91c9d3be0a80426eaae17fcb4ec1
           <line x1="12" y1="36" x2="20" y2="36" stroke="#111" strokeWidth="1" />
           <line x1="110" y1="60" x2="118" y2="60" stroke="#111" strokeWidth="1" />
         </>
@@ -139,7 +114,6 @@ export interface ProductionDimension {
 
 export function getProductionDimensions(row: RowData, thickness: number): ProductionDimension[] {
   const dims: ProductionDimension[] = [];
-
   if (row.notes === 'צינור עגול') {
     dims.push({ label: 'קוטר (מ"מ)', reference: row.width1 ? String(row.width1) : undefined });
     dims.push({ label: 'אורך (מ"מ)', reference: row.length ? String(row.length) : undefined });
@@ -165,12 +139,7 @@ export function getProductionDimensions(row: RowData, thickness: number): Produc
     dims.push({ label: 'גובה (מ"מ)', reference: row.height1 ? String(row.height1) : undefined });
     dims.push({ label: 'אורך (מ"מ)', reference: row.length ? String(row.length) : undefined });
   }
-
   dims.push({ label: 'עובי פח (מ"מ)', reference: thickness ? thickness.toFixed(2) : undefined });
   if (row.panels > 0) dims.push({ label: 'דופן (יח\')', reference: String(row.panels) });
   return dims;
 }
-<<<<<<< HEAD
-=======
-
->>>>>>> fc3a4a198e2c91c9d3be0a80426eaae17fcb4ec1
