@@ -14,6 +14,7 @@ export interface RowData {
   partNumber: string;
   type: 'קטע ישר' | 'קשת' | 'מעבר';
   panels: number;
+  dofan: number;
   width1: number;
   height1: number;
   width2: number;
@@ -161,7 +162,7 @@ export default function App() {
       rows: [{ 
         id: '1', partNumber: 'P001', type: 'קטע ישר', width1: 500, height1: 400, width2: 0, height2: 0, length: 1000, rBig: 0, rSmall: 150,
         shatuzar: false, flexible: 0, acoustic: false, external: false, 
-        sharshuriType: 'ללא', sharshuriLen: 0, adapterType: 'ללא', adapterQty: 0, notes: '', manualThickness: 0, rBig2: 0, panels: 0
+        sharshuriType: 'ללא', sharshuriLen: 0, adapterType: 'ללא', adapterQty: 0, notes: '', manualThickness: 0, rBig2: 0, panels: 0, dofan: 0
       }]
     }
   ]);
@@ -377,10 +378,16 @@ export default function App() {
     partNumber: '',
     manualThickness: 0,
     rBig2: 0,
-    panels: 0
+    panels: 0,
+    dofan: 0
   });
 
+  const [invoicePriceOverrides, setInvoicePriceOverrides] = useState<Record<string, number>>({});
+  const getInvoicePrice = (key: string) => invoicePriceOverrides[key] !== undefined ? invoicePriceOverrides[key] : getPrice(key);
+  const setInvoicePrice = (key: string, value: number) => setInvoicePriceOverrides({...invoicePriceOverrides, [key]: value});
+
   // הצגת מסך טעינה - ממוקם אחרי כל ה-useState וה-useEffect כדי למנוע חריגה מחוקי ה-Hooks
+
   if (isLoading) {
     return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>טוען נתונים מהענן...</div>;
   }
@@ -560,24 +567,32 @@ export default function App() {
   };
 
   const calculateArea = (row: RowData): number => {
-    const { type, width1, height1, width2, height2, length, rBig, rSmall, notes, rBig2 } = row;
+    const { type, width1, height1, width2, height2, length, rBig, rSmall, notes, rBig2, dofan = 0 } = row;
+    const panels = row.panels || 1;
     
-    // חישוב שטח לצינור פח עגול: pi * diameter * length
-    if (notes && notes.includes('צינור עגול')) {
-      return (Math.PI * width1 * length) / 1000000;
-    }
+    let areaBase = 0;
+    let dofanArea = 0;
 
-    // לאמד S - שטח עם 2 רדיוסי סטייה שונים
-    if (notes === 'לאמד S') {
+    if (notes && notes.includes('צינור עגול')) {
+      areaBase = Math.PI * width1 * length;
+      dofanArea = dofan * width1 * 2;
+    } else if (notes === 'לאמד S') {
       const r2 = rBig2 || rSmall;
       const totalLen = length + (Math.PI / 2) * (rSmall + r2);
-      return (2 * (width1 + height1) * totalLen) / 1000000;
+      areaBase = 2 * (width1 + height1) * totalLen;
+      dofanArea = dofan * width1 * height1;
+    } else if (type === 'קטע ישר') {
+      areaBase = 2 * (width1 + height1) * length;
+      dofanArea = dofan * width1 * height1;
+    } else if (type === 'קשת') {
+      areaBase = 2 * (width1 + height1) * (rBig + rSmall);
+      dofanArea = dofan * width1 * height1;
+    } else if (type === 'מעבר') {
+      areaBase = ((width1 + width2) + (height1 + height2)) * length;
+      dofanArea = dofan * width1 * height1;
     }
-
-    if (type === 'קטע ישר') return (2 * (width1 + height1) * length) / 1000000;
-    if (type === 'קשת') return (2 * (width1 + height1) * (rBig + rSmall)) / 1000000;
-    if (type === 'מעבר') return (((width1 + width2) + (height1 + height2)) * length) / 1000000;
-    return 0;
+    
+    return ((areaBase + dofanArea) * panels) / 1000000;
   };
 
   // שליפת מחיר פריט מהמחירון הדינמי לפי שמו
@@ -611,7 +626,7 @@ export default function App() {
 
       // 2. בידוד (פנימי אקוסטי או חיצוני טרמי)
       if (row.acoustic) {
-        sheetBidudSum += area * getPrice('בידוד פנימי 1"');
+        sheetBidudSum += (area / (row.panels || 1)) * getPrice('בידוד פנימי 1"');
       }
       if (row.external) {
         sheetBidudSum += area * getPrice('בידוד חיצוני 1"');
@@ -862,7 +877,8 @@ export default function App() {
       notes: defaultNotes,
       manualThickness: 0,
       rBig2: 0,
-      panels: 0
+      panels: 0,
+      dofan: 0
     };
 
     if (type === 'קשת') {
@@ -1123,7 +1139,7 @@ export default function App() {
 
     const allTotals = { t08: 0, t10: 0, t125: 0, flexible: 0, acoustic: 0, external: 0, sharshuri6: 0, sharshuri8: 0, sharshuri10: 0, adapterQty: 0, shatuzar: 0 };
     sheets.forEach(s => { const t = getSheetTotals(s); Object.keys(allTotals).forEach(k => allTotals[k as keyof typeof allTotals] += t[k as keyof typeof t]); });
-    const gp = (k: string) => pricesList.find(p => p.detail === k)?.price || 0;
+    const gp = (k: string) => getInvoicePrice(k);
     const items: { label: string; qty: number; unit: string; price: number; total: number }[] = [];
     if (allTotals.t08 > 0) items.push({ label: 'פח מגולוון עובי 0.8 מ"מ', qty: allTotals.t08, unit: 'מ"ר', price: gp('פח 0.8'), total: allTotals.t08 * gp('פח 0.8') });
     if (allTotals.t10 > 0) items.push({ label: 'פח מגולוון עובי 1.0 מ"מ', qty: allTotals.t10, unit: 'מ"ר', price: gp('פח 1.0'), total: allTotals.t10 * gp('פח 1.0') });
@@ -1987,27 +2003,41 @@ export default function App() {
                       <button onClick={() => setIsAddingPart(false)} style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#64748b', fontWeight: 'bold' }}>✕</button>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '20px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
                       
                       {/* עמודה 1: מידות החלק */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', backgroundColor: '#ffffff', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                         <h4 style={{ margin: '0 0 6px 0', borderBottom: '1px solid #cbd5e1', paddingBottom: '4px', color: '#0f172a', fontWeight: 'bold', fontSize: '13px' }}>📏 מידות החלק (מ"מ)</h4>
                         
-                        <div style={{ marginBottom: '8px' }}>
-                          <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>מס' חלק:</label>
-                          <input type="text" value={newPartData.partNumber} onChange={(e) => setNewPartData({...newPartData, partNumber: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} placeholder="לדוגמה: P001" />
+                        <div style={{ display: 'flex', gap: '12px', marginBottom: '8px' }}>
+                          <div>
+                            <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>מס' חלק:</label>
+                            <input type="text" value={newPartData.partNumber} onChange={(e) => setNewPartData({...newPartData, partNumber: e.target.value})} style={{ width: '100%', maxWidth: '140px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} placeholder="לדוגמה: P001" />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>עובי פח:</label>
+                            <select value={newPartData.manualThickness || ''} onChange={(e) => setNewPartData({...newPartData, manualThickness: Number(e.target.value)})} style={{ width: '110px', padding: '6px 10px', border: newPartData.manualThickness > 0 ? '2px solid #d97706' : '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: newPartData.manualThickness > 0 ? '#fffbeb' : '#ffffff', color: '#0f172a', fontWeight: newPartData.manualThickness > 0 ? 700 : 400, textAlign: 'center' }}>
+                              <option value="">מחושב אוטומטי</option>
+                              <option value="0.7">0.7 מ"מ</option>
+                              <option value="0.8">0.8 מ"מ</option>
+                              <option value="0.9">0.9 מ"מ</option>
+                              <option value="1.0">1.0 מ"מ</option>
+                              <option value="1.25">1.25 מ"מ</option>
+                              <option value="2.0">2.0 מ"מ (שחור)</option>
+                            </select>
+                          </div>
                         </div>
                         
                         {/* 1. מידות לצינור עגול */}
                         {newPartData.notes === 'צינור עגול' ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                             <div>
                               <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>קוטר הצינור (Diameter):</label>
-                              <input type="number" value={newPartData.width1 || ''} onChange={(e) => setNewPartData({...newPartData, width1: Number(e.target.value), height1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                              <input type="number" value={newPartData.width1 || ''} onChange={(e) => setNewPartData({...newPartData, width1: Number(e.target.value), height1: Number(e.target.value)})} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} />
                             </div>
                             <div>
                               <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>אורך צינור (מ"מ):</label>
-                              <input type="number" value={newPartData.length || ''} onChange={(e) => setNewPartData({...newPartData, length: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                              <input type="number" value={newPartData.length || ''} onChange={(e) => setNewPartData({...newPartData, length: Number(e.target.value)})} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} />
                             </div>
                           </div>
                         ) : newPartData.notes === 'לאמד S' ? (
@@ -2015,56 +2045,56 @@ export default function App() {
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                             <div>
                               <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>רוחב תעלה (Width):</label>
-                              <input type="number" value={newPartData.width1 || ''} onChange={(e) => setNewPartData({...newPartData, width1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                              <input type="number" value={newPartData.width1 || ''} onChange={(e) => setNewPartData({...newPartData, width1: Number(e.target.value)})} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} />
                             </div>
                             <div>
-                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>גובה תעלה (Height):</label>
-                              <input type="number" value={newPartData.height1 || ''} onChange={(e) => setNewPartData({...newPartData, height1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>עומק תעלה (Depth):</label>
+                              <input type="number" value={newPartData.height1 || ''} onChange={(e) => setNewPartData({...newPartData, height1: Number(e.target.value)})} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} />
                             </div>
                             <div>
                               <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>אורך לאמד (מ"מ):</label>
-                              <input type="number" value={newPartData.length || ''} onChange={(e) => setNewPartData({...newPartData, length: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                              <input type="number" value={newPartData.length || ''} onChange={(e) => setNewPartData({...newPartData, length: Number(e.target.value)})} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} />
                             </div>
                             <div></div>
                             <div>
                               <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>סטייה עליונה (מ"מ):</label>
-                              <input type="number" value={newPartData.rSmall || ''} onChange={(e) => setNewPartData({...newPartData, rSmall: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                              <input type="number" value={newPartData.rSmall || ''} onChange={(e) => setNewPartData({...newPartData, rSmall: Number(e.target.value)})} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} />
                             </div>
                             <div>
                               <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>סטייה תחתונה (מ"מ):</label>
-                              <input type="number" value={newPartData.rBig2 || ''} onChange={(e) => setNewPartData({...newPartData, rBig2: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                              <input type="number" value={newPartData.rBig2 || ''} onChange={(e) => setNewPartData({...newPartData, rBig2: Number(e.target.value)})} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} />
                             </div>
                           </div>
                         ) : newPartData.notes === 'קופסת פיזור' ? (
                           /* 3. מידות לקופסת פיזור */
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                             <div>
                               <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>רוחב קופסה (מ"מ):</label>
-                              <input type="number" value={newPartData.width1 || ''} onChange={(e) => setNewPartData({...newPartData, width1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
-                            </div>
-                            <div>
-                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>גובה קופסה (מ"מ):</label>
-                              <input type="number" value={newPartData.height1 || ''} onChange={(e) => setNewPartData({...newPartData, height1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                              <input type="number" value={newPartData.width1 || ''} onChange={(e) => setNewPartData({...newPartData, width1: Number(e.target.value)})} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} />
                             </div>
                             <div>
                               <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>עומק קופסה (מ"מ):</label>
-                              <input type="number" value={newPartData.length || ''} onChange={(e) => setNewPartData({...newPartData, length: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                              <input type="number" value={newPartData.height1 || ''} onChange={(e) => setNewPartData({...newPartData, height1: Number(e.target.value)})} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} />
+                            </div>
+                            <div style={{ gridColumn: 'span 2' }}>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>גובה קופסה (מ"מ):</label>
+                              <input type="number" value={newPartData.length || ''} onChange={(e) => setNewPartData({...newPartData, length: Number(e.target.value)})} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} />
                             </div>
                           </div>
                         ) : newPartData.notes === 'מדף אש' ? (
                           /* 4. מידות למדף אש */
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                             <div>
                               <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>רוחב מדף (Width):</label>
-                              <input type="number" value={newPartData.width1 || ''} onChange={(e) => setNewPartData({...newPartData, width1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                              <input type="number" value={newPartData.width1 || ''} onChange={(e) => setNewPartData({...newPartData, width1: Number(e.target.value)})} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} />
                             </div>
                             <div>
-                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>גובה מדף (Height):</label>
-                              <input type="number" value={newPartData.height1 || ''} onChange={(e) => setNewPartData({...newPartData, height1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>עומק מדף (Depth):</label>
+                              <input type="number" value={newPartData.height1 || ''} onChange={(e) => setNewPartData({...newPartData, height1: Number(e.target.value)})} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} />
                             </div>
-                            <div>
-                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>עומק מדף (מ"מ):</label>
-                              <input type="number" value={newPartData.length || ''} onChange={(e) => setNewPartData({...newPartData, length: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                            <div style={{ gridColumn: 'span 2' }}>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>גובה מדף (מ"מ):</label>
+                              <input type="number" value={newPartData.length || ''} onChange={(e) => setNewPartData({...newPartData, length: Number(e.target.value)})} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} />
                             </div>
                           </div>
                         ) : (
@@ -2072,40 +2102,40 @@ export default function App() {
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             {/* מידות לקטע ישר */}
                             {newPartData.type === 'קטע ישר' && (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                                 <div>
                                   <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>חתך 1 (רוחב):</label>
-                                  <input type="number" value={newPartData.width1 || ''} onChange={(e) => setNewPartData({...newPartData, width1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                                  <input type="number" value={newPartData.width1 || ''} onChange={(e) => setNewPartData({...newPartData, width1: Number(e.target.value)})} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} />
                                 </div>
                                 <div>
-                                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>חתך 1 (גובה):</label>
-                                  <input type="number" value={newPartData.height1 || ''} onChange={(e) => setNewPartData({...newPartData, height1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>חתך 1 (עומק):</label>
+                                  <input type="number" value={newPartData.height1 || ''} onChange={(e) => setNewPartData({...newPartData, height1: Number(e.target.value)})} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} />
                                 </div>
-                                <div>
+                                <div style={{ gridColumn: 'span 2' }}>
                                   <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>אורך (מ"מ):</label>
-                                  <input type="number" value={newPartData.length || ''} onChange={(e) => setNewPartData({...newPartData, length: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                                  <input type="number" value={newPartData.length || ''} onChange={(e) => setNewPartData({...newPartData, length: Number(e.target.value)})} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} />
                                 </div>
                               </div>
                             )}
 
                             {/* מידות לקשת */}
                             {newPartData.type === 'קשת' && (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                                 <div>
                                   <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>חתך 1 (רוחב):</label>
-                                  <input type="number" value={newPartData.width1 || ''} onChange={(e) => { const w = Number(e.target.value); setNewPartData({...newPartData, width1: w, rBig: w + newPartData.rSmall}); }} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                                  <input type="number" value={newPartData.width1 || ''} onChange={(e) => { const w = Number(e.target.value); setNewPartData({...newPartData, width1: w, rBig: w + newPartData.rSmall}); }} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} />
                                 </div>
                                 <div>
-                                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>חתך 1 (גובה):</label>
-                                  <input type="number" value={newPartData.height1 || ''} onChange={(e) => setNewPartData({...newPartData, height1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>חתך 1 (עומק):</label>
+                                  <input type="number" value={newPartData.height1 || ''} onChange={(e) => setNewPartData({...newPartData, height1: Number(e.target.value)})} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} />
                                 </div>
                                 <div>
                                   <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>רדיוס קטן (R קטן):</label>
-                                  <input type="number" value={newPartData.rSmall || ''} onChange={(e) => { const r = Number(e.target.value); setNewPartData({...newPartData, rSmall: r, rBig: newPartData.width1 + r}); }} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                                  <input type="number" value={newPartData.rSmall || ''} onChange={(e) => { const r = Number(e.target.value); setNewPartData({...newPartData, rSmall: r, rBig: newPartData.width1 + r}); }} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} />
                                 </div>
                                 <div>
                                   <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>רדיוס גדול (מחושב):</label>
-                                  <input type="number" disabled value={newPartData.rBig || ''} style={{ width: '100%', padding: '6px 10px', border: '1px solid #e2e8f0', borderRadius: '4px', backgroundColor: '#e2e8f0', color: '#475569', fontWeight: 'bold' }} />
+                                  <input type="number" disabled value={newPartData.rBig || ''} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #e2e8f0', borderRadius: '4px', backgroundColor: '#e2e8f0', color: '#475569', fontWeight: 'bold', textAlign: 'center' }} />
                                 </div>
                               </div>
                             )}
@@ -2115,23 +2145,23 @@ export default function App() {
                               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                                 <div>
                                   <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>רוחב 1:</label>
-                                  <input type="number" value={newPartData.width1 || ''} onChange={(e) => setNewPartData({...newPartData, width1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                                  <input type="number" value={newPartData.width1 || ''} onChange={(e) => setNewPartData({...newPartData, width1: Number(e.target.value)})} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} />
                                 </div>
                                 <div>
-                                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>גובה 1:</label>
-                                  <input type="number" value={newPartData.height1 || ''} onChange={(e) => setNewPartData({...newPartData, height1: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>עומק 1:</label>
+                                  <input type="number" value={newPartData.height1 || ''} onChange={(e) => setNewPartData({...newPartData, height1: Number(e.target.value)})} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} />
                                 </div>
                                 <div>
                                   <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>רוחב 2:</label>
-                                  <input type="number" value={newPartData.width2 || ''} onChange={(e) => setNewPartData({...newPartData, width2: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                                  <input type="number" value={newPartData.width2 || ''} onChange={(e) => setNewPartData({...newPartData, width2: Number(e.target.value)})} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} />
                                 </div>
                                 <div>
-                                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>גובה 2:</label>
-                                  <input type="number" value={newPartData.height2 || ''} onChange={(e) => setNewPartData({...newPartData, height2: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>עומק 2:</label>
+                                  <input type="number" value={newPartData.height2 || ''} onChange={(e) => setNewPartData({...newPartData, height2: Number(e.target.value)})} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} />
                                 </div>
                                 <div style={{ gridColumn: 'span 2' }}>
                                   <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>אורך (מ"מ):</label>
-                                  <input type="number" value={newPartData.length || ''} onChange={(e) => setNewPartData({...newPartData, length: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                                  <input type="number" value={newPartData.length || ''} onChange={(e) => setNewPartData({...newPartData, length: Number(e.target.value)})} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} />
                                 </div>
                               </div>
                             )}
@@ -2151,7 +2181,7 @@ export default function App() {
                           
                           <div>
                             <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>חיבור גמיש (מ"א):</label>
-                            <input type="number" value={newPartData.flexible || ''} onChange={(e) => setNewPartData({...newPartData, flexible: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                            <input type="number" value={newPartData.flexible || ''} onChange={(e) => setNewPartData({...newPartData, flexible: Number(e.target.value)})} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} />
                           </div>
 
                           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', marginTop: '4px' }}>
@@ -2170,10 +2200,10 @@ export default function App() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', backgroundColor: '#ffffff', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                         <h4 style={{ margin: '0 0 6px 0', borderBottom: '1px solid #cbd5e1', paddingBottom: '4px', color: '#0f172a', fontWeight: 'bold', fontSize: '13px' }}>🔌 צינור שרשורי ומתאמים</h4>
                         
-                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '8px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                           <div>
                             <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>קוטר שרשורי:</label>
-                            <select value={newPartData.sharshuriType} onChange={(e) => setNewPartData({...newPartData, sharshuriType: e.target.value as any})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: '600' }}>
+                            <select value={newPartData.sharshuriType} onChange={(e) => setNewPartData({...newPartData, sharshuriType: e.target.value as any})} style={{ width: '100%', maxWidth: '120px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: '600' }}>
                               <option value="ללא">ללא</option>
                               <option value='"4'>"4</option>
                               <option value='"6'>"6</option>
@@ -2185,12 +2215,12 @@ export default function App() {
                           </div>
                           <div>
                             <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>שרשורי (מ"א):</label>
-                            <input type="number" disabled={newPartData.sharshuriType === 'ללא'} value={newPartData.sharshuriLen || ''} onChange={(e) => setNewPartData({...newPartData, sharshuriLen: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: newPartData.sharshuriType === 'ללא' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} />
+                            <input type="number" disabled={newPartData.sharshuriType === 'ללא'} value={newPartData.sharshuriLen || ''} onChange={(e) => setNewPartData({...newPartData, sharshuriLen: Number(e.target.value)})} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: newPartData.sharshuriType === 'ללא' ? '#e2e8f0' : '#ffffff', color: '#0f172a', textAlign: 'center' }} />
                           </div>
                           
                            <div>
                             <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>סוג מתאם:</label>
-                            <select value={newPartData.adapterType} onChange={(e) => setNewPartData({...newPartData, adapterType: e.target.value as any})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: '600' }}>
+                            <select value={newPartData.adapterType} onChange={(e) => setNewPartData({...newPartData, adapterType: e.target.value as any})} style={{ width: '100%', maxWidth: '140px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: '600' }}>
                               <option value="ללא">ללא</option>
                               <option value='"6 מתאם'>"6 מתאם'</option>
                               <option value='8/8 מתאם'>8/8 מתאם</option>
@@ -2203,26 +2233,24 @@ export default function App() {
                           </div>
                           <div>
                             <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>מתאם (כמות):</label>
-                            <input type="number" disabled={newPartData.adapterType === 'ללא'} value={newPartData.adapterQty || ''} onChange={(e) => setNewPartData({...newPartData, adapterQty: Number(e.target.value)})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: newPartData.adapterType === 'ללא' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} />
+                            <input type="number" disabled={newPartData.adapterType === 'ללא'} value={newPartData.adapterQty || ''} onChange={(e) => setNewPartData({...newPartData, adapterQty: Number(e.target.value)})} style={{ width: '100%', maxWidth: '110px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: newPartData.adapterType === 'ללא' ? '#e2e8f0' : '#ffffff', color: '#0f172a', textAlign: 'center' }} />
                           </div>
 
-                          {/* דופן - תוסף לכל סוג חלק */}
+                          {/* דופן ומס' חלקים */}
                           <div style={{ gridColumn: 'span 2', display: 'flex', gap: '12px', alignItems: 'center', padding: '10px 12px', backgroundColor: '#fefce8', borderRadius: '6px', border: '1px solid #facc15' }}>
-                            <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#854d0e', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                              <input type="checkbox" checked={newPartData.panels > 0} onChange={(e) => setNewPartData({...newPartData, panels: e.target.checked ? 1 : 0})} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
-                              דופן
-                            </label>
-                            {newPartData.panels > 0 && (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#854d0e' }}>כמות:</span>
-                                <input type="number" min="1" value={newPartData.panels} onChange={(e) => setNewPartData({...newPartData, panels: Math.max(1, Number(e.target.value))})} style={{ width: '60px', padding: '4px 8px', border: '1px solid #facc15', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: 'bold', textAlign: 'center' }} />
-                              </div>
-                            )}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#854d0e' }}>דופן:</label>
+                              <input type="number" min="0" value={newPartData.dofan || ''} onChange={(e) => setNewPartData({...newPartData, dofan: Math.max(0, Number(e.target.value))})} style={{ width: '50px', padding: '4px 8px', border: '1px solid #facc15', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: 'bold', textAlign: 'center' }} placeholder="0" />
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#854d0e' }}>מס' חלקים:</label>
+                              <input type="number" min="1" value={newPartData.panels || 1} onChange={(e) => setNewPartData({...newPartData, panels: Math.max(1, Number(e.target.value))})} style={{ width: '50px', padding: '4px 8px', border: '1px solid #facc15', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: 'bold', textAlign: 'center' }} placeholder="1" />
+                            </div>
                           </div>
 
                           <div style={{ gridColumn: 'span 2', marginTop: '4px' }}>
                             <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>הערות לחלק זה:</label>
-                            <input type="text" value={newPartData.notes} onChange={(e) => setNewPartData({...newPartData, notes: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} placeholder="כתוב הערה..." />
+                            <input type="text" value={newPartData.notes} onChange={(e) => setNewPartData({...newPartData, notes: e.target.value})} style={{ width: '100%', maxWidth: '220px', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', textAlign: 'center' }} placeholder="כתוב הערה..." />
                           </div>
                         </div>
                       </div>
@@ -2270,7 +2298,7 @@ export default function App() {
                 )}
 
                 <div style={{ overflowX: 'auto', width: '100%', backgroundColor: '#ffffff' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '13px', minWidth: '1650px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '13px', minWidth: '1700px' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#f1f5f9', color: '#475569', fontWeight: 'bold', borderBottom: '2px solid #cbd5e1' }}>
                         <th style={{ padding: '12px 8px', textAlign: 'center', width: '40px' }}>מס'</th>
@@ -2293,6 +2321,7 @@ export default function App() {
                         <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#f0fdf4' }}>מתאם (כמות)</th>
                         <th style={{ padding: '12px 8px', textAlign: 'center' }}>עובי פח</th>
                         <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#fefce8', color: '#854d0e', fontWeight: 'bold' }}>דופן</th>
+                        <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#fefce8', color: '#854d0e', fontWeight: 'bold' }}>מס' חלקים</th>
                         <th style={{ padding: '12px 8px', textAlign: 'center', color: '#1d4ed8', fontWeight: 'bold' }}>שטח (מ"ר)</th>
                         <th style={{ padding: '12px 8px', width: '160px' }}>הערות</th>
                         <th style={{ padding: '12px 8px', width: '40px' }}></th>
@@ -2354,11 +2383,26 @@ export default function App() {
                           <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#f0fdf4' }}><input type="number" value={row.adapterQty || ''} disabled={row.adapterType === 'ללא'} onChange={(e) => updateRow(row.id, 'adapterQty', Number(e.target.value))} style={{ width: '55px', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.adapterType === 'ללא' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} /></td>
                           
                           <td style={{ padding: '8px', textAlign: 'center' }}>
-                            <input type="number" step="0.05" value={row.manualThickness > 0 ? row.manualThickness : calculateThickness(row.width1, row.height1, row.manualThickness)} onChange={(e) => updateRow(row.id, 'manualThickness', Number(e.target.value))} 
-                              style={{ width: '55px', padding: '4px', textAlign: 'center', border: row.manualThickness > 0 ? '2px solid #d97706' : '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.manualThickness > 0 ? '#fffbeb' : '#ffffff', color: '#0f172a', fontWeight: row.manualThickness > 0 ? 700 : 500 }} />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                              <select value={row.manualThickness || ''} onChange={(e) => updateRow(row.id, 'manualThickness', Number(e.target.value))} style={{ width: '80px', padding: '4px', textAlign: 'center', border: row.manualThickness > 0 ? '2px solid #d97706' : '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.manualThickness > 0 ? '#fffbeb' : '#ffffff', color: '#0f172a', fontWeight: row.manualThickness > 0 ? 700 : 500, fontSize: '11px' }}>
+                                <option value="">אוטומטי</option>
+                                <option value="0.7">0.7</option>
+                                <option value="0.8">0.8</option>
+                                <option value="0.9">0.9</option>
+                                <option value="1.0">1.0</option>
+                                <option value="1.25">1.25</option>
+                                <option value="2.0">2.0</option>
+                              </select>
+                              <span style={{ fontSize: '10px', color: row.manualThickness > 0 ? '#d97706' : '#64748b', fontWeight: 'bold' }}>
+                                {row.manualThickness > 0 ? '' : `(${calculateThickness(row.width1, row.height1, row.manualThickness).toFixed(2)})`}
+                              </span>
+                            </div>
                           </td>
                           <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#fefce8' }}>
-                            <input type="number" min="0" value={row.panels || ''} onChange={(e) => updateRow(row.id, 'panels', Math.max(0, Number(e.target.value)))} style={{ width: '40px', padding: '4px', textAlign: 'center', border: '1px solid #facc15', borderRadius: '4px', backgroundColor: row.panels > 0 ? '#fffbeb' : '#ffffff', color: '#854d0e', fontWeight: row.panels > 0 ? 700 : 400 }} placeholder="0" />
+                            <input type="number" min="0" value={row.dofan || ''} onChange={(e) => updateRow(row.id, 'dofan', Math.max(0, Number(e.target.value)))} style={{ width: '40px', padding: '4px', textAlign: 'center', border: '1px solid #facc15', borderRadius: '4px', backgroundColor: row.dofan > 0 ? '#fffbeb' : '#ffffff', color: '#854d0e', fontWeight: row.dofan > 0 ? 700 : 400 }} placeholder="0" />
+                          </td>
+                          <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#fefce8' }}>
+                            <input type="number" min="1" value={row.panels || 1} onChange={(e) => updateRow(row.id, 'panels', Math.max(1, Number(e.target.value)))} style={{ width: '40px', padding: '4px', textAlign: 'center', border: '1px solid #facc15', borderRadius: '4px', backgroundColor: '#ffffff', color: '#854d0e', fontWeight: 700 }} placeholder="1" />
                           </td>
                           <td style={{ padding: '8px', textAlign: 'center', fontWeight: 'bold', color: '#1d4ed8', backgroundColor: '#eff6ff' }}>{calculateArea(row).toFixed(3)}</td>
                           <td style={{ padding: '8px' }}><input type="text" value={row.notes} onChange={(e) => updateRow(row.id, 'notes', e.target.value)} style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px', boxSizing: 'border-box', backgroundColor: '#ffffff', color: '#0f172a' }} /></td>
@@ -2746,73 +2790,87 @@ export default function App() {
                     </thead>
                     <tbody>
                       {/* 1. פח מגולוון 0.8 */}
-                      {totals[0.8] > 0 && (
+                      {(totals[0.8] || 0) > 0 && (
                         <tr style={{ borderBottom: '1px solid #cbd5e1' }}>
                           <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', fontWeight: 600, color: '#1e293b' }}>פח מגולוון עובי 0.8 מ"מ</td>
                           <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 'bold' }}>{totals[0.8].toFixed(2)}</td>
                           <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', color: '#64748b' }}>מ"ר</td>
-                          <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center' }}>{getPrice('פח 0.8')} ₪</td>
-                          <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold', color: '#1d4ed8' }}>{(totals[0.8] * getPrice('פח 0.8')).toFixed(2)} ₪</td>
+                          <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center' }}>
+                            <input type="number" step="0.01" value={getInvoicePrice('פח 0.8')} onChange={(e) => setInvoicePrice('פח 0.8', Number(e.target.value))} style={{ width: '70px', padding: '4px', textAlign: 'center', border: invoicePriceOverrides['פח 0.8'] !== undefined ? '2px solid #d97706' : '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: invoicePriceOverrides['פח 0.8'] !== undefined ? '#fffbeb' : '#ffffff', color: '#0f172a', fontWeight: invoicePriceOverrides['פח 0.8'] !== undefined ? 700 : 400 }} /> ₪
+                          </td>
+                          <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold', color: '#1d4ed8' }}>{(totals[0.8] * getInvoicePrice('פח 0.8')).toFixed(2)} ₪</td>
                         </tr>
                       )}
                       {/* 2. פח מגולוון 1.0 */}
-                      {totals[1.0] > 0 && (
+                      {(totals[1.0] || 0) > 0 && (
                         <tr style={{ borderBottom: '1px solid #cbd5e1' }}>
                           <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', fontWeight: 600, color: '#1e293b' }}>פח מגולוון עובי 1.0 מ"מ</td>
                           <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 'bold' }}>{totals[1.0].toFixed(2)}</td>
                           <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', color: '#64748b' }}>מ"ר</td>
-                          <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center' }}>{getPrice('פח 1.0')} ₪</td>
-                          <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold', color: '#1d4ed8' }}>{(totals[1.0] * getPrice('פח 1.0')).toFixed(2)} ₪</td>
+                          <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center' }}>
+                            <input type="number" step="0.01" value={getInvoicePrice('פח 1.0')} onChange={(e) => setInvoicePrice('פח 1.0', Number(e.target.value))} style={{ width: '70px', padding: '4px', textAlign: 'center', border: invoicePriceOverrides['פח 1.0'] !== undefined ? '2px solid #d97706' : '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: invoicePriceOverrides['פח 1.0'] !== undefined ? '#fffbeb' : '#ffffff', color: '#0f172a', fontWeight: invoicePriceOverrides['פח 1.0'] !== undefined ? 700 : 400 }} /> ₪
+                          </td>
+                          <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold', color: '#1d4ed8' }}>{(totals[1.0] * getInvoicePrice('פח 1.0')).toFixed(2)} ₪</td>
                         </tr>
                       )}
                       {/* 3. פח מגולוון 1.25 */}
-                      {totals[1.25] > 0 && (
+                      {(totals[1.25] || 0) > 0 && (
                         <tr style={{ borderBottom: '1px solid #cbd5e1' }}>
                           <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', fontWeight: 600, color: '#1e293b' }}>פח מגולוון עובי 1.25 מ"מ</td>
                           <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 'bold' }}>{totals[1.25].toFixed(2)}</td>
                           <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', color: '#64748b' }}>מ"ר</td>
-                          <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center' }}>{getPrice('פח 1.25')} ₪</td>
-                          <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold', color: '#1d4ed8' }}>{(totals[1.25] * getPrice('פח 1.25')).toFixed(2)} ₪</td>
+                          <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center' }}>
+                            <input type="number" step="0.01" value={getInvoicePrice('פח 1.25')} onChange={(e) => setInvoicePrice('פח 1.25', Number(e.target.value))} style={{ width: '70px', padding: '4px', textAlign: 'center', border: invoicePriceOverrides['פח 1.25'] !== undefined ? '2px solid #d97706' : '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: invoicePriceOverrides['פח 1.25'] !== undefined ? '#fffbeb' : '#ffffff', color: '#0f172a', fontWeight: invoicePriceOverrides['פח 1.25'] !== undefined ? 700 : 400 }} /> ₪
+                          </td>
+                          <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold', color: '#1d4ed8' }}>{(totals[1.25] * getInvoicePrice('פח 1.25')).toFixed(2)} ₪</td>
                         </tr>
                       )}
                       {/* 4. שתוצר עגול */}
-                      {totals.shatuzar > 0 && (
+                      {(totals.shatuzar || 0) > 0 && (
                         <tr style={{ borderBottom: '1px solid #cbd5e1' }}>
                           <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', fontWeight: 600, color: '#1e293b' }}>שתוצר עגול לתעלות</td>
                           <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 'bold' }}>{totals.shatuzar}</td>
                           <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', color: '#64748b' }}>יח'</td>
-                          <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center' }}>{getPrice('שתוצר עגול')} ₪</td>
-                          <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold', color: '#1d4ed8' }}>{(totals.shatuzar * getPrice('שתוצר עגול')).toFixed(2)} ₪</td>
+                          <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center' }}>
+                            <input type="number" step="0.01" value={getInvoicePrice('שתוצר עגול')} onChange={(e) => setInvoicePrice('שתוצר עגול', Number(e.target.value))} style={{ width: '70px', padding: '4px', textAlign: 'center', border: invoicePriceOverrides['שתוצר עגול'] !== undefined ? '2px solid #d97706' : '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: invoicePriceOverrides['שתוצר עגול'] !== undefined ? '#fffbeb' : '#ffffff', color: '#0f172a', fontWeight: invoicePriceOverrides['שתוצר עגול'] !== undefined ? 700 : 400 }} /> ₪
+                          </td>
+                          <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold', color: '#1d4ed8' }}>{(totals.shatuzar * getInvoicePrice('שתוצר עגול')).toFixed(2)} ₪</td>
                         </tr>
                       )}
                       {/* 5. חיבור גמיש */}
-                      {totals.flexible > 0 && (
+                      {(totals.flexible || 0) > 0 && (
                         <tr style={{ borderBottom: '1px solid #cbd5e1' }}>
                           <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', fontWeight: 600, color: '#1e293b' }}>חיבור גמיש מונע רעידות</td>
                           <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 'bold' }}>{totals.flexible.toFixed(2)}</td>
                           <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', color: '#64748b' }}>מ"א</td>
-                          <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center' }}>{getPrice('חיבור גמיש')} ₪</td>
-                          <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold', color: '#1d4ed8' }}>{(totals.flexible * getPrice('חיבור גמיש')).toFixed(2)} ₪</td>
+                          <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center' }}>
+                            <input type="number" step="0.01" value={getInvoicePrice('חיבור גמיש')} onChange={(e) => setInvoicePrice('חיבור גמיש', Number(e.target.value))} style={{ width: '70px', padding: '4px', textAlign: 'center', border: invoicePriceOverrides['חיבור גמיש'] !== undefined ? '2px solid #d97706' : '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: invoicePriceOverrides['חיבור גמיש'] !== undefined ? '#fffbeb' : '#ffffff', color: '#0f172a', fontWeight: invoicePriceOverrides['חיבור גמיש'] !== undefined ? 700 : 400 }} /> ₪
+                          </td>
+                          <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold', color: '#1d4ed8' }}>{(totals.flexible * getInvoicePrice('חיבור גמיש')).toFixed(2)} ₪</td>
                         </tr>
                       )}
                       {/* 6. בידוד אקוסטי */}
-                      {totals.acoustic > 0 && (
+                      {(totals.acoustic || 0) > 0 && (
                         <tr style={{ borderBottom: '1px solid #cbd5e1' }}>
                           <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', fontWeight: 600, color: '#1e293b' }}>בידוד פנימי אקוסטי 1"</td>
                           <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 'bold' }}>{totals.acoustic.toFixed(2)}</td>
                           <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', color: '#64748b' }}>מ"ר</td>
-                          <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center' }}>{getPrice('בידוד פנימי 1"')} ₪</td>
-                          <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold', color: '#1d4ed8' }}>{(totals.acoustic * getPrice('בידוד פנימי 1"')).toFixed(2)} ₪</td>
+                          <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center' }}>
+                            <input type="number" step="0.01" value={getInvoicePrice('בידוד פנימי 1"')} onChange={(e) => setInvoicePrice('בידוד פנימי 1"', Number(e.target.value))} style={{ width: '70px', padding: '4px', textAlign: 'center', border: invoicePriceOverrides['בידוד פנימי 1"'] !== undefined ? '2px solid #d97706' : '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: invoicePriceOverrides['בידוד פנימי 1"'] !== undefined ? '#fffbeb' : '#ffffff', color: '#0f172a', fontWeight: invoicePriceOverrides['בידוד פנימי 1"'] !== undefined ? 700 : 400 }} /> ₪
+                          </td>
+                          <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold', color: '#1d4ed8' }}>{(totals.acoustic * getInvoicePrice('בידוד פנימי 1"')).toFixed(2)} ₪</td>
                         </tr>
                       )}
                       {/* 7. בידוד חיצוני */}
-                      {totals.external > 0 && (
+                      {(totals.external || 0) > 0 && (
                         <tr style={{ borderBottom: '1px solid #cbd5e1' }}>
                           <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', fontWeight: 600, color: '#1e293b' }}>בידוד חיצוני תעלות 1"</td>
                           <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 'bold' }}>{totals.external.toFixed(2)}</td>
                           <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', color: '#64748b' }}>מ"ר</td>
-                          <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center' }}>{getPrice('בידוד חיצוני 1"')} ₪</td>
-                          <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold', color: '#1d4ed8' }}>{(totals.external * getPrice('בידוד חיצוני 1"')).toFixed(2)} ₪</td>
+                          <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center' }}>
+                            <input type="number" step="0.01" value={getInvoicePrice('בידוד חיצוני 1"')} onChange={(e) => setInvoicePrice('בידוד חיצוני 1"', Number(e.target.value))} style={{ width: '70px', padding: '4px', textAlign: 'center', border: invoicePriceOverrides['בידוד חיצוני 1"'] !== undefined ? '2px solid #d97706' : '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: invoicePriceOverrides['בידוד חיצוני 1"'] !== undefined ? '#fffbeb' : '#ffffff', color: '#0f172a', fontWeight: invoicePriceOverrides['בידוד חיצוני 1"'] !== undefined ? 700 : 400 }} /> ₪
+                          </td>
+                          <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold', color: '#1d4ed8' }}>{(totals.external * getInvoicePrice('בידוד חיצוני 1"')).toFixed(2)} ₪</td>
                         </tr>
                       )}
                       {/* 8. שרשורי */}
@@ -2825,8 +2883,10 @@ export default function App() {
                             <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', fontWeight: 600, color: '#1e293b' }}>צינור שרשורי קוטר {k}</td>
                             <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 'bold' }}>{qty.toFixed(2)}</td>
                             <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', color: '#64748b' }}>מ"א</td>
-                            <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center' }}>{getPrice(priceKey)} ₪</td>
-                            <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold', color: '#1d4ed8' }}>{(qty * getPrice(priceKey)).toFixed(2)} ₪</td>
+                            <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center' }}>
+                              <input type="number" step="0.01" value={getInvoicePrice(priceKey)} onChange={(e) => setInvoicePrice(priceKey, Number(e.target.value))} style={{ width: '70px', padding: '4px', textAlign: 'center', border: invoicePriceOverrides[priceKey] !== undefined ? '2px solid #d97706' : '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: invoicePriceOverrides[priceKey] !== undefined ? '#fffbeb' : '#ffffff', color: '#0f172a', fontWeight: invoicePriceOverrides[priceKey] !== undefined ? 700 : 400 }} /> ₪
+                            </td>
+                            <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold', color: '#1d4ed8' }}>{(qty * getInvoicePrice(priceKey)).toFixed(2)} ₪</td>
                           </tr>
                         );
                       })}
@@ -2847,8 +2907,10 @@ export default function App() {
                             <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', fontWeight: 600, color: '#1e293b' }}>מתאם / קופסת פיזור סוג {k}</td>
                             <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 'bold' }}>{qty}</td>
                             <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', color: '#64748b' }}>יח'</td>
-                            <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center' }}>{getPrice(adapterPriceKey)} ₪</td>
-                            <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold', color: '#1d4ed8' }}>{(qty * getPrice(adapterPriceKey)).toFixed(2)} ₪</td>
+                            <td style={{ padding: '10px 8px', borderLeft: '1px solid #cbd5e1', textAlign: 'center' }}>
+                              <input type="number" step="0.01" value={getInvoicePrice(adapterPriceKey)} onChange={(e) => setInvoicePrice(adapterPriceKey, Number(e.target.value))} style={{ width: '70px', padding: '4px', textAlign: 'center', border: invoicePriceOverrides[adapterPriceKey] !== undefined ? '2px solid #d97706' : '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: invoicePriceOverrides[adapterPriceKey] !== undefined ? '#fffbeb' : '#ffffff', color: '#0f172a', fontWeight: invoicePriceOverrides[adapterPriceKey] !== undefined ? 700 : 400 }} /> ₪
+                            </td>
+                            <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold', color: '#1d4ed8' }}>{(qty * getInvoicePrice(adapterPriceKey)).toFixed(2)} ₪</td>
                           </tr>
                         );
                       })}
@@ -2857,14 +2919,31 @@ export default function App() {
                 </div>
 
                 <div style={{ marginTop: '20px', backgroundColor: '#f1f5f9', padding: '16px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}><span>סך הכל נטו (ללא מע"מ):</span><span style={{ fontWeight: 600 }}>{subtotal.toFixed(2)} ₪</span></div>
-                  {/* חישוב מע"מ עדכני ומדויק של 18% */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', color: '#475569' }}><span>מס ערך מוסף (18%):</span><span>{vat.toFixed(2)} ₪</span></div>
-                  
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', paddingTop: '12px', borderTop: '2px dashed #94a3b8', fontSize: '18px', fontWeight: 'bold', color: '#0f172a' }}>
-                    <span>לתשלום כולל מע"מ:</span>
-                    <span style={{ color: '#1e40af', borderBottom: '2px double #1e40af' }}>{finalTotal.toFixed(2)} ₪</span>
-                  </div>
+                  {(() => {
+                    const invSubtotal = (totals[0.8] * getInvoicePrice('פח 0.8')) + (totals[1.0] * getInvoicePrice('פח 1.0')) + (totals[1.25] * getInvoicePrice('פח 1.25')) + (totals.shatuzar * getInvoicePrice('שתוצר עגול')) + (totals.flexible * getInvoicePrice('חיבור גמיש')) + (totals.acoustic * getInvoicePrice('בידוד פנימי 1"')) + (totals.external * getInvoicePrice('בידוד חיצוני 1"')) + Object.keys(totals.sharshuri).reduce((s, k) => s + (totals.sharshuri[k as keyof typeof totals.sharshuri] * getInvoicePrice('שרשורי ' + k)), 0) + Object.keys(totals.adapter).reduce((s, k) => {
+                      const qty = totals.adapter[k as keyof typeof totals.adapter];
+                      let adapterPriceKey = 'מתאם 6"6/"';
+                      if (k === '8/8 מתאם') adapterPriceKey = 'מתאם 8"8/"';
+                      else if (k === '10/10 מתאם') adapterPriceKey = 'מתאם 10"10/"';
+                      else if (k === '12/12 נת') adapterPriceKey = 'מתאם 12"12/"';
+                      else if (k === '14/14 מתאם') adapterPriceKey = 'מתאם 14"14/"';
+                      else if (k === '16/16 מת') adapterPriceKey = 'מתאם 16"16/"';
+                      else if (k === '60/60 מתאם') adapterPriceKey = 'מתאם 60/60';
+                      return s + qty * getInvoicePrice(adapterPriceKey);
+                    }, 0);
+                    const invVat = invSubtotal * 0.18;
+                    const invTotal = invSubtotal + invVat;
+                    return (
+                      <>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}><span>סך הכל נטו (ללא מע"מ):</span><span style={{ fontWeight: 600 }}>{invSubtotal.toFixed(2)} ₪</span></div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', color: '#475569' }}><span>מס ערך מוסף (18%):</span><span>{invVat.toFixed(2)} ₪</span></div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', paddingTop: '12px', borderTop: '2px dashed #94a3b8', fontSize: '18px', fontWeight: 'bold', color: '#0f172a' }}>
+                          <span>לתשלום כולל מע"מ:</span>
+                          <span style={{ color: '#1e40af', borderBottom: '2px double #1e40af' }}>{invTotal.toFixed(2)} ₪</span>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
 
                 <div style={{ marginTop: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#64748b', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
