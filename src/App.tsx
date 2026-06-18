@@ -3056,8 +3056,6 @@ export default function App() {
             {/* טאב דפי ייצור לייצור תעלות ואביזרים */}
             {activeTab === 'production' && (
               <div className="no-shadow landscape-print print-document production-print-document" style={{ maxWidth: '1100px', margin: '0 auto' }}>
-                <div className="print-orientation-spacer landscape-print" aria-hidden="true" />
-                
                 {/* סרגל כפתורי ניהול מוסתר בהדפסה */}
                 <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '20px', backgroundColor: '#ffffff', padding: '16px', borderRadius: '8px', border: '1px solid #cbd5e1', gap: '8px' }}>
                   <button
