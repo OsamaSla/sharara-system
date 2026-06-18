@@ -585,7 +585,7 @@ export default function App() {
       areaBase = 2 * (width1 + height1) * length;
       dofanArea = dofan * width1 * height1;
     } else if (type === 'קשת') {
-      areaBase = 2 * (width1 + height1) * (rBig + rSmall);
+      areaBase = 2 * (width1 + height1) * (rSmall * 2 + rBig);
       dofanArea = dofan * width1 * height1;
     } else if (type === 'מעבר') {
       areaBase = ((width1 + width2) + (height1 + height2)) * length;
