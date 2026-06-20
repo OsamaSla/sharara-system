@@ -333,6 +333,13 @@ export default function App() {
     window.print();
   };
 
+  const [lastHoveredRowId, setLastHoveredRowId] = useState<string | null>(null);
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [partPresets, setPartPresets] = useState<{name: string, data: Omit<RowData, 'id'>}[]>(() => {
+    try { return JSON.parse(localStorage.getItem('sharara-presets') || '[]'); } catch { return []; }
+  });
+
   // מאזין גלובלי למקשי מקלדת Ctrl+Z ו-Ctrl+Y לביצוע UNDO/REDO בזמן עריכה
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -402,13 +409,6 @@ export default function App() {
     dofan: 0
   });
   const [quickQty, setQuickQty] = useState<number>(1);
-  const [lastHoveredRowId, setLastHoveredRowId] = useState<string | null>(null);
-  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [partPresets, setPartPresets] = useState<{name: string, data: Omit<RowData, 'id'>}[]>(() => {
-    try { return JSON.parse(localStorage.getItem('sharara-presets') || '[]'); } catch { return []; }
-  });
-
   const [invoicePriceOverrides, setInvoicePriceOverrides] = useState<Record<string, number>>({});
   const getInvoicePrice = (key: string) => invoicePriceOverrides[key] !== undefined ? invoicePriceOverrides[key] : getPrice(key);
   const setInvoicePrice = (key: string, value: number) => setInvoicePriceOverrides({...invoicePriceOverrides, [key]: value});
