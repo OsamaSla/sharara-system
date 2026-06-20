@@ -340,33 +340,6 @@ export default function App() {
     window.print();
   };
 
-  // מאזין גלובלי למקשי מקלדת Ctrl+Z ו-Ctrl+Y לביצוע UNDO/REDO בזמן עריכה
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isSessionInitialized || activeTab !== 'measure') return;
-      
-      if (e.ctrlKey && e.key.toLowerCase() === 'z') {
-        e.preventDefault();
-        handleUndo();
-      }
-      if (e.ctrlKey && e.key.toLowerCase() === 'y') {
-        e.preventDefault();
-        handleRedo();
-      }
-      if (e.ctrlKey && e.key.toLowerCase() === 'd') {
-        e.preventDefault();
-        if (lastHoveredRowId) duplicateRow(lastHoveredRowId);
-      }
-      if (e.key === 'Delete' && !isAddingPart && lastHoveredRowId) {
-        e.preventDefault();
-        deleteRow(lastHoveredRowId);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [undoStack, redoStack, sheets, isSessionInitialized, activeTab, lastHoveredRowId, isAddingPart]);
-
   // שמירת מזהה הלקוח שממנו ייבאנו פרטים בעת יצירת לקוח חדש
   const [importedClientSourceKey, setImportedClientSourceKey] = useState<string>('');
 
@@ -412,6 +385,33 @@ export default function App() {
   const [invoicePriceOverrides, setInvoicePriceOverrides] = useState<Record<string, number>>({});
   const getInvoicePrice = (key: string) => invoicePriceOverrides[key] !== undefined ? invoicePriceOverrides[key] : getPrice(key);
   const setInvoicePrice = (key: string, value: number) => setInvoicePriceOverrides({...invoicePriceOverrides, [key]: value});
+
+  // מאזין גלובלי למקשי מקלדת Ctrl+Z, Ctrl+Y, Ctrl+D, Delete
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isSessionInitialized || activeTab !== 'measure') return;
+      
+      if (e.ctrlKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        handleUndo();
+      }
+      if (e.ctrlKey && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        handleRedo();
+      }
+      if (e.ctrlKey && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        if (lastHoveredRowId) duplicateRow(lastHoveredRowId);
+      }
+      if (e.key === 'Delete' && !isAddingPart && lastHoveredRowId) {
+        e.preventDefault();
+        deleteRow(lastHoveredRowId);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undoStack, redoStack, sheets, isSessionInitialized, activeTab, lastHoveredRowId, isAddingPart]);
 
   // הצגת מסך טעינה - ממוקם אחרי כל ה-useState וה-useEffect כדי למנוע חריגה מחוקי ה-Hooks
 
