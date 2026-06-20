@@ -313,11 +313,13 @@ export default function App() {
           producedProjects,
           producedSnapshots
         });
+        setLastSaved(new Date());
       } catch (error) {
         console.error("Error saving to Firestore: ", error);
       }
     };
-    saveData();
+    const timer = setTimeout(saveData, 1500);
+    return () => clearTimeout(timer);
   }, [clientsData, pricesList, myCompanyDetails, projectDocNumbers, projectDocDates, producedProjects, producedSnapshots, isLoading]);
 
   useEffect(() => {
@@ -401,6 +403,11 @@ export default function App() {
   });
   const [quickQty, setQuickQty] = useState<number>(1);
   const [lastHoveredRowId, setLastHoveredRowId] = useState<string | null>(null);
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [partPresets, setPartPresets] = useState<{name: string, data: Omit<RowData, 'id'>}[]>(() => {
+    try { return JSON.parse(localStorage.getItem('sharara-presets') || '[]'); } catch { return []; }
+  });
 
   const [invoicePriceOverrides, setInvoicePriceOverrides] = useState<Record<string, number>>({});
   const getInvoicePrice = (key: string) => invoicePriceOverrides[key] !== undefined ? invoicePriceOverrides[key] : getPrice(key);
@@ -577,6 +584,17 @@ export default function App() {
   const activeSheet = sheets.find(s => s.id === activeSheetId) || sheets[0];
 
 
+  const getRowWarnings = (row: RowData): string[] => {
+    const warnings: string[] = [];
+    if (row.length > 6) warnings.push('אורך מעל 6 מטר');
+    if (row.type !== 'קשת' && row.length > 0 && row.length < 0.05) warnings.push('אורך קצר מאוד');
+    if (row.width1 > 2 || row.height1 > 2) warnings.push('מידות חריגות');
+    if (row.type === 'מעבר' && row.width2 > 0 && row.height2 > 0) {
+      const ratio = Math.max(row.width1, row.height1) / Math.max(row.width2, row.height2);
+      if (ratio > 3 || ratio < 0.33) warnings.push('יחס מעבר חריג');
+    }
+    return warnings;
+  };
 
   const calculateThickness = (w1: number, h1: number, manual?: number): number => {
     if (manual && manual > 0) return manual;
@@ -822,6 +840,45 @@ export default function App() {
     }));
   };
 
+  const toggleRowSelection = (id: string) => {
+    setSelectedRowIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = (rows: RowData[]) => {
+    if (selectedRowIds.size === rows.length && rows.every(r => selectedRowIds.has(r.id))) {
+      setSelectedRowIds(new Set());
+    } else {
+      setSelectedRowIds(new Set(rows.map(r => r.id)));
+    }
+  };
+
+  const bulkDelete = () => {
+    if (selectedRowIds.size === 0) return;
+    if (!window.confirm(`למחוק ${selectedRowIds.size} חלקים נבחרים?`)) return;
+    pushToHistory(sheets);
+    setSheets(sheets.map(s => s.id === activeSheetId ? { ...s, rows: s.rows.filter(r => !selectedRowIds.has(r.id)) } : s));
+    setSelectedRowIds(new Set());
+  };
+
+  const bulkCopyToSheet = (targetSheetId: string) => {
+    if (selectedRowIds.size === 0 || targetSheetId === activeSheetId) return;
+    pushToHistory(sheets);
+    const sourceSheet = sheets.find(s => s.id === activeSheetId);
+    if (!sourceSheet) return;
+    const rowsToCopy = sourceSheet.rows.filter(r => selectedRowIds.has(r.id));
+    const newRows = rowsToCopy.map(r => ({ ...r, id: Date.now().toString() + Math.random().toString(36).slice(2, 6), partNumber: '' }));
+    setSheets(sheets.map(s => {
+      if (s.id === targetSheetId) return { ...s, rows: [...s.rows, ...newRows] };
+      return s;
+    }));
+    alert(`הועתקו ${rowsToCopy.length} חלקים לדף "${sheets.find(s => s.id === targetSheetId)?.name}"`);
+  };
+
   const addSheet = () => {
     pushToHistory(sheets);
     let maxNum = 0;
@@ -891,6 +948,25 @@ export default function App() {
     setUndoStack(prev => [...prev, current]);
     setSheets(next);
     setRedoStack(prev => prev.slice(0, -1));
+  };
+
+  const savePreset = () => {
+    const name = window.prompt('שם התבנית:', `${newPartData.type} ${newPartData.width1}x${newPartData.height1}`);
+    if (!name) return;
+    const { id, ...dataWithoutId } = newPartData;
+    const updated = [...partPresets, { name, data: dataWithoutId }];
+    setPartPresets(updated);
+    localStorage.setItem('sharara-presets', JSON.stringify(updated));
+  };
+
+  const loadPreset = (preset: {name: string, data: Omit<RowData, 'id'>}) => {
+    setNewPartData({ ...preset.data, id: '' });
+  };
+
+  const deletePreset = (idx: number) => {
+    const updated = partPresets.filter((_, i) => i !== idx);
+    setPartPresets(updated);
+    localStorage.setItem('sharara-presets', JSON.stringify(updated));
   };
 
   // פתיחת טופס להוספת חלק חדש עם ברירות מחדל בהתאם לצורה שנבחרה
@@ -1378,7 +1454,15 @@ export default function App() {
         >
           🔑 התנתק
         </button>
-        
+
+        {/* אינדיקטור שמירה */}
+        {lastSaved && (
+          <div style={{ position: 'absolute', top: '20px', right: '20px', fontSize: '10px', color: '#4ade80', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#4ade80', display: 'inline-block' }}></span>
+            נשמר {lastSaved.toLocaleTimeString('he-IL')}
+          </div>
+        )}
+
         {/* לוגו באמצע הדף - מוגדל בצורה משמעותית */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
             <div style={{ position: 'relative' }}>
@@ -2347,6 +2431,15 @@ export default function App() {
                       >
                         בטל
                       </button>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginRight: 'auto' }}>
+                        <button onClick={savePreset} style={{ padding: '6px 12px', backgroundColor: '#8b5cf6', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '11px' }} title="שמור כתבנית">💾 שמור תבנית</button>
+                        {partPresets.length > 0 && (
+                          <select onChange={(e) => { if (e.target.value !== '') loadPreset(partPresets[Number(e.target.value)]); e.target.value = ''; }} style={{ padding: '5px 8px', borderRadius: '4px', border: '1px solid #8b5cf6', fontSize: '11px', color: '#6b21a8', fontWeight: 'bold' }}>
+                            <option value="">📋 טען תבנית...</option>
+                            {partPresets.map((p, i) => <option key={i} value={i}>{p.name}</option>)}
+                          </select>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -2363,11 +2456,28 @@ export default function App() {
                     const hasInsulation = regularRows.some(r => r.acoustic || r.external);
 
                     return (<>
+                      {/* ─── סרגל פעולות מרובות ─── */}
+                      {selectedRowIds.size > 0 && (
+                        <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 16px', marginBottom: '16px', backgroundColor: '#eff6ff', border: '2px solid #93c5fd', borderRadius: '8px', fontSize: '13px' }}>
+                          <span style={{ fontWeight: 'bold', color: '#1e40af' }}>{selectedRowIds.size} חלקים נבחרים</span>
+                          <button onClick={bulkDelete} style={{ padding: '5px 12px', backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}>🗑 מחק נבחרים</button>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ color: '#475569' }}>העתק לדף:</span>
+                            <select id="bulkCopyTarget" style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #93c5fd', fontSize: '12px' }}>
+                              {sheets.filter(s => s.id !== activeSheetId).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                            </select>
+                            <button onClick={() => { const sel = document.getElementById('bulkCopyTarget') as HTMLSelectElement; if (sel) bulkCopyToSheet(sel.value); }} style={{ padding: '5px 12px', backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}>📋 העתק</button>
+                          </div>
+                          <button onClick={() => setSelectedRowIds(new Set())} style={{ padding: '5px 12px', backgroundColor: '#64748b', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}>ביטול בחירה</button>
+                        </div>
+                      )}
+
                       {/* ─── טבלה 1: חלקים רגילים ─── */}
                       {regularRows.length > 0 && (
                         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '13px', minWidth: hasTransition || hasElbow ? '1700px' : '1200px', marginBottom: '24px' }}>
                           <thead>
                             <tr style={{ backgroundColor: '#f1f5f9', color: '#475569', fontWeight: 'bold', borderBottom: '2px solid #cbd5e1' }}>
+                              <th style={{ padding: '12px 8px', textAlign: 'center', width: '32px' }}><input type="checkbox" checked={regularRows.length > 0 && regularRows.every(r => selectedRowIds.has(r.id))} onChange={() => toggleSelectAll(regularRows)} style={{ cursor: 'pointer' }} /></th>
                               <th style={{ padding: '12px 8px', textAlign: 'center', width: '40px' }}>מס'</th>
                               <th style={{ padding: '12px 8px', textAlign: 'center', width: '60px' }}>מס' חלק</th>
                               <th style={{ padding: '12px 8px', width: '140px' }}>סוג חלק</th>
@@ -2391,6 +2501,7 @@ export default function App() {
                           <tbody>
                             {regularRows.map((row, idx) => (
                               <tr key={row.id} onMouseEnter={() => setLastHoveredRowId(row.id)} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                <td style={{ padding: '8px', textAlign: 'center' }}><input type="checkbox" checked={selectedRowIds.has(row.id)} onChange={() => toggleRowSelection(row.id)} style={{ cursor: 'pointer' }} /></td>
                                 <td style={{ padding: '8px', textAlign: 'center', color: '#94a3b8' }}>{idx + 1}</td>
                                 <td style={{ padding: '8px', textAlign: 'center' }}>
                                   <input type="text" value={row.partNumber} onChange={(e) => updateRow(row.id, 'partNumber', e.target.value)} style={{ width: '50px', padding: '4px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: 600, fontSize: '12px' }} />
@@ -2423,9 +2534,12 @@ export default function App() {
                                   <input type="text" value={row.notes} onChange={(e) => updateRow(row.id, 'notes', e.target.value)}
                                     style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px', boxSizing: 'border-box', backgroundColor: '#ffffff', color: '#0f172a' }} />
                                 </td>
-                                <td style={{ padding: '8px', textAlign: 'center', display: 'flex', gap: '4px', justifyContent: 'center' }}>
-                                  <button onClick={() => duplicateRow(row.id)} title="שכפל חלק" style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-                                  <button onClick={() => deleteRow(row.id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                                <td style={{ padding: '8px', textAlign: 'center', display: 'flex', gap: '4px', justifyContent: 'center', flexDirection: 'column', alignItems: 'center' }}>
+                                  {getRowWarnings(row).length > 0 && <span title={getRowWarnings(row).join('\n')} style={{ color: '#f59e0b', fontSize: '12px', cursor: 'help' }}>⚠️</span>}
+                                  <div style={{ display: 'flex', gap: '4px' }}>
+                                    <button onClick={() => duplicateRow(row.id)} title="שכפל חלק" style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                                    <button onClick={() => deleteRow(row.id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                                  </div>
                                 </td>
                               </tr>
                             ))}
@@ -2438,6 +2552,7 @@ export default function App() {
                         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '13px', minWidth: '900px', marginBottom: '24px' }}>
                           <thead>
                             <tr style={{ backgroundColor: '#f1f5f9', color: '#475569', fontWeight: 'bold', borderBottom: '2px solid #cbd5e1' }}>
+                              <th style={{ padding: '12px 8px', textAlign: 'center', width: '32px' }}><input type="checkbox" checked={accessoryRows.length > 0 && accessoryRows.every(r => selectedRowIds.has(r.id))} onChange={() => toggleSelectAll(accessoryRows)} style={{ cursor: 'pointer' }} /></th>
                               <th style={{ padding: '12px 8px', textAlign: 'center', width: '40px' }}>מס'</th>
                               <th style={{ padding: '12px 8px', textAlign: 'center', width: '60px' }}>מס' חלק</th>
                               <th style={{ padding: '12px 8px', width: '120px' }}>סוג אביזר</th>
@@ -2451,6 +2566,7 @@ export default function App() {
                           <tbody>
                             {accessoryRows.map((row, idx) => (
                               <tr key={row.id} onMouseEnter={() => setLastHoveredRowId(row.id)} style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#ffffff' }}>
+                                <td style={{ padding: '8px', textAlign: 'center' }}><input type="checkbox" checked={selectedRowIds.has(row.id)} onChange={() => toggleRowSelection(row.id)} style={{ cursor: 'pointer' }} /></td>
                                 <td style={{ padding: '8px', textAlign: 'center', color: '#94a3b8' }}>{idx + 1}</td>
                                 <td style={{ padding: '8px', textAlign: 'center' }}>
                                   <input type="text" value={row.partNumber} onChange={(e) => updateRow(row.id, 'partNumber', e.target.value)} style={{ width: '50px', padding: '4px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: 600, fontSize: '12px' }} />
