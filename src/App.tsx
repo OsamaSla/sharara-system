@@ -355,7 +355,7 @@ export default function App() {
     setProjectDocNumbers(snap.projectDocNumbers);
     setProjectDocDates(snap.projectDocDates);
     setActiveSheetId(snap.sheets[0].id);
-    setSelectedClient(snap.selectedClient);
+    setSelectedClientKey(snap.selectedClient);
     setSelectedProject(snap.selectedProject);
     setClientDetails(snap.clientsData[snap.selectedClient] || { phone: '', email: '', contact: '', regDate: '', projects: [] });
     setUndoStack([]);
@@ -371,7 +371,7 @@ export default function App() {
 
   // ─── ייצוא JSON ───
   const handleExportJSON = () => {
-    const defaultName = `sharara-${selectedClient || 'project'}-${selectedProject || ''}-${new Date().toISOString().slice(0, 10)}`.replace(/--/g, '-');
+    const defaultName = `sharara-${selectedClientKey || 'project'}-${selectedProject || ''}-${new Date().toISOString().slice(0, 10)}`.replace(/--/g, '-');
     setExportFileName(defaultName);
     setShowExportDialog(true);
   };
@@ -443,7 +443,7 @@ export default function App() {
     setProjectDocNumbers({});
     setProjectDocDates({});
     setActiveSheetId('1');
-    setSelectedClient('');
+    setSelectedClientKey('');
     setSelectedProject('');
     setClientDetails({ phone: '', email: '', contact: '', regDate: '', projects: [] });
     setUndoStack([]);
@@ -464,7 +464,7 @@ export default function App() {
     const snapshot = {
       name,
       savedAt: new Date().toISOString(),
-      client: selectedClient,
+      client: selectedClientKey,
       project: selectedProject,
       sheets,
       clientsData,
@@ -518,7 +518,7 @@ export default function App() {
         if (data.myCompanyDetails) setMyCompanyDetails(data.myCompanyDetails);
         if (data.projectDocNumbers) setProjectDocNumbers(data.projectDocNumbers);
         if (data.projectDocDates) setProjectDocDates(data.projectDocDates);
-        if (data.client) setSelectedClient(data.client);
+        if (data.client) setSelectedClientKey(data.client);
         if (data.project) setSelectedProject(data.project);
         setUndoStack([]);
         setRedoStack([]);
@@ -3576,21 +3576,13 @@ export default function App() {
         </div>
       )}
       </div> {/* end of .no-print wrapper */}
-      <PrintableReport
-        sheets={sheets}
-        clientDetails={{ name: clientDetails.name, phone: clientDetails.phone, email: clientDetails.email, contact: clientDetails.contact }}
-        selectedProject={selectedProject}
-        docDate={docDate}
-        docNumber={docNumber}
-        calculateArea={calculateArea}
-        calculateThickness={calculateThickness}
-      />
 
       {/* דיאלוג שמירת קובץ JSON */}
       {showExportDialog && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }} onClick={() => setShowExportDialog(false)}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '24px', minWidth: '400px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', color: '#0f172a' }}>💾 ייצוא לקובץ JSON</h3>
+            <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 12px 0' }}>הקובץ יישמר מקומית + בענן Firebase</p>
             <label style={{ fontSize: '13px', color: '#64748b', display: 'block', marginBottom: '6px' }}>שם הקובץ:</label>
             <input
               value={exportFileName}
@@ -3605,6 +3597,17 @@ export default function App() {
             </div>
           </div>
         </div>
+      )}
+      {isSessionInitialized && (
+        <PrintableReport
+          sheets={sheets}
+          clientDetails={{ name: clientDetails.name, phone: clientDetails.phone, email: clientDetails.email, contact: clientDetails.contact }}
+          selectedProject={selectedProject}
+          docDate={docDate}
+          docNumber={docNumber}
+          calculateArea={calculateArea}
+          calculateThickness={calculateThickness}
+        />
       )}
     </div>
   );
