@@ -2050,6 +2050,74 @@ export default function App() {
                   <p style={{ fontSize: '10px', color: '#94a3b8', margin: '6px 0 0 0' }}>השינוי ייכנס לתוקף בהתחברות הבאה של המשתמשים</p>
                 </div>
               )}
+              {/* עריכת פרטי עסק */}
+              <div style={{ marginBottom: '16px' }}>
+                {!showChangeAppCredentials && !showChangeAdminPasscode && (
+                  <button onClick={() => { setIsEditingMyCompany(!isEditingMyCompany); }} style={{ backgroundColor: isEditingMyCompany ? '#475569' : '#d97706', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>🏢 {isEditingMyCompany ? 'סגור עריכת פרטי עסק' : 'ערוך פרטי לוגו וטלפונים/מיילים של העסק'}</button>
+                )}
+                {isEditingMyCompany && (
+                  <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '16px', marginTop: '10px' }}>
+                    <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: '#92400e', margin: '0 0 12px 0' }}>🏢 עריכת פרטי לוגו ונייר המכתבים הרשמי של העסק</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>שם העסק בעברית:</label>
+                        <input type="text" value={myCompanyDetails.name} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, name: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>כיתוב אנגלי / שנת הקמה:</label>
+                        <input type="text" value={myCompanyDetails.engName} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, engName: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                      </div>
+                      <div style={{ gridColumn: 'span 2' }}>
+                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>תיאור העסק / סלוגן:</label>
+                        <input type="text" value={myCompanyDetails.subtitle} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, subtitle: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>אימייל:</label>
+                        <input type="text" value={myCompanyDetails.email} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, email: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>אתר אינטרנט:</label>
+                        <input type="text" value={myCompanyDetails.website} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, website: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>טלפון משרד:</label>
+                        <input type="text" value={myCompanyDetails.phone} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, phone: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>מספר פקס:</label>
+                        <input type="text" value={myCompanyDetails.fax} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, fax: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>מספר נייד:</label>
+                        <input type="text" value={myCompanyDetails.mobile} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, mobile: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>כתובת העסק והמפעל:</label>
+                        <input type="text" value={myCompanyDetails.address} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, address: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                      </div>
+                      <div style={{ gridColumn: 'span 2' }}>
+                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>דואר למשלוחים:</label>
+                        <input type="text" value={myCompanyDetails.pobox} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, pobox: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                      </div>
+                      {(myCompanyDetails.serviceLines ?? []).map((line: string, index: number) => (
+                        <div key={index} style={{ gridColumn: 'span 2' }}>
+                          <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>{`שורת שירותים ${index + 1} (הפרד ב-*):`}</label>
+                          <input
+                            type="text"
+                            value={line}
+                            onChange={(e) => {
+                              const nextLines = [...(myCompanyDetails.serviceLines ?? ['', '', ''])];
+                              nextLines[index] = e.target.value;
+                              setMyCompanyDetails({ ...myCompanyDetails, serviceLines: nextLines });
+                            }}
+                            style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </>
           )}
           <div style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '16px', marginBottom: '24px' }}>
@@ -3356,23 +3424,7 @@ export default function App() {
                 <div className="print-orientation-spacer portrait-print" aria-hidden="true" />
                 
                 {/* סרגל כפתורי ניהול נייר המכתבים - מוסתר בהדפסה */}
-                <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '1px solid #cbd5e1', paddingBottom: '10px', gap: '8px' }}>
-                  <button 
-                    onClick={() => setIsEditingMyCompany(!isEditingMyCompany)} 
-                    style={{ 
-                      padding: '8px 16px', 
-                      backgroundColor: isEditingMyCompany ? '#475569' : '#d97706', 
-                      color: '#ffffff', 
-                      border: 'none', 
-                      borderRadius: '6px', 
-                      cursor: 'pointer', 
-                      fontWeight: 'bold', 
-                      fontSize: '13px'
-                    }}
-                  >
-                    {isEditingMyCompany ? "סגור עריכת פרטי לוגו" : "ערוך פרטי לוגו וטלפונים/מיילים של העסק"}
-                  </button>
-                  
+                <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px', borderBottom: '1px solid #cbd5e1', paddingBottom: '10px', gap: '8px' }}>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     {/* כפתור הפקה ונעילת שינויים */}
                     <button 
@@ -3433,69 +3485,6 @@ export default function App() {
                     <button onClick={exportInvoiceToExcel} style={{ padding: '8px 16px', backgroundColor: '#16a34a', color: '#ffffff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}><FileDown size={14} /> Excel</button>
                   </div>
                 </div>
-
-                {isEditingMyCompany && (
-                  <div className="no-print" style={{ backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '20px', marginBottom: '24px' }}>
-                    <h3 style={{ fontSize: '15px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 15px 0' }}>עריכת פרטי לוגו ונייר המכתבים הרשמי של העסק</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                      <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>שם העסק בעברית:</label>
-                        <input type="text" value={myCompanyDetails.name} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, name: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>כיתוב אנגלי / שנת הקמה:</label>
-                        <input type="text" value={myCompanyDetails.engName} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, engName: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
-                      </div>
-                      <div style={{ gridColumn: 'span 2' }}>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>תיאור העסק / סלוגן:</label>
-                        <input type="text" value={myCompanyDetails.subtitle} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, subtitle: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>אימייל:</label>
-                        <input type="text" value={myCompanyDetails.email} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, email: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>אתר אינטרנט:</label>
-                        <input type="text" value={myCompanyDetails.website} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, website: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>טלפון משרד:</label>
-                        <input type="text" value={myCompanyDetails.phone} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, phone: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>מספר פקס:</label>
-                        <input type="text" value={myCompanyDetails.fax} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, fax: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>מספר נייד:</label>
-                        <input type="text" value={myCompanyDetails.mobile} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, mobile: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>כתובת העסק והמפעל:</label>
-                        <input type="text" value={myCompanyDetails.address} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, address: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
-                      </div>
-                      <div style={{ gridColumn: 'span 2' }}>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>דואר למשלוחים:</label>
-                        <input type="text" value={myCompanyDetails.pobox} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, pobox: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
-                      </div>
-                      {(myCompanyDetails.serviceLines ?? []).map((line: string, index: number) => (
-                        <div key={index} style={{ gridColumn: 'span 2' }}>
-                          <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>{`שורת שירותים ${index + 1} (הפרד ב-*):`}</label>
-                          <input
-                            type="text"
-                            value={line}
-                            onChange={(e) => {
-                              const nextLines = [...(myCompanyDetails.serviceLines ?? ['', '', ''])];
-                              nextLines[index] = e.target.value;
-                              setMyCompanyDetails({ ...myCompanyDetails, serviceLines: nextLines });
-                            }}
-                            style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 <CompanyLetterhead details={myCompanyDetails} />
 
