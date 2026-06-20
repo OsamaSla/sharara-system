@@ -7,7 +7,7 @@ import { SAMPLE_SNAPSHOT } from './sampleData';
 import CompanyLetterhead from './CompanyLetterhead';
 import ProductionWorksheet from './ProductionWorksheet';
 import { db } from './firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import logoSrc from './assets/logo.png';
 
 
@@ -308,6 +308,9 @@ export default function App() {
   const [invoicePriceOverrides, setInvoicePriceOverrides] = useState<Record<string, number>>({});
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [exportFileName, setExportFileName] = useState('');
+  const [backups, setBackups] = useState<{ id: string; name: string; savedAt: string; client: string; project: string; sheetCount: number }[]>([]);
+  const [loadingBackups, setLoadingBackups] = useState(false);
+  const [showBackupsList, setShowBackupsList] = useState(false);
 
   // אפקטים לשמירה אוטומטית בענן (Firestore)
   useEffect(() => {
@@ -372,7 +375,8 @@ export default function App() {
     setExportFileName(defaultName);
     setShowExportDialog(true);
   };
-  const doExportJSON = () => {
+  const doExportJSON = async () => {
+    // Save to local file
     const data = {
       sheets,
       clientsData,
@@ -391,6 +395,9 @@ export default function App() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+
+    // Also save to Firebase
+    await saveToFirebaseBackup(exportFileName);
     setShowExportDialog(false);
   };
 
@@ -449,6 +456,90 @@ export default function App() {
     setPartPresets([]);
     localStorage.removeItem('sharara-presets');
     alert('✅ הפרויקט אופס בהצלחה!');
+  };
+
+  // ─── Firebase Backups ───
+  const saveToFirebaseBackup = async (backupName?: string) => {
+    const name = backupName || `backup-${new Date().toISOString().slice(0, 16).replace('T', '_').replace(/:/g, '-')}`;
+    const snapshot = {
+      name,
+      savedAt: new Date().toISOString(),
+      client: selectedClient,
+      project: selectedProject,
+      sheets,
+      clientsData,
+      pricesList,
+      myCompanyDetails,
+      projectDocNumbers,
+      projectDocDates,
+    };
+    try {
+      await setDoc(doc(db, 'appData', `backups/${name}`), snapshot);
+      return true;
+    } catch (error) {
+      console.error('Error saving backup:', error);
+      return false;
+    }
+  };
+
+  const loadFirebaseBackups = async () => {
+    setLoadingBackups(true);
+    try {
+      const snapshot = await getDocs(collection(db, 'appData/backups'));
+      const list = snapshot.docs.map(d => {
+        const data = d.data();
+        return {
+          id: d.id,
+          name: data.name || d.id,
+          savedAt: data.savedAt || '',
+          client: data.client || '',
+          project: data.project || '',
+          sheetCount: data.sheets?.length || 0,
+        };
+      });
+      list.sort((a, b) => (b.savedAt || '').localeCompare(a.savedAt || ''));
+      setBackups(list);
+    } catch (error) {
+      console.error('Error loading backups:', error);
+    } finally {
+      setLoadingBackups(false);
+    }
+  };
+
+  const restoreFromFirebaseBackup = async (backupId: string) => {
+    if (!confirm('האם לשחזר גיבוי זה?\n⚠️ הנתונים הנוכחיים יוחלפו.')) return;
+    try {
+      const docSnap = await getDoc(doc(db, 'appData', `backups/${backupId}`));
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.sheets) setSheets(data.sheets);
+        if (data.clientsData) setClientsData(data.clientsData);
+        if (data.pricesList) setPricesList(data.pricesList);
+        if (data.myCompanyDetails) setMyCompanyDetails(data.myCompanyDetails);
+        if (data.projectDocNumbers) setProjectDocNumbers(data.projectDocNumbers);
+        if (data.projectDocDates) setProjectDocDates(data.projectDocDates);
+        if (data.client) setSelectedClient(data.client);
+        if (data.project) setSelectedProject(data.project);
+        setUndoStack([]);
+        setRedoStack([]);
+        setLastSaved(new Date());
+        setShowBackupsList(false);
+        setIsSessionInitialized(true);
+        setActiveTab('measure');
+      }
+    } catch (error) {
+      console.error('Error restoring backup:', error);
+    }
+  };
+
+  const deleteFirebaseBackup = async (backupId: string) => {
+    if (!confirm(`למחוק את הגיבוי "${backupId}"?`)) return;
+    try {
+      await deleteDoc(doc(db, 'appData', `backups/${backupId}`));
+      setBackups(backups.filter(b => b.id !== backupId));
+    } catch (error) {
+      console.error('Error deleting backup:', error);
+    }
   };
 
   // טעינת נתונים מ-Firestore
@@ -1619,12 +1710,42 @@ export default function App() {
       {!isSessionInitialized ? (
         <div style={{ maxWidth: '800px', margin: '40px auto', padding: '32px', backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' }}>
           {/* כפתורי ניהול נתונים */}
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', justifyContent: 'flex-start' }}>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', justifyContent: 'flex-start', flexWrap: 'wrap' }}>
             <button onClick={loadSampleData} title="טען נתוני דוגמה לבדיקה מהירה" style={{ backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>📋 טען דוגמה</button>
             <button onClick={importFromJSON} title="ייבוא נתוני פרויקט מקובץ JSON" style={{ backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>📂 ייבוא מקובץ</button>
-            <button onClick={handleExportJSON} title="שמור נתוני פרויקט לקובץ JSON עם שם מותאם" style={{ backgroundColor: '#0891b2', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>💾 ייצוא לקובץ</button>
+            <button onClick={handleExportJSON} title="שמור נתוני פרויקט לקובץ JSON + ענן" style={{ backgroundColor: '#0891b2', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>💾 ייצוא לקובץ</button>
+            <button onClick={async () => { await loadFirebaseBackups(); setShowBackupsList(!showBackupsList); }} title="צפייה בגיבויים השמורים בענן" style={{ backgroundColor: '#059669', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>☁️ גיבויים בענן</button>
             <button onClick={resetProject} title="איפוס מלא של הפרויקט" style={{ backgroundColor: '#dc2626', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>🗑️ איפוס</button>
           </div>
+
+          {/* פאנל גיבויים בענן */}
+          {showBackupsList && (
+            <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#065f46', margin: '0 0 12px 0' }}>☁️ גיבויים בענן</h3>
+              {loadingBackups ? (
+                <p style={{ color: '#64748b', fontSize: '13px' }}>טוען גיבויים...</p>
+              ) : backups.length === 0 ? (
+                <p style={{ color: '#64748b', fontSize: '13px' }}>לא נמצאו גיבויים בענן</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {backups.map((backup) => (
+                    <div key={backup.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ffffff', padding: '10px 14px', borderRadius: '6px', border: '1px solid #d1fae5' }}>
+                      <div style={{ fontSize: '12px', color: '#0f172a' }}>
+                        <strong>{backup.name}</strong>
+                        <span style={{ color: '#64748b', marginRight: '8px' }}>{backup.client} — {backup.project}</span>
+                        <span style={{ color: '#94a3b8', marginRight: '8px' }}>({backup.sheetCount} דפים)</span>
+                        <span style={{ color: '#9ca3af', fontSize: '11px' }}>{backup.savedAt ? new Date(backup.savedAt).toLocaleString('he-IL') : ''}</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button onClick={() => restoreFromFirebaseBackup(backup.id)} style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>שחזר</button>
+                        <button onClick={() => deleteFirebaseBackup(backup.id)} style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>🗑️</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <div style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '16px', marginBottom: '24px' }}>
             <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#0f172a', margin: 0 }}>שלב א': זיהוי והגדרת לקוח ופרויקט</h2>
             <p style={{ fontSize: '13px', color: '#64748b', margin: '4px 0 0 0' }}>יש לבחור או להקים לקוח ופרויקט לפני תחילת הזנת המדידות בטבלה.</p>
@@ -3479,7 +3600,7 @@ export default function App() {
               style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '14px', boxSizing: 'border-box' }}
             />
             <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'flex-start' }}>
-              <button onClick={doExportJSON} style={{ backgroundColor: '#10b981', color: '#ffffff', border: 'none', padding: '8px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>שמור והורד</button>
+              <button onClick={() => doExportJSON()} style={{ backgroundColor: '#10b981', color: '#ffffff', border: 'none', padding: '8px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>💾 שמור קובץ + ענן</button>
               <button onClick={() => setShowExportDialog(false)} style={{ backgroundColor: '#64748b', color: '#ffffff', border: 'none', padding: '8px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>ביטול</button>
             </div>
           </div>
