@@ -9,8 +9,10 @@ import ProductionWorksheet from './ProductionWorksheet';
 import { db } from './firebase';
 import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import logoSrc from './assets/logo.png';
+import { EXISTING_DATA, DEFAULT_PRICES, DEFAULT_COMPANY, DEFAULT_ROW, DEFAULT_SHEET } from './constants';
+import { calculateThickness, calculateArea, getPrice, getRowWarnings, getDetailedSheetCosts, getProjectTotals, getSubtotal, getSheetTotals } from './calculations';
 
-
+// ─── Types ───
 export interface RowData {
   id: string;
   partNumber: string;
@@ -49,22 +51,6 @@ export interface PriceItem {
   unit: string;
   price: number;
 }
-
-// בסיס נתונים פיקטיבי ראשוני של לקוחות ופרויקטים קיימים במערכת
-const EXISTING_DATA = {
-  "אלקטרה מיזוג אוויר": {
-    phone: "03-9404040", email: "info@electra.co.il", contact: "יוסי לוי", regDate: "2025-01-10",
-    projects: ["מגדלי עזריאלי קומה 4", "בית חולים שיבא - מחלקה ד'"]
-  },
-  "תדיראן פרויקטים": {
-    phone: "04-8203030", email: "pro@tadiran.co.il", contact: "אבי כהן", regDate: "2025-03-15",
-    projects: ["קניון עופר פתח תקווה", "משרדי הייטק הרצליה"]
-  },
-  "משב הנדסה": {
-    phone: "02-5607080", email: "mashav@mashav.co.il", contact: "רוני לוין", regDate: "2025-06-01",
-    projects: ["מגדל פלטינום תל אביב"]
-  }
-};
 
 import ProductionPartSketch from './ProductionPartSketch';
 
@@ -311,6 +297,16 @@ export default function App() {
   const [backups, setBackups] = useState<{ id: string; name: string; savedAt: string; client: string; project: string; sheetCount: number }[]>([]);
   const [loadingBackups, setLoadingBackups] = useState(false);
   const [showBackupsList, setShowBackupsList] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(() => sessionStorage.getItem('sharara_isAdmin') === 'true');
+  const [adminUsername, setAdminUsername] = useState(() => localStorage.getItem('sharara_adminUsername') || 'מנהל');
+  const [adminPasscode, setAdminPasscode] = useState(() => localStorage.getItem('sharara_adminPasscode') || '1029');
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [adminUsernameInput, setAdminUsernameInput] = useState('');
+  const [adminPasscodeInput, setAdminPasscodeInput] = useState('');
+  const [showChangeAdminCredentials, setShowChangeAdminCredentials] = useState(false);
+  const [newAdminUsername, setNewAdminUsername] = useState('');
+  const [newAdminPasscode, setNewAdminPasscode] = useState('');
+  const [newAdminPasscodeConfirm, setNewAdminPasscodeConfirm] = useState('');
 
   // אפקטים לשמירה אוטומטית בענן (Firestore)
   useEffect(() => {
@@ -398,6 +394,7 @@ export default function App() {
 
     // Also save to Firebase
     await saveToFirebaseBackup(exportFileName);
+    await loadFirebaseBackups();
     setShowExportDialog(false);
   };
 
@@ -1709,42 +1706,101 @@ export default function App() {
       {/* שלב 1: מסך הגדרת לקוח ופרויקט (חוסם את הטבלה עד למילוי) */}
       {!isSessionInitialized ? (
         <div style={{ maxWidth: '800px', margin: '40px auto', padding: '32px', backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' }}>
-          {/* כפתורי ניהול נתונים */}
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', justifyContent: 'flex-start', flexWrap: 'wrap' }}>
-            <button onClick={loadSampleData} title="טען נתוני דוגמה לבדיקה מהירה" style={{ backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>📋 טען דוגמה</button>
-            <button onClick={importFromJSON} title="ייבוא נתוני פרויקט מקובץ JSON" style={{ backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>📂 ייבוא מקובץ</button>
-            <button onClick={handleExportJSON} title="שמור נתוני פרויקט לקובץ JSON + ענן" style={{ backgroundColor: '#0891b2', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>💾 ייצוא לקובץ</button>
-            <button onClick={async () => { await loadFirebaseBackups(); setShowBackupsList(!showBackupsList); }} title="צפייה בגיבויים השמורים בענן" style={{ backgroundColor: '#059669', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>☁️ גיבויים בענן</button>
-            <button onClick={resetProject} title="איפוס מלא של הפרויקט" style={{ backgroundColor: '#dc2626', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>🗑️ איפוס</button>
-          </div>
-
-          {/* פאנל גיבויים בענן */}
-          {showBackupsList && (
-            <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#065f46', margin: '0 0 12px 0' }}>☁️ גיבויים בענן</h3>
-              {loadingBackups ? (
-                <p style={{ color: '#64748b', fontSize: '13px' }}>טוען גיבויים...</p>
-              ) : backups.length === 0 ? (
-                <p style={{ color: '#64748b', fontSize: '13px' }}>לא נמצאו גיבויים בענן</p>
+          {/* כפתורי ניהול נתונים — מנהל בלבד */}
+          {!isAdmin ? (
+            <div style={{ marginBottom: '16px' }}>
+              {!showAdminLogin ? (
+                <button onClick={() => setShowAdminLogin(true)} title="כניסת מנהל" style={{ backgroundColor: '#475569', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>🔒 כניסת מנהל</button>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {backups.map((backup) => (
-                    <div key={backup.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ffffff', padding: '10px 14px', borderRadius: '6px', border: '1px solid #d1fae5' }}>
-                      <div style={{ fontSize: '12px', color: '#0f172a' }}>
-                        <strong>{backup.name}</strong>
-                        <span style={{ color: '#64748b', marginRight: '8px' }}>{backup.client} — {backup.project}</span>
-                        <span style={{ color: '#94a3b8', marginRight: '8px' }}>({backup.sheetCount} דפים)</span>
-                        <span style={{ color: '#9ca3af', fontSize: '11px' }}>{backup.savedAt ? new Date(backup.savedAt).toLocaleString('he-IL') : ''}</span>
-                      </div>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <button onClick={() => restoreFromFirebaseBackup(backup.id)} style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>שחזר</button>
-                        <button onClick={() => deleteFirebaseBackup(backup.id)} style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>🗑️</button>
-                      </div>
-                    </div>
-                  ))}
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', backgroundColor: '#f1f5f9', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '13px', color: '#475569', fontWeight: 'bold' }}>שם משתמש:</span>
+                  <input type="text" value={adminUsernameInput} onChange={(e) => setAdminUsernameInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') document.querySelector<HTMLInputElement>('[data-admin-passcode]')?.focus(); }} style={{ width: '120px', padding: '6px 10px', border: '1px solid #94a3b8', borderRadius: '4px', fontSize: '13px', textAlign: 'center' }} autoFocus />
+                  <span style={{ fontSize: '13px', color: '#475569', fontWeight: 'bold' }}>קוד:</span>
+                  <input data-admin-passcode type="password" value={adminPasscodeInput} onChange={(e) => setAdminPasscodeInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { if (adminUsernameInput === adminUsername && adminPasscodeInput === adminPasscode) { setIsAdmin(true); sessionStorage.setItem('sharara_isAdmin', 'true'); setShowAdminLogin(false); setAdminUsernameInput(''); setAdminPasscodeInput(''); } else { alert('❌ שם משתמש או קוד שגויים'); } } }} maxLength={6} style={{ width: '80px', padding: '6px 10px', border: '1px solid #94a3b8', borderRadius: '4px', fontSize: '14px', textAlign: 'center', letterSpacing: '4px' }} />
+                  <button onClick={() => { if (adminUsernameInput === adminUsername && adminPasscodeInput === adminPasscode) { setIsAdmin(true); sessionStorage.setItem('sharara_isAdmin', 'true'); setShowAdminLogin(false); setAdminUsernameInput(''); setAdminPasscodeInput(''); } else { alert('❌ שם משתמש או קוד שגויים'); } }} style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>אישור</button>
+                  <button onClick={() => { setShowAdminLogin(false); setAdminUsernameInput(''); setAdminPasscodeInput(''); }} style={{ backgroundColor: '#94a3b8', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>ביטול</button>
                 </div>
               )}
             </div>
+          ) : (
+            <>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', justifyContent: 'flex-start', flexWrap: 'wrap', alignItems: 'center' }}>
+                <span style={{ fontSize: '11px', color: '#10b981', fontWeight: 'bold', backgroundColor: '#ecfdf5', padding: '4px 8px', borderRadius: '4px', border: '1px solid #a7f3d0' }}>✓ {adminUsername}</span>
+                <button onClick={loadSampleData} title="טען נתוני דוגמה לבדיקה מהירה" style={{ backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>📋 טען דוגמה</button>
+                <button onClick={importFromJSON} title="ייבוא נתוני פרויקט מקובץ JSON" style={{ backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>📂 ייבוא מקובץ</button>
+                <button onClick={handleExportJSON} title="שמור נתוני פרויקט לקובץ JSON + ענן" style={{ backgroundColor: '#0891b2', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>💾 ייצוא לקובץ</button>
+                <button onClick={async () => { await loadFirebaseBackups(); setShowBackupsList(!showBackupsList); }} title="צפייה בגיבויים השמורים בענן" style={{ backgroundColor: '#059669', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>☁️ גיבויים בענן</button>
+                <button onClick={resetProject} title="איפוס מלא של הפרויקט" style={{ backgroundColor: '#dc2626', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>🗑️ איפוס</button>
+                <button onClick={() => { setIsAdmin(false); sessionStorage.removeItem('sharara_isAdmin'); }} title="התנתק מניהול" style={{ backgroundColor: '#94a3b8', color: '#ffffff', border: 'none', padding: '8px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>🚪</button>
+              </div>
+
+              {/* פאנל גיבויים בענן */}
+              {showBackupsList && (
+                <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#065f46', margin: '0 0 12px 0' }}>☁️ גיבויים בענן</h3>
+                  {loadingBackups ? (
+                    <p style={{ color: '#64748b', fontSize: '13px' }}>טוען גיבויים...</p>
+                  ) : backups.length === 0 ? (
+                    <p style={{ color: '#64748b', fontSize: '13px' }}>לא נמצאו גיבויים — בצע ייצוא כדי לגבות בענן</p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {backups.map((backup) => (
+                        <div key={backup.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ffffff', padding: '10px 14px', borderRadius: '6px', border: '1px solid #d1fae5' }}>
+                          <div style={{ fontSize: '12px', color: '#0f172a' }}>
+                            <strong>{backup.name}</strong>
+                            <span style={{ color: '#64748b', marginRight: '8px' }}>{backup.client} — {backup.project}</span>
+                            <span style={{ color: '#94a3b8', marginRight: '8px' }}>({backup.sheetCount} דפים)</span>
+                            <span style={{ color: '#9ca3af', fontSize: '11px' }}>{backup.savedAt ? new Date(backup.savedAt).toLocaleString('he-IL') : ''}</span>
+                          </div>
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <button onClick={() => restoreFromFirebaseBackup(backup.id)} style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>שחזר</button>
+                            <button onClick={() => deleteFirebaseBackup(backup.id)} style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>🗑️</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* שינוי פרטי מנהל */}
+              <div style={{ marginBottom: '16px' }}>
+                {!showChangeAdminCredentials ? (
+                  <button onClick={() => { setNewAdminUsername(adminUsername); setShowChangeAdminCredentials(true); }} style={{ backgroundColor: '#475569', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '11px' }}>🔑 שנה פרטי מנהל</button>
+                ) : (
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', backgroundColor: '#f1f5f9', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <label style={{ fontSize: '11px', color: '#64748b' }}>שם משתמש חדש:</label>
+                      <input type="text" value={newAdminUsername} onChange={(e) => setNewAdminUsername(e.target.value)} style={{ width: '130px', padding: '6px', border: '1px solid #94a3b8', borderRadius: '4px', fontSize: '13px' }} />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <label style={{ fontSize: '11px', color: '#64748b' }}>קוד חדש:</label>
+                      <input type="password" value={newAdminPasscode} onChange={(e) => setNewAdminPasscode(e.target.value)} style={{ width: '100px', padding: '6px', border: '1px solid #94a3b8', borderRadius: '4px', fontSize: '13px', textAlign: 'center' }} />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <label style={{ fontSize: '11px', color: '#64748b' }}>אישור קוד:</label>
+                      <input type="password" value={newAdminPasscodeConfirm} onChange={(e) => setNewAdminPasscodeConfirm(e.target.value)} style={{ width: '100px', padding: '6px', border: '1px solid #94a3b8', borderRadius: '4px', fontSize: '13px', textAlign: 'center' }} />
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', alignSelf: 'flex-end' }}>
+                      <button onClick={() => {
+                        if (!newAdminUsername.trim()) { alert('❌ שם משתמש לא יכול להיות ריק'); return; }
+                        if (newAdminPasscode.length < 4) { alert('❌ הקוד חייב להיות לפחות 4 תווים'); return; }
+                        if (newAdminPasscode !== newAdminPasscodeConfirm) { alert('❌ Codes do not match'); return; }
+                        setAdminUsername(newAdminUsername.trim());
+                        setAdminPasscode(newAdminPasscode);
+                        localStorage.setItem('sharara_adminUsername', newAdminUsername.trim());
+                        localStorage.setItem('sharara_adminPasscode', newAdminPasscode);
+                        setShowChangeAdminCredentials(false);
+                        setNewAdminPasscode('');
+                        setNewAdminPasscodeConfirm('');
+                        alert('✅ פרטי המנהל עודכנו');
+                      }} style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>שמור</button>
+                      <button onClick={() => { setShowChangeAdminCredentials(false); setNewAdminPasscode(''); setNewAdminPasscodeConfirm(''); }} style={{ backgroundColor: '#94a3b8', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}>ביטול</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
           )}
           <div style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '16px', marginBottom: '24px' }}>
             <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#0f172a', margin: 0 }}>שלב א': זיהוי והגדרת לקוח ופרויקט</h2>
