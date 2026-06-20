@@ -344,11 +344,19 @@ export default function App() {
         e.preventDefault();
         handleRedo();
       }
+      if (e.ctrlKey && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        if (lastHoveredRowId) duplicateRow(lastHoveredRowId);
+      }
+      if (e.key === 'Delete' && !isAddingPart && lastHoveredRowId) {
+        e.preventDefault();
+        deleteRow(lastHoveredRowId);
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [undoStack, redoStack, sheets, isSessionInitialized, activeTab]);
+  }, [undoStack, redoStack, sheets, isSessionInitialized, activeTab, lastHoveredRowId, isAddingPart]);
 
   // שמירת מזהה הלקוח שממנו ייבאנו פרטים בעת יצירת לקוח חדש
   const [importedClientSourceKey, setImportedClientSourceKey] = useState<string>('');
@@ -392,6 +400,7 @@ export default function App() {
     dofan: 0
   });
   const [quickQty, setQuickQty] = useState<number>(1);
+  const [lastHoveredRowId, setLastHoveredRowId] = useState<string | null>(null);
 
   const [invoicePriceOverrides, setInvoicePriceOverrides] = useState<Record<string, number>>({});
   const getInvoicePrice = (key: string) => invoicePriceOverrides[key] !== undefined ? invoicePriceOverrides[key] : getPrice(key);
@@ -973,9 +982,12 @@ export default function App() {
     let flexible = 0;
     let acoustic = 0;
     let external = 0;
+    let sharshuri4 = 0;
     let sharshuri6 = 0;
     let sharshuri8 = 0;
     let sharshuri10 = 0;
+    let sharshuri12 = 0;
+    let sharshuri14 = 0;
     let adapterQty = 0;
     let shatuzar = 0;
 
@@ -991,9 +1003,12 @@ export default function App() {
       if (row.acoustic) acoustic += area;
       if (row.external) external += area;
 
-      if (row.sharshuriType === '"6') sharshuri6 += row.length;
+      if (row.sharshuriType === '"4') sharshuri4 += row.length;
+      else if (row.sharshuriType === '"6') sharshuri6 += row.length;
       else if (row.sharshuriType === '"8') sharshuri8 += row.length;
       else if (row.sharshuriType === '"10') sharshuri10 += row.length;
+      else if (row.sharshuriType === '"12') sharshuri12 += row.length;
+      else if (row.sharshuriType === '"14') sharshuri14 += row.length;
 
       if (row.adapterType !== 'ללא') adapterQty += row.adapterQty;
       if (row.type === 'שתוצר') shatuzar += (row.panels || 1);
@@ -1007,9 +1022,12 @@ export default function App() {
       flexible,
       acoustic,
       external,
+      sharshuri4,
       sharshuri6,
       sharshuri8,
       sharshuri10,
+      sharshuri12,
+      sharshuri14,
       adapterQty,
       shatuzar
     };
@@ -1146,7 +1164,7 @@ export default function App() {
           row.panels||'',
           row.shatuzar ? 1 : '',
           row.flexible && row.length ? (row.flexible * row.length) : '',
-          row.adapterType !== 'ללא' ? row.adapterQty : '',
+          row.sharshuriType !== 'ללא' ? row.length : '',
           is125 && area > 0 ? area.toFixed(2) : '',
           row.notes||''
         ]);
@@ -1179,7 +1197,7 @@ export default function App() {
     infoRow.alignment = { horizontal: 'right', vertical: 'middle' };
     infoRow.height = 20;
 
-    const allTotals = { t08: 0, t10: 0, t125: 0, flexible: 0, acoustic: 0, external: 0, sharshuri6: 0, sharshuri8: 0, sharshuri10: 0, adapterQty: 0, shatuzar: 0 };
+    const allTotals = { t08: 0, t10: 0, t125: 0, flexible: 0, acoustic: 0, external: 0, sharshuri4: 0, sharshuri6: 0, sharshuri8: 0, sharshuri10: 0, sharshuri12: 0, sharshuri14: 0, adapterQty: 0, shatuzar: 0 };
     sheets.forEach(s => { const t = getSheetTotals(s); Object.keys(allTotals).forEach(k => allTotals[k as keyof typeof allTotals] += t[k as keyof typeof t]); });
     const gp = (k: string) => getInvoicePrice(k);
     const items: { label: string; qty: number; unit: string; price: number; total: number }[] = [];
@@ -1190,7 +1208,7 @@ export default function App() {
     if (allTotals.flexible > 0) items.push({ label: 'חיבור גמיש מונע רעידות', qty: allTotals.flexible, unit: 'מ"א', price: gp('חיבור גמיש'), total: allTotals.flexible * gp('חיבור גמיש') });
     if (allTotals.acoustic > 0) items.push({ label: 'בידוד אקוסטי', qty: allTotals.acoustic, unit: 'מ"ר', price: gp('בידוד אקוסטי'), total: allTotals.acoustic * gp('בידוד אקוסטי') });
     if (allTotals.external > 0) items.push({ label: 'בידוד חיצוני', qty: allTotals.external, unit: 'מ"ר', price: gp('בידוד חיצוני'), total: allTotals.external * gp('בידוד חיצוני') });
-    const sumSharshuri = allTotals.sharshuri6 + allTotals.sharshuri8 + allTotals.sharshuri10;
+    const sumSharshuri = allTotals.sharshuri4 + allTotals.sharshuri6 + allTotals.sharshuri8 + allTotals.sharshuri10 + allTotals.sharshuri12 + allTotals.sharshuri14;
     if (sumSharshuri > 0) items.push({ label: 'שרשוריות', qty: sumSharshuri, unit: 'מ"א', price: gp('שרשוריות'), total: sumSharshuri * gp('שרשוריות') });
     if (allTotals.adapterQty > 0) items.push({ label: 'מתאמים', qty: allTotals.adapterQty, unit: 'יח\'', price: gp('מתאמים'), total: allTotals.adapterQty * gp('מתאמים') });
 
@@ -1929,6 +1947,7 @@ export default function App() {
                               style={{ display: 'flex', alignItems: 'center', gap: '2px', padding: '4px 6px', borderRadius: '4px', backgroundColor: s.id === activeSheetId ? '#3b82f6' : '#475569', color: '#ffffff', border: s.id === activeSheetId ? '2px solid #60a5fa' : '1px solid #64748b', fontWeight: 'bold', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap' }}
                             >
                               <span>{s.name}</span>
+                              <span style={{ fontSize: '9px', opacity: 0.7, backgroundColor: 'rgba(255,255,255,0.15)', padding: '0 4px', borderRadius: '8px' }}>{s.rows.length}</span>
                               <span onClick={(e) => { e.stopPropagation(); setEditingSheetId(s.id); setEditingSheetName(s.name); }} title="עריכת שם" style={{ cursor: 'pointer', fontSize: '10px', opacity: 0.7, marginLeft: '2px', padding: '0 2px' }}>&#9998;</span>
                             </div>
                           )
@@ -1940,7 +1959,7 @@ export default function App() {
                             onChange={(e) => setActiveSheetId(e.target.value)}
                             style={{ padding: '4px 8px', borderRadius: '4px', backgroundColor: '#334155', color: '#ffffff', border: '1px solid #475569', fontWeight: 'bold', fontSize: '11px' }}
                           >
-                            {sheets.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                            {sheets.map(s => <option key={s.id} value={s.id}>{s.name} ({s.rows.length})</option>)}
                           </select>
                           <span
                             onClick={() => { setEditingSheetId(activeSheetId); setEditingSheetName(sheets.find(s => s.id === activeSheetId)?.name || ''); }}
@@ -2371,7 +2390,7 @@ export default function App() {
                           </thead>
                           <tbody>
                             {regularRows.map((row, idx) => (
-                              <tr key={row.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                              <tr key={row.id} onMouseEnter={() => setLastHoveredRowId(row.id)} style={{ borderBottom: '1px solid #e2e8f0' }}>
                                 <td style={{ padding: '8px', textAlign: 'center', color: '#94a3b8' }}>{idx + 1}</td>
                                 <td style={{ padding: '8px', textAlign: 'center' }}>
                                   <input type="text" value={row.partNumber} onChange={(e) => updateRow(row.id, 'partNumber', e.target.value)} style={{ width: '50px', padding: '4px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: 600, fontSize: '12px' }} />
@@ -2431,7 +2450,7 @@ export default function App() {
                           </thead>
                           <tbody>
                             {accessoryRows.map((row, idx) => (
-                              <tr key={row.id} style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#ffffff' }}>
+                              <tr key={row.id} onMouseEnter={() => setLastHoveredRowId(row.id)} style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#ffffff' }}>
                                 <td style={{ padding: '8px', textAlign: 'center', color: '#94a3b8' }}>{idx + 1}</td>
                                 <td style={{ padding: '8px', textAlign: 'center' }}>
                                   <input type="text" value={row.partNumber} onChange={(e) => updateRow(row.id, 'partNumber', e.target.value)} style={{ width: '50px', padding: '4px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: 600, fontSize: '12px' }} />
@@ -2490,7 +2509,7 @@ export default function App() {
                 </div>
 
                 <div style={{ backgroundColor: '#0f172a', color: '#ffffff', padding: '14px 20px', display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 'bold', borderBottomLeftRadius: '7px', borderBottomRightRadius: '7px' }}>
-                  <span>סך הכל שטח בדף הנוכחי:</span>
+                  <span>סך הכל: {activeSheet.rows.length} חלקים | שטח בדף הנוכחי:</span>
                   <span style={{ color: '#3b82f6', fontSize: '16px' }}>{activeSheet.rows.reduce((s, r) => s + calculateArea(r), 0).toFixed(3)} מ"ר</span>
                 </div>
               </div>
@@ -2659,7 +2678,7 @@ export default function App() {
                               <td style={{ padding: '8px 6px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{''}</td>
                               <td style={{ padding: '8px 6px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{shTotals.shatuzar > 0 ? shTotals.shatuzar : ''}</td>
                               <td style={{ padding: '8px 6px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{shTotals.flexible > 0 ? shTotals.flexible.toFixed(2) : ''}</td>
-                              <td style={{ padding: '8px 6px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{(shTotals.sharshuri6 + shTotals.sharshuri8 + shTotals.sharshuri10) > 0 ? (shTotals.sharshuri6 + shTotals.sharshuri8 + shTotals.sharshuri10).toFixed(2) : ''}</td>
+                              <td style={{ padding: '8px 6px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{(shTotals.sharshuri4 + shTotals.sharshuri6 + shTotals.sharshuri8 + shTotals.sharshuri10 + shTotals.sharshuri12 + shTotals.sharshuri14) > 0 ? (shTotals.sharshuri4 + shTotals.sharshuri6 + shTotals.sharshuri8 + shTotals.sharshuri10 + shTotals.sharshuri12 + shTotals.sharshuri14).toFixed(2) : ''}</td>
                               <td style={{ padding: '8px 6px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{shTotals.t125 > 0 ? shTotals.t125.toFixed(2) : ''}</td>
                               <td style={{ padding: '8px 10px' }}></td>
                             </tr>
@@ -2973,9 +2992,9 @@ export default function App() {
                         let adapterPriceKey = 'מתאם 6"6/"';
                         if (k === '8/8 מתאם') adapterPriceKey = 'מתאם 8"8/"';
                         else if (k === '10/10 מתאם') adapterPriceKey = 'מתאם 10"10/"';
-                        else if (k === '12/12 נת') adapterPriceKey = 'מתאם 12"12/"';
+                        else if (k === '12/12 מתאם') adapterPriceKey = 'מתאם 12"12/"';
                         else if (k === '14/14 מתאם') adapterPriceKey = 'מתאם 14"14/"';
-                        else if (k === '16/16 מת') adapterPriceKey = 'מתאם 16"16/"';
+                        else if (k === '16/16 מתאם') adapterPriceKey = 'מתאם 16"16/"';
                         else if (k === '60/60 מתאם') adapterPriceKey = 'מתאם 60/60';
                         
                         return (
@@ -3001,9 +3020,9 @@ export default function App() {
                       let adapterPriceKey = 'מתאם 6"6/"';
                       if (k === '8/8 מתאם') adapterPriceKey = 'מתאם 8"8/"';
                       else if (k === '10/10 מתאם') adapterPriceKey = 'מתאם 10"10/"';
-                      else if (k === '12/12 נת') adapterPriceKey = 'מתאם 12"12/"';
+                      else if (k === '12/12 מתאם') adapterPriceKey = 'מתאם 12"12/"';
                       else if (k === '14/14 מתאם') adapterPriceKey = 'מתאם 14"14/"';
-                      else if (k === '16/16 מת') adapterPriceKey = 'מתאם 16"16/"';
+                      else if (k === '16/16 מתאם') adapterPriceKey = 'מתאם 16"16/"';
                       else if (k === '60/60 מתאם') adapterPriceKey = 'מתאם 60/60';
                       return s + qty * getInvoicePrice(adapterPriceKey);
                     }, 0);
