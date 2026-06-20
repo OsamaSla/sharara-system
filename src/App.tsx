@@ -176,6 +176,8 @@ export default function App() {
   ]);
   const [activeSheetId, setActiveSheetId] = useState<string>('1');
   const [activeTab, setActiveTab] = useState<'measure' | 'summary' | 'invoice' | 'pricelist' | 'production'>('measure');
+  const [editingSheetId, setEditingSheetId] = useState<string | null>(null);
+  const [editingSheetName, setEditingSheetName] = useState<string>('');
 
   // מחירון מעודכן הניתן לעריכה בכל עת (טעינה מ-localStorage)
   const [pricesList, setPricesList] = useState<PriceItem[]>(() => {
@@ -389,6 +391,7 @@ export default function App() {
     panels: 0,
     dofan: 0
   });
+  const [quickQty, setQuickQty] = useState<number>(1);
 
   const [invoicePriceOverrides, setInvoicePriceOverrides] = useState<Record<string, number>>({});
   const getInvoicePrice = (key: string) => invoicePriceOverrides[key] !== undefined ? invoicePriceOverrides[key] : getPrice(key);
@@ -794,6 +797,22 @@ export default function App() {
     setSheets(sheets.map(s => s.id === activeSheetId ? { ...s, rows: s.rows.filter(r => r.id !== id) } : s));
   };
 
+  const duplicateRow = (id: string) => {
+    pushToHistory(sheets);
+    setSheets(sheets.map(s => {
+      if (s.id === activeSheetId) {
+        const src = s.rows.find(r => r.id === id);
+        if (!src) return s;
+        const dup = { ...src, id: Date.now().toString(), partNumber: '' };
+        const idx = s.rows.findIndex(r => r.id === id);
+        const newRows = [...s.rows];
+        newRows.splice(idx + 1, 0, dup);
+        return { ...s, rows: newRows };
+      }
+      return s;
+    }));
+  };
+
   const addSheet = () => {
     pushToHistory(sheets);
     let maxNum = 0;
@@ -808,6 +827,16 @@ export default function App() {
     const newId = Date.now().toString();
     setSheets([...sheets, { id: newId, name: `דף מדידה #${nextNum}`, rows: [] }]);
     setActiveSheetId(newId);
+  };
+
+  const renameSheet = (sheetId: string) => {
+    const sheet = sheets.find(s => s.id === sheetId);
+    if (!sheet) return;
+    const newName = window.prompt('הכנס שם חדש לדף המדידה:', sheet.name);
+    if (newName && newName.trim() !== '') {
+      pushToHistory(sheets);
+      setSheets(sheets.map(s => s.id === sheetId ? { ...s, name: newName.trim() } : s));
+    }
   };
 
   const deleteSheet = (sheetIdToDelete: string) => {
@@ -915,18 +944,25 @@ export default function App() {
     // הוספת החלק להיסטוריית בטל/שחזר
     pushToHistory(sheets);
 
+    const qty = Math.max(1, Math.round(quickQty));
+    const newRows = Array.from({ length: qty }, (_, i) => ({
+      ...newPartData,
+      id: (Date.now() + i).toString(),
+    }));
+
     // הוספת שורה חדשה לדף המדידה הפעיל
     setSheets(sheets.map(s => {
       if (s.id === activeSheetId) {
         return {
           ...s,
-          rows: [...s.rows, { ...newPartData, id: Date.now().toString() }]
+          rows: [...s.rows, ...newRows]
         };
       }
       return s;
     }));
 
     setIsAddingPart(false);
+    setQuickQty(1);
   };
 
   // חישוב ריכוז כמויות עבור דף מדידה בודד (עבור טבלת האקסל)
@@ -1864,10 +1900,57 @@ export default function App() {
                         </button>
                       )}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <select value={activeSheetId} onChange={(e) => setActiveSheetId(e.target.value)} style={{ padding: '4px 8px', borderRadius: '4px', backgroundColor: '#334155', color: '#ffffff', border: '1px solid #475569', fontWeight: 'bold', fontSize: '12px' }}>
-                        {sheets.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                      </select>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'nowrap' }}>
+                      {sheets.length <= 1 ? (
+                        sheets.map(s => (
+                          editingSheetId === s.id ? (
+                            <input
+                              key={s.id}
+                              autoFocus
+                              value={editingSheetName}
+                              onChange={(e) => setEditingSheetName(e.target.value)}
+                              onBlur={() => {
+                                if (editingSheetName.trim() !== '') {
+                                  pushToHistory(sheets);
+                                  setSheets(sheets.map(sh => sh.id === s.id ? { ...sh, name: editingSheetName.trim() } : sh));
+                                }
+                                setEditingSheetId(null);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                                else if (e.key === 'Escape') setEditingSheetId(null);
+                              }}
+                              style={{ padding: '3px 6px', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', border: '2px solid #60a5fa', fontWeight: 'bold', fontSize: '11px', width: '80px', outline: 'none' }}
+                            />
+                          ) : (
+                            <div
+                              key={s.id}
+                              onClick={() => setActiveSheetId(s.id)}
+                              style={{ display: 'flex', alignItems: 'center', gap: '2px', padding: '4px 6px', borderRadius: '4px', backgroundColor: s.id === activeSheetId ? '#3b82f6' : '#475569', color: '#ffffff', border: s.id === activeSheetId ? '2px solid #60a5fa' : '1px solid #64748b', fontWeight: 'bold', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                            >
+                              <span>{s.name}</span>
+                              <span onClick={(e) => { e.stopPropagation(); setEditingSheetId(s.id); setEditingSheetName(s.name); }} title="עריכת שם" style={{ cursor: 'pointer', fontSize: '10px', opacity: 0.7, marginLeft: '2px', padding: '0 2px' }}>&#9998;</span>
+                            </div>
+                          )
+                        ))
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <select
+                            value={activeSheetId}
+                            onChange={(e) => setActiveSheetId(e.target.value)}
+                            style={{ padding: '4px 8px', borderRadius: '4px', backgroundColor: '#334155', color: '#ffffff', border: '1px solid #475569', fontWeight: 'bold', fontSize: '11px' }}
+                          >
+                            {sheets.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                          </select>
+                          <span
+                            onClick={() => { setEditingSheetId(activeSheetId); setEditingSheetName(sheets.find(s => s.id === activeSheetId)?.name || ''); }}
+                            title="עריכת שם הדף הפעיל"
+                            style={{ cursor: 'pointer', fontSize: '12px', color: '#94a3b8', padding: '2px' }}
+                          >
+                            &#9998;
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -1967,7 +2050,7 @@ export default function App() {
 
                 {/* טופס הוספת חלק ויזואלי נוח ורחב */}
                 {isAddingPart && (
-                  <div style={{ backgroundColor: '#f8fafc', padding: '24px', borderBottom: '2.5px solid #cbd5e1', borderTop: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div style={{ backgroundColor: '#f8fafc', padding: '24px', borderBottom: '2.5px solid #cbd5e1', borderTop: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: '20px', position: 'sticky', top: 0, zIndex: 10, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #334155', paddingBottom: '10px' }}>
                       <h3 style={{ fontSize: '15px', fontWeight: 'bold', color: '#1e3a8a', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                         ✨ טופס הזנת חלק חדש: <span style={{ color: '#10b981' }}>{newPartData.notes || newPartData.type}</span>
@@ -2208,7 +2291,9 @@ export default function App() {
                     </div>
 
 {/* כפתורי שמירה וביטול */}
-                    <div style={{ display: 'flex', justifyContent: 'flex-start', gap: '10px', borderTop: '1px solid #cbd5e1', paddingTop: '15px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-start', gap: '10px', borderTop: '1px solid #cbd5e1', paddingTop: '15px', alignItems: 'center' }}>
+                      <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#334155' }}>כמות:</label>
+                      <input type="number" min={1} step={1} value={quickQty} onChange={(e) => setQuickQty(Math.max(1, Math.round(Number(e.target.value))))} style={{ width: '50px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: 'bold', fontSize: '13px' }} />
                       <button 
                         onClick={saveFormPart} 
                         style={{ 
@@ -2253,24 +2338,29 @@ export default function App() {
                     const regularRows = activeSheet.rows.filter(r => !accessoryTypes.includes(r.type));
                     const accessoryRows = activeSheet.rows.filter(r => accessoryTypes.includes(r.type));
 
+                    const hasTransition = regularRows.some(r => r.type === 'מעבר');
+                    const hasElbow = regularRows.some(r => r.type === 'קשת');
+                    const hasRound = regularRows.some(r => r.notes === 'צינור עגול');
+                    const hasInsulation = regularRows.some(r => r.acoustic || r.external);
+
                     return (<>
                       {/* ─── טבלה 1: חלקים רגילים ─── */}
                       {regularRows.length > 0 && (
-                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '13px', minWidth: '1700px', marginBottom: '24px' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '13px', minWidth: hasTransition || hasElbow ? '1700px' : '1200px', marginBottom: '24px' }}>
                           <thead>
                             <tr style={{ backgroundColor: '#f1f5f9', color: '#475569', fontWeight: 'bold', borderBottom: '2px solid #cbd5e1' }}>
                               <th style={{ padding: '12px 8px', textAlign: 'center', width: '40px' }}>מס'</th>
                               <th style={{ padding: '12px 8px', textAlign: 'center', width: '60px' }}>מס' חלק</th>
                               <th style={{ padding: '12px 8px', width: '140px' }}>סוג חלק</th>
-                              <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#f8fafc' }}>חתך 1 (רוחב)</th>
-                              <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#f8fafc' }}>חתך 1 (גובה)</th>
-                              <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#e2f5ec' }}>חתך 2 (רוחב)</th>
-                              <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#e2f5ec' }}>חתך 2 (גובה)</th>
+                              <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#f8fafc' }}>רוחב</th>
+                              <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#f8fafc' }}>גובה</th>
+                              {hasTransition && <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#e2f5ec' }}>רוחב 2</th>}
+                              {hasTransition && <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#e2f5ec' }}>גובה 2</th>}
                               <th style={{ padding: '12px 8px', textAlign: 'center' }}>אורך (מטר)</th>
-                              <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#fff7ed' }}>רדיוס גדול</th>
-                              <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#fff7ed' }}>רדיוס קטן</th>
-                              <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#faf5ff' }}>אקוסטי</th>
-                              <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#faf5ff' }}>חיצוני</th>
+                              {hasElbow && <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#fff7ed' }}>רדיוס גדול</th>}
+                              {hasElbow && <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#fff7ed' }}>רדיוס קטן</th>}
+                              {hasInsulation && <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#faf5ff' }}>אקוסטי</th>}
+                              {hasInsulation && <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#faf5ff' }}>חיצוני</th>}
                               <th style={{ padding: '12px 8px', textAlign: 'center' }}>עובי פח</th>
                               <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#fefce8', color: '#854d0e', fontWeight: 'bold' }}>דופן</th>
                               <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#fefce8', color: '#854d0e', fontWeight: 'bold' }}>מס' חלקים</th>
@@ -2291,13 +2381,13 @@ export default function App() {
                                 </td>
                                 <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#f8fafc' }}><input type="number" value={row.width1 || ''} onChange={(e) => updateRow(row.id, 'width1', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} /></td>
                                 <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#f8fafc' }}><input type="number" value={row.height1 || ''} onChange={(e) => updateRow(row.id, 'height1', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} /></td>
-                                <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#f4fbf7' }}><input type="number" value={row.width2 || ''} disabled={row.type !== 'מעבר'} onChange={(e) => updateRow(row.id, 'width2', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.type !== 'מעבר' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} /></td>
-                                <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#f4fbf7' }}><input type="number" value={row.height2 || ''} disabled={row.type !== 'מעבר'} onChange={(e) => updateRow(row.id, 'height2', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.type !== 'מעבר' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} /></td>
+                                {hasTransition && <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#f4fbf7' }}><input type="number" value={row.width2 || ''} disabled={row.type !== 'מעבר'} onChange={(e) => updateRow(row.id, 'width2', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.type !== 'מעבר' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} /></td>}
+                                {hasTransition && <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#f4fbf7' }}><input type="number" value={row.height2 || ''} disabled={row.type !== 'מעבר'} onChange={(e) => updateRow(row.id, 'height2', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.type !== 'מעבר' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} /></td>}
                                 <td style={{ padding: '8px', textAlign: 'center' }}><input type="number" value={['קשת'].includes(row.type) ? '' : (row.length || '')} disabled={['קשת'].includes(row.type)} onChange={(e) => updateRow(row.id, 'length', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: ['קשת'].includes(row.type) ? '#e2e8f0' : '#ffffff', color: '#0f172a', cursor: ['קשת'].includes(row.type) ? 'not-allowed' : 'auto' }} /></td>
-                                <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#fffaf3' }}><input type="number" value={row.rBig || ''} disabled={row.type !== 'קשת'} onChange={(e) => updateRow(row.id, 'rBig', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.type !== 'קשת' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} /></td>
-                                <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#fffaf3' }}><input type="number" value={row.type === 'קשת' && row.rSmall ? row.rSmall : ''} disabled={row.type !== 'קשת'} onChange={(e) => updateRow(row.id, 'rSmall', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.type !== 'קשת' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} /></td>
-                                <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#faf5ff' }}><input type="checkbox" checked={row.acoustic} onChange={(e) => updateRow(row.id, 'acoustic', e.target.checked)} style={{ cursor: 'pointer' }} /></td>
-                                <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#faf5ff' }}><input type="checkbox" checked={row.external} onChange={(e) => updateRow(row.id, 'external', e.target.checked)} style={{ cursor: 'pointer' }} /></td>
+                                {hasElbow && <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#fffaf3' }}><input type="number" value={row.rBig || ''} disabled={row.type !== 'קשת'} onChange={(e) => updateRow(row.id, 'rBig', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.type !== 'קשת' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} /></td>}
+                                {hasElbow && <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#fffaf3' }}><input type="number" value={row.type === 'קשת' && row.rSmall ? row.rSmall : ''} disabled={row.type !== 'קשת'} onChange={(e) => updateRow(row.id, 'rSmall', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.type !== 'קשת' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} /></td>}
+                                {hasInsulation && <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#faf5ff' }}><input type="checkbox" checked={row.acoustic} onChange={(e) => updateRow(row.id, 'acoustic', e.target.checked)} style={{ cursor: 'pointer' }} /></td>}
+                                {hasInsulation && <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#faf5ff' }}><input type="checkbox" checked={row.external} onChange={(e) => updateRow(row.id, 'external', e.target.checked)} style={{ cursor: 'pointer' }} /></td>}
                                 <td style={{ padding: '8px', textAlign: 'center' }}>
                                   <input type="number" step="0.05" value={row.manualThickness > 0 ? row.manualThickness : calculateThickness(row.width1, row.height1, row.manualThickness)} onChange={(e) => updateRow(row.id, 'manualThickness', Number(e.target.value))}
                                     style={{ width: '55px', padding: '4px', textAlign: 'center', border: row.manualThickness > 0 ? '2px solid #d97706' : '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.manualThickness > 0 ? '#fffbeb' : '#ffffff', color: '#0f172a', fontWeight: row.manualThickness > 0 ? 700 : 500 }} />
@@ -2314,7 +2404,10 @@ export default function App() {
                                   <input type="text" value={row.notes} onChange={(e) => updateRow(row.id, 'notes', e.target.value)}
                                     style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px', boxSizing: 'border-box', backgroundColor: '#ffffff', color: '#0f172a' }} />
                                 </td>
-                                <td style={{ padding: '8px', textAlign: 'center' }}><button onClick={() => deleteRow(row.id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={16} /></button></td>
+                                <td style={{ padding: '8px', textAlign: 'center', display: 'flex', gap: '4px', justifyContent: 'center' }}>
+                                  <button onClick={() => duplicateRow(row.id)} title="שכפל חלק" style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                                  <button onClick={() => deleteRow(row.id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                                </td>
                               </tr>
                             ))}
                           </tbody>
@@ -2383,7 +2476,10 @@ export default function App() {
                                     readOnly
                                     style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px', boxSizing: 'border-box', backgroundColor: '#f8fafc', color: '#0f172a', cursor: 'not-allowed' }} />
                                 </td>
-                                <td style={{ padding: '8px', textAlign: 'center' }}><button onClick={() => deleteRow(row.id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={16} /></button></td>
+                                <td style={{ padding: '8px', textAlign: 'center', display: 'flex', gap: '4px', justifyContent: 'center' }}>
+                                  <button onClick={() => duplicateRow(row.id)} title="שכפל חלק" style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                                  <button onClick={() => deleteRow(row.id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                                </td>
                               </tr>
                             ))}
                           </tbody>
