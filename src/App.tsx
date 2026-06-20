@@ -81,50 +81,6 @@ export default function App() {
   const [loginPassword, setLoginPassword] = useState<string>('');
   const [loginError, setLoginError] = useState<string>('');
 
-  // טעינת נתונים מ-Firestore
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const docRef = doc(db, 'appData', 'mainData');
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          // עדכון הסטייטים מהענן
-          if (data.clientsData) setClientsData(data.clientsData);
-          if (data.pricesList) setPricesList(data.pricesList);
-          if (data.myCompanyDetails) setMyCompanyDetails(data.myCompanyDetails);
-          // וכן הלאה לכל השאר...
-        }
-      } catch (error) {
-        console.error("Error loading from Firestore: ", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
-  }, []);
-
-  // הצגת מסך טעינה
-  // (הועבר למטה אחרי כל ה-Hooks)
-
-
-
-  const handleLoginSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Bypass authentication check
-    setIsLoggedIn(true);
-    sessionStorage.setItem('sharara_isLoggedIn', 'true');
-    setLoginError('');
-  };
-
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    sessionStorage.removeItem('sharara_isLoggedIn');
-    setLoginUsername('');
-    setLoginPassword('');
-  };
-
   // שלבי עבודה: false = מסך הגדרת לקוח/פרויקט, true = כניסה לעבודה על הטבלאות
   const [isSessionInitialized, setIsSessionInitialized] = useState<boolean>(false);
 
@@ -307,6 +263,52 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem('sharara-presets') || '[]'); } catch { return []; }
   });
 
+  // שמירת מזהה הלקוח שממנו ייבאנו פרטים בעת יצירת לקוח חדש
+  const [importedClientSourceKey, setImportedClientSourceKey] = useState<string>('');
+
+  // מעקב אחר החברה והפרויקט הפעילים כרגע בטבלה כדי לזהות מתי הם הוחלפו ולתחול דפים מחדש
+  const [loadedClientProject, setLoadedClientProject] = useState({
+    client: "אלקטרה מיזוג אוויר",
+    project: "מגדלי עזריאלי קומה 4"
+  });
+
+  // סטייטים לעריכת לקוחות ופרויקטים
+  const [isEditingClient, setIsEditingClient] = useState<boolean>(false);
+  const [isEditingProjectName, setIsEditingProjectName] = useState<boolean>(false);
+  const [tempProjectName, setTempProjectName] = useState<string>('');
+
+  // סטייטים להוספת חלקים באמצעות טופס צורות ויזואלי (כמו באפליקציה המקורית)
+  const [isAddingPart, setIsAddingPart] = useState<boolean>(false);
+  const [newPartData, setNewPartData] = useState<RowData>({
+    id: '',
+    type: 'קטע ישר',
+    width1: 0.5,
+    height1: 0.4,
+    width2: 0,
+    height2: 0,
+    length: 1.0,
+    rBig: 0,
+    rSmall: 0,
+    shatuzar: false,
+    flexible: 0,
+    acoustic: true,
+    external: false,
+    sharshuriType: 'ללא',
+    sharshuriLen: 0,
+    adapterType: 'ללא',
+    adapterQty: 0,
+    notes: '',
+    partNumber: '',
+    manualThickness: 0,
+    rBig2: 0,
+    panels: 0,
+    dofan: 0
+  });
+  const [quickQty, setQuickQty] = useState<number>(1);
+  const [invoicePriceOverrides, setInvoicePriceOverrides] = useState<Record<string, number>>({});
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [exportFileName, setExportFileName] = useState('');
+
   // אפקטים לשמירה אוטומטית בענן (Firestore)
   useEffect(() => {
     if (isLoading) return;
@@ -365,8 +367,6 @@ export default function App() {
   };
 
   // ─── ייצוא JSON ───
-  const [showExportDialog, setShowExportDialog] = useState(false);
-  const [exportFileName, setExportFileName] = useState('');
   const handleExportJSON = () => {
     const defaultName = `sharara-${selectedClient || 'project'}-${selectedProject || ''}-${new Date().toISOString().slice(0, 10)}`.replace(/--/g, '-');
     setExportFileName(defaultName);
@@ -451,51 +451,41 @@ export default function App() {
     alert('✅ הפרויקט אופס בהצלחה!');
   };
 
-  // שמירת מזהה הלקוח שממנו ייבאנו פרטים בעת יצירת לקוח חדש
-  const [importedClientSourceKey, setImportedClientSourceKey] = useState<string>('');
+  // טעינת נתונים מ-Firestore
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const docRef = doc(db, 'appData', 'mainData');
+        const docSnap = await getDoc(docRef);
 
-  // מעקב אחר החברה והפרויקט הפעילים כרגע בטבלה כדי לזהות מתי הם הוחלפו ולתחול דפים מחדש
-  const [loadedClientProject, setLoadedClientProject] = useState({
-    client: "אלקטרה מיזוג אוויר",
-    project: "מגדלי עזריאלי קומה 4"
-  });
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.clientsData) setClientsData(data.clientsData);
+          if (data.pricesList) setPricesList(data.pricesList);
+          if (data.myCompanyDetails) setMyCompanyDetails(data.myCompanyDetails);
+        }
+      } catch (error) {
+        console.error("Error loading from Firestore: ", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, []);
 
-  // סטייטים לעריכת לקוחות ופרויקטים
-  const [isEditingClient, setIsEditingClient] = useState<boolean>(false);
-  const [isEditingProjectName, setIsEditingProjectName] = useState<boolean>(false);
-  const [tempProjectName, setTempProjectName] = useState<string>('');
+  const handleLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoggedIn(true);
+    sessionStorage.setItem('sharara_isLoggedIn', 'true');
+    setLoginError('');
+  };
 
-  // סטייטים להוספת חלקים באמצעות טופס צורות ויזואלי (כמו באפליקציה המקורית)
-  const [isAddingPart, setIsAddingPart] = useState<boolean>(false);
-  const [newPartData, setNewPartData] = useState<RowData>({
-    id: '',
-    type: 'קטע ישר',
-    width1: 0.5,
-    height1: 0.4,
-    width2: 0,
-    height2: 0,
-    length: 1.0,
-    rBig: 0,
-    rSmall: 0,
-    shatuzar: false,
-    flexible: 0,
-    acoustic: true,
-    external: false,
-    sharshuriType: 'ללא',
-    sharshuriLen: 0,
-    adapterType: 'ללא',
-    adapterQty: 0,
-    notes: '',
-    partNumber: '',
-    manualThickness: 0,
-    rBig2: 0,
-    panels: 0,
-    dofan: 0
-  });
-  const [quickQty, setQuickQty] = useState<number>(1);
-  const [invoicePriceOverrides, setInvoicePriceOverrides] = useState<Record<string, number>>({});
-  const getInvoicePrice = (key: string) => invoicePriceOverrides[key] !== undefined ? invoicePriceOverrides[key] : getPrice(key);
-  const setInvoicePrice = (key: string, value: number) => setInvoicePriceOverrides({...invoicePriceOverrides, [key]: value});
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    sessionStorage.removeItem('sharara_isLoggedIn');
+    setLoginUsername('');
+    setLoginPassword('');
+  };
 
   // מאזין גלובלי למקשי מקלדת Ctrl+Z, Ctrl+Y, Ctrl+D, Delete
   useEffect(() => {
@@ -1632,7 +1622,7 @@ export default function App() {
           <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', justifyContent: 'flex-start' }}>
             <button onClick={loadSampleData} title="טען נתוני דוגמה לבדיקה מהירה" style={{ backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>📋 טען דוגמה</button>
             <button onClick={importFromJSON} title="ייבוא נתוני פרויקט מקובץ JSON" style={{ backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>📂 ייבוא מקובץ</button>
-            <button onClick={handleExportJSON} title="שמור נתוני פרויקט לקובץ JSON עם שם מותאם" style={{ backgroundColor: '#0891b2', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>💾 שמור קובץ</button>
+            <button onClick={handleExportJSON} title="שמור נתוני פרויקט לקובץ JSON עם שם מותאם" style={{ backgroundColor: '#0891b2', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>💾 ייצוא לקובץ</button>
             <button onClick={resetProject} title="איפוס מלא של הפרויקט" style={{ backgroundColor: '#dc2626', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>🗑️ איפוס</button>
           </div>
           <div style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '16px', marginBottom: '24px' }}>
@@ -3479,7 +3469,7 @@ export default function App() {
       {showExportDialog && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }} onClick={() => setShowExportDialog(false)}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '24px', minWidth: '400px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }} onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', color: '#0f172a' }}>💾 שמור קובץ JSON</h3>
+            <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', color: '#0f172a' }}>💾 ייצוא לקובץ JSON</h3>
             <label style={{ fontSize: '13px', color: '#64748b', display: 'block', marginBottom: '6px' }}>שם הקובץ:</label>
             <input
               value={exportFileName}
