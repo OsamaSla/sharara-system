@@ -65,6 +65,13 @@ const EXISTING_DATA = {
   }
 };
 
+import ProductionPartSketch from './ProductionPartSketch';
+
+function SketchThumb({ type, notes, w = 30, h = 22 }: { type: string; notes?: string; w?: number; h?: number }) {
+  const row = { type, notes: notes || '', width1: 0, height1: 0, length: 0, rSmall: 0, rBig: 0, width2: 0, height2: 0, panels: 0, dofan: 0, partNumber: '', acoustic: false, external: false, manualThickness: 0, id: '', flexible: 0, adapterType: 'ללא', adapterQty: 0, shatuzar: false, sharshuriType: 'ללא', rBig2: 0 } as RowData;
+  return <ProductionPartSketch row={row} width={w} height={h} />;
+}
+
 export default function App() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   // סטייטים של אבטחה וכניסה לאתר (sessionStorage לשמירת החיבור)
@@ -1870,45 +1877,76 @@ export default function App() {
                     <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, auto)', gap: '6px', border: '2px solid #3b82f6', borderRadius: '8px', padding: '6px' }}>
                         <button onClick={() => openAddPartForm('קטע ישר')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff', fontSize: '12px', fontWeight: 'bold' }}>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="8" width="18" height="8" rx="1" /></svg>
+                          <SketchThumb type="קטע ישר" />
                           <span>קטע ישר</span>
                         </button>
                         <button onClick={() => openAddPartForm('קשת')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff', fontSize: '12px', fontWeight: 'bold' }}>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 21v-9a8 8 0 0 1 8-8h9" /></svg>
+                          <SketchThumb type="קשת" />
                           <span>קשת</span>
                         </button>
                         <button onClick={() => openAddPartForm('מעבר')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff', fontSize: '12px', fontWeight: 'bold' }}>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="4,5 20,5 17,19 7,17" /></svg>
+                          <SketchThumb type="מעבר" />
                           <span>מעבר</span>
                         </button>
                         <button onClick={() => openAddPartForm('קטע ישר', 'לאמד S')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff', fontSize: '12px', fontWeight: 'bold' }}>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 5h5c3 0 5 6 8 6h5" /></svg>
+                          <SketchThumb type="קטע ישר" notes="לאמד S" />
                           <span>לאמד S</span>
                         </button>
                         <button onClick={() => openAddPartForm('קטע ישר', 'צינור עגול')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff', fontSize: '12px', fontWeight: 'bold' }}>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><ellipse cx="12" cy="6" rx="6" ry="3" /></svg>
+                          <SketchThumb type="קטע ישר" notes="צינור עגול" />
                           <span>צינור</span>
                         </button>
                         <button onClick={() => openAddPartForm('קטע ישר', 'קופסת פיזור')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff', fontSize: '12px', fontWeight: 'bold' }}>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="10" width="16" height="11" rx="1" /></svg>
+                          <SketchThumb type="קטע ישר" notes="קופסת פיזור" />
                           <span>קופסה</span>
                         </button>
                         <button onClick={() => openAddPartForm('קטע ישר', 'מדף אש')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff', fontSize: '12px', fontWeight: 'bold', gridColumn: 'span 2', justifyContent: 'center' }}>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="4" width="16" height="16" rx="1" /></svg>
+                          <SketchThumb type="קטע ישר" notes="מדף אש" />
                           <span>מדף אש</span>
                         </button>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, auto)', gap: '6px', border: '2px solid #10b981', borderRadius: '8px', padding: '6px' }}>
                         <button onClick={() => openAddPartForm('שתוצר')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff', fontSize: '12px', fontWeight: 'bold' }}>
+                          <svg width="30" height="22" viewBox="0 0 60 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="5" y="8" width="50" height="28" rx="2" fill="#e5e7eb" stroke="#374151" strokeWidth="1.5"/>
+                            <line x1="30" y1="8" x2="30" y2="36" stroke="#ef4444" strokeWidth="1.2"/>
+                            <rect x="22" y="16" width="16" height="12" rx="1" fill="#fef2f2" stroke="#ef4444" strokeWidth="0.8"/>
+                            <line x1="26" y1="22" x2="34" y2="22" stroke="#ef4444" strokeWidth="0.8"/>
+                          </svg>
                           <span>שתוצר</span>
                         </button>
                         <button onClick={() => openAddPartForm('מתאם')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff', fontSize: '12px', fontWeight: 'bold' }}>
+                          <svg width="30" height="22" viewBox="0 0 60 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="5" y="10" width="20" height="24" rx="2" fill="#e5e7eb" stroke="#374151" strokeWidth="1.5"/>
+                            <ellipse cx="45" cy="22" rx="10" ry="12" fill="#e5e7eb" stroke="#374151" strokeWidth="1.5"/>
+                            <line x1="25" y1="14" x2="35" y2="12" stroke="#374151" strokeWidth="1" strokeDasharray="2,1.5"/>
+                            <line x1="25" y1="30" x2="35" y2="32" stroke="#374151" strokeWidth="1" strokeDasharray="2,1.5"/>
+                          </svg>
                           <span>מתאם</span>
                         </button>
                         <button onClick={() => openAddPartForm('שרשורי')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff', fontSize: '12px', fontWeight: 'bold' }}>
+                          <svg width="30" height="22" viewBox="0 0 60 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <line x1="30" y1="4" x2="30" y2="40" stroke="#374151" strokeWidth="2.5"/>
+                            <line x1="27" y1="8" x2="33" y2="8" stroke="#9ca3af" strokeWidth="0.8"/>
+                            <line x1="27" y1="12" x2="33" y2="12" stroke="#9ca3af" strokeWidth="0.8"/>
+                            <line x1="27" y1="16" x2="33" y2="16" stroke="#9ca3af" strokeWidth="0.8"/>
+                            <line x1="27" y1="20" x2="33" y2="20" stroke="#9ca3af" strokeWidth="0.8"/>
+                            <line x1="27" y1="24" x2="33" y2="24" stroke="#9ca3af" strokeWidth="0.8"/>
+                            <line x1="27" y1="28" x2="33" y2="28" stroke="#9ca3af" strokeWidth="0.8"/>
+                            <line x1="27" y1="32" x2="33" y2="32" stroke="#9ca3af" strokeWidth="0.8"/>
+                            <rect x="22" y="2" width="16" height="5" rx="1" fill="#d1d5db" stroke="#374151" strokeWidth="1"/>
+                            <rect x="22" y="37" width="16" height="5" rx="1" fill="#d1d5db" stroke="#374151" strokeWidth="1"/>
+                          </svg>
                           <span>שרשורי</span>
                         </button>
                         <button onClick={() => openAddPartForm('חיבור גמיש')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff', fontSize: '12px', fontWeight: 'bold' }}>
+                          <svg width="30" height="22" viewBox="0 0 60 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="2" y="10" width="12" height="24" rx="1" fill="#e5e7eb" stroke="#374151" strokeWidth="1.2"/>
+                            <rect x="46" y="10" width="12" height="24" rx="1" fill="#e5e7eb" stroke="#374151" strokeWidth="1.2"/>
+                            <path d="M14,14 C20,14 20,34 26,34 C32,34 32,14 38,14 C42,14 44,14 46,14" fill="none" stroke="#374151" strokeWidth="1.2"/>
+                            <path d="M14,18 C20,18 20,30 26,30 C32,30 32,18 38,18 C42,18 44,18 46,18" fill="none" stroke="#9ca3af" strokeWidth="0.6" strokeDasharray="2,1.5"/>
+                            <path d="M14,22 C20,22 20,26 26,26 C32,26 32,22 38,22 C42,22 44,22 46,22" fill="none" stroke="#9ca3af" strokeWidth="0.6" strokeDasharray="2,1.5"/>
+                          </svg>
                           <span>גמיש</span>
                         </button>
                       </div>
@@ -1962,14 +2000,14 @@ export default function App() {
                           {newPartData.type === 'שתוצר' && (
                              <div style={{ width: '120px' }}>
                                <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>כמות שתוצרים:</label>
-                               <input type="number" min="1" value={newPartData.panels || 1} onChange={(e) => setNewPartData({...newPartData, panels: Math.max(1, Number(e.target.value))})} style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px', textAlign: 'center' }} />
+                                <input type="number" min="1" step="1" value={newPartData.panels || 1} onChange={(e) => setNewPartData({...newPartData, panels: Math.max(1, Math.round(Number(e.target.value)))})} style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', textAlign: 'center', color: '#0f172a' }} />
                              </div>
                           )}
 
                           {newPartData.type === 'חיבור גמיש' && (
                              <div style={{ width: '120px' }}>
                                <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>מס' חלקים:</label>
-                               <input type="number" min="1" value={newPartData.flexible || 1} onChange={(e) => setNewPartData({...newPartData, flexible: Math.max(1, Number(e.target.value))})} style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px', textAlign: 'center' }} />
+                                <input type="number" min="1" step="1" value={newPartData.flexible || 1} onChange={(e) => setNewPartData({...newPartData, flexible: Math.max(1, Math.round(Number(e.target.value)))})} style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', textAlign: 'center', color: '#0f172a' }} />
                              </div>
                           )}
 
@@ -2010,8 +2048,8 @@ export default function App() {
                                  </select>
                                </div>
                                <div style={{ width: '100px' }}>
-                                 <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>כמות:</label>
-                                 <input type="number" disabled={newPartData.adapterType === 'ללא'} value={newPartData.adapterQty || ''} onChange={(e) => setNewPartData({...newPartData, adapterQty: Number(e.target.value)})} style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: newPartData.adapterType === 'ללא' ? '#e2e8f0' : '#ffffff', textAlign: 'center', color: '#0f172a' }} />
+                                <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>כמות:</label>
+                                  <input type="number" min="1" step="1" disabled={newPartData.adapterType === 'ללא'} value={newPartData.adapterQty || ''} onChange={(e) => setNewPartData({...newPartData, adapterQty: Math.max(1, Math.round(Number(e.target.value)))})} style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: newPartData.adapterType === 'ללא' ? '#e2e8f0' : '#ffffff', textAlign: 'center', color: '#0f172a' }} />
                                </div>
                              </>
                           )}
@@ -2019,7 +2057,7 @@ export default function App() {
                           {newPartData.type === 'חיבור גמיש' && (
                              <div style={{ width: '120px' }}>
                                <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>אורך ליח' (מטר):</label>
-                               <input type="number" value={newPartData.length || ''} onChange={(e) => setNewPartData({...newPartData, length: Number(e.target.value)})} style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px', textAlign: 'center', color: '#0f172a' }} />
+                               <input type="number" min="0" step="1" value={newPartData.length || ''} onChange={(e) => { const v = Math.max(0, Math.round(Number(e.target.value))); setNewPartData({...newPartData, length: v}); }} style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', textAlign: 'center', color: '#0f172a' }} />
                              </div>
                           )}
 
@@ -2029,11 +2067,11 @@ export default function App() {
                             <>
                               <div style={{ width: '100px' }}>
                                 <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>קוטר (מטר):</label>
-                                <input type="number" value={newPartData.width1 || ''} onChange={(e) => setNewPartData({...newPartData, width1: Number(e.target.value), height1: Number(e.target.value)})} style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px', textAlign: 'center' }} />
+                                <input type="number" min="0" step="1" value={newPartData.width1 || ''} onChange={(e) => setNewPartData({...newPartData, width1: Math.max(0, Math.round(Number(e.target.value))), height1: Math.max(0, Math.round(Number(e.target.value)))})} style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', textAlign: 'center', color: '#0f172a' }} />
                               </div>
                               <div style={{ width: '100px' }}>
                                 <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>אורך (מטר):</label>
-                                <input type="number" value={newPartData.length || ''} onChange={(e) => setNewPartData({...newPartData, length: Number(e.target.value)})} style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px', textAlign: 'center' }} />
+                                <input type="number" min="0" step="1" value={newPartData.length || ''} onChange={(e) => setNewPartData({...newPartData, length: Math.max(0, Math.round(Number(e.target.value)))})} style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', textAlign: 'center', color: '#0f172a' }} />
                               </div>
                             </>
                           )}
@@ -2153,7 +2191,7 @@ export default function App() {
                               {newPartData.panels > 0 && (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                   <span style={{ fontSize: '11px', color: '#854d0e' }}>כמות:</span>
-                                  <input type="number" min="1" value={newPartData.panels} onChange={(e) => setNewPartData({...newPartData, panels: Math.max(1, Number(e.target.value))})} style={{ width: '40px', padding: '2px 4px', border: '1px solid #facc15', borderRadius: '4px', textAlign: 'center', fontSize: '12px' }} />
+                                   <input type="number" min="1" step="1" value={newPartData.panels} onChange={(e) => setNewPartData({...newPartData, panels: Math.max(1, Math.round(Number(e.target.value)))})} style={{ width: '40px', padding: '2px 4px', border: '1px solid #facc15', borderRadius: '4px', textAlign: 'center', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
                                 </div>
                               )}
                             </div>
@@ -2248,34 +2286,8 @@ export default function App() {
                                 <td style={{ padding: '8px', textAlign: 'center' }}>
                                   <input type="text" value={row.partNumber} onChange={(e) => updateRow(row.id, 'partNumber', e.target.value)} style={{ width: '50px', padding: '4px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: 600, fontSize: '12px' }} />
                                 </td>
-                                <td style={{ padding: '8px' }}>
-                                  <select value={row.notes && ['לאמד S','צינור עגול','קופסת פיזור','מדף אש'].includes(row.notes) ? `${row.type}||${row.notes}` : row.type} onChange={(e) => {
-                                    const val = e.target.value;
-                                    if (val.includes('||')) {
-                                      const [type, notes] = val.split('||');
-                                      updateRow(row.id, 'type', type);
-                                      updateRow(row.id, 'notes', notes);
-                                    } else {
-                                      updateRow(row.id, 'type', val);
-                                      if (val === 'שתוצר') updateRow(row.id, 'notes', 'שתוצר');
-                                      else if (val === 'מתאם') updateRow(row.id, 'notes', `מתאם: ${row.adapterType || 'ללא'}`);
-                                       else if (val === 'שרשורי') updateRow(row.id, 'notes', `שרשורי: קוטר ${row.sharshuriType || 'ללא'}, אורך ${row.length || 0}`);
-                                       else if (val === 'חיבור גמיש') updateRow(row.id, 'notes', `גמיש: ${row.flexible || 0} יח', אורך ${row.length || 0} מ'`);
-                                      else updateRow(row.id, 'notes', '');
-                                    }
-                                  }} style={{ width: '130px', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontWeight: 500, backgroundColor: '#ffffff', color: '#0f172a' }}>
-                                    <option value="קטע ישר">קטע ישר</option>
-                                    <option value="קשת">קשת (מרפק)</option>
-                                    <option value="מעבר">מעבר</option>
-                                    <option value="קטע ישר||לאמד S">לאמד S</option>
-                                    <option value="קטע ישר||צינור עגול">צינור עגול</option>
-                                    <option value="קטע ישר||קופסת פיזור">קופסת פיזור</option>
-                                    <option value="קטע ישר||מדף אש">מדף אש</option>
-                                    <option value="שתוצר">שתוצר</option>
-                                    <option value="מתאם">מתאם</option>
-                                    <option value="שרשורי">שרשורי</option>
-                                    <option value="חיבור גמיש">חיבור גמיש</option>
-                                  </select>
+                                <td style={{ padding: '8px', fontWeight: 500, color: '#0f172a' }}>
+                                  {row.notes && ['לאמד S','צינור עגול','קופסת פיזור','מדף אש'].includes(row.notes) ? row.notes : row.type}
                                 </td>
                                 <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#f8fafc' }}><input type="number" value={row.width1 || ''} onChange={(e) => updateRow(row.id, 'width1', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} /></td>
                                 <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#f8fafc' }}><input type="number" value={row.height1 || ''} onChange={(e) => updateRow(row.id, 'height1', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} /></td>
@@ -2291,11 +2303,11 @@ export default function App() {
                                     style={{ width: '55px', padding: '4px', textAlign: 'center', border: row.manualThickness > 0 ? '2px solid #d97706' : '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.manualThickness > 0 ? '#fffbeb' : '#ffffff', color: '#0f172a', fontWeight: row.manualThickness > 0 ? 700 : 500 }} />
                                 </td>
                                 <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#fefce8' }}>
-                                  <input type="number" min="0" value={row.dofan || ''} onChange={(e) => updateRow(row.id, 'dofan', Math.max(0, Number(e.target.value)))}
+                                  <input type="number" min="0" step="1" value={row.dofan || ''} onChange={(e) => updateRow(row.id, 'dofan', Math.max(0, Math.round(Number(e.target.value))))}
                                     style={{ width: '40px', padding: '4px', textAlign: 'center', border: '1px solid #facc15', borderRadius: '4px', backgroundColor: row.dofan > 0 ? '#fffbeb' : '#ffffff', color: '#854d0e', fontWeight: row.dofan > 0 ? 700 : 400 }} placeholder="0" />
                                 </td>
                                 <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#fefce8' }}>
-                                  <input type="number" min="1" value={row.panels || 1} onChange={(e) => updateRow(row.id, 'panels', Math.max(1, Number(e.target.value)))} style={{ width: '40px', padding: '4px', textAlign: 'center', border: '1px solid #facc15', borderRadius: '4px', backgroundColor: '#ffffff', color: '#854d0e', fontWeight: 700 }} placeholder="1" />
+                                  <input type="number" min="1" step="1" value={row.panels || 1} onChange={(e) => updateRow(row.id, 'panels', Math.max(1, Math.round(Number(e.target.value))))} style={{ width: '40px', padding: '4px', textAlign: 'center', border: '1px solid #facc15', borderRadius: '4px', backgroundColor: '#ffffff', color: '#854d0e', fontWeight: 700 }} placeholder="1" />
                                 </td>
                                 <td style={{ padding: '8px', textAlign: 'center', fontWeight: 'bold', color: '#1d4ed8', backgroundColor: '#eff6ff' }}>{calculateArea(row).toFixed(3)}</td>
                                 <td style={{ padding: '8px' }}>
@@ -2331,21 +2343,8 @@ export default function App() {
                                 <td style={{ padding: '8px', textAlign: 'center' }}>
                                   <input type="text" value={row.partNumber} onChange={(e) => updateRow(row.id, 'partNumber', e.target.value)} style={{ width: '50px', padding: '4px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: 600, fontSize: '12px' }} />
                                 </td>
-                                <td style={{ padding: '8px' }}>
-                                  <select value={row.type} onChange={(e) => {
-                                    const val = e.target.value;
-                                    updateRow(row.id, 'type', val);
-                                    if (val === 'שתוצר') updateRow(row.id, 'notes', 'שתוצר');
-                                    else if (val === 'מתאם') updateRow(row.id, 'notes', `מתאם: ${row.adapterType || 'ללא'}`);
-                                    else if (val === 'שרשורי') updateRow(row.id, 'notes', `שרשורי: קוטר ${row.sharshuriType || 'ללא'}, אורך ${row.length || 0}`);
-                                    else if (val === 'חיבור גמיש') updateRow(row.id, 'notes', `גמיש: ${row.flexible || 0} יח', אורך ${row.length || 0} מ'`);
-                                    else updateRow(row.id, 'notes', '');
-                                  }} style={{ width: '120px', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontWeight: 500, backgroundColor: '#ffffff', color: '#0f172a' }}>
-                                    <option value="שתוצר">שתוצר</option>
-                                    <option value="מתאם">מתאם</option>
-                                    <option value="שרשורי">שרשורי</option>
-                                    <option value="חיבור גמיש">חיבור גמיש</option>
-                                  </select>
+                                <td style={{ padding: '8px', fontWeight: 500, color: '#0f172a' }}>
+                                  {row.type}
                                 </td>
                                 <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#ffffff', fontWeight: 'bold', color: '#334155' }}>
                                   {row.type === 'שתוצר' && 'יחידות'}
@@ -2355,18 +2354,18 @@ export default function App() {
                                 </td>
                                 <td style={{ padding: '8px', textAlign: 'center' }}>
                                   {row.type === 'שרשורי' || row.type === 'חיבור גמיש' ? (
-                                    <input type="number" value={row.length || ''} onChange={(e) => updateRow(row.id, 'length', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontSize: '13px' }} />
+                                    <input type="number" min="0" step="1" value={row.length || ''} onChange={(e) => updateRow(row.id, 'length', Math.max(0, Math.round(Number(e.target.value))))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontSize: '13px' }} />
                                   ) : (
                                     <span style={{ color: '#94a3b8' }}>—</span>
                                   )}
                                 </td>
                                 <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#ffffff', fontWeight: 'bold', color: '#334155' }}>
                                   {row.type === 'מתאם' ? (
-                                    <input type="number" value={row.adapterQty || ''} onChange={(e) => updateRow(row.id, 'adapterQty', Number(e.target.value))} style={{ width: '50px', padding: '4px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: 700 }} />
+                                    <input type="number" min="1" step="1" value={row.adapterQty || ''} onChange={(e) => updateRow(row.id, 'adapterQty', Math.max(1, Math.round(Number(e.target.value))))} style={{ width: '50px', padding: '4px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: 700 }} />
                                   ) : row.type === 'שתוצר' ? (
-                                    <input type="number" min="1" value={row.panels || 1} onChange={(e) => updateRow(row.id, 'panels', Math.max(1, Number(e.target.value)))} style={{ width: '50px', padding: '4px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: 700 }} placeholder="1" />
+                                    <input type="number" min="1" step="1" value={row.panels || 1} onChange={(e) => updateRow(row.id, 'panels', Math.max(1, Math.round(Number(e.target.value))))} style={{ width: '50px', padding: '4px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: 700 }} placeholder="1" />
                                   ) : row.type === 'חיבור גמיש' ? (
-                                    <span style={{ color: '#0f172a' }}>{row.flexible || 0}</span>
+                                    <input type="number" min="1" step="1" value={row.flexible || ''} onChange={(e) => updateRow(row.id, 'flexible', Math.max(1, Math.round(Number(e.target.value))))} style={{ width: '50px', padding: '4px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: 700 }} />
                                   ) : (
                                     <span style={{ color: '#94a3b8' }}>—</span>
                                   )}

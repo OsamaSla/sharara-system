@@ -194,15 +194,7 @@ export default function ProductionWorksheet({
                           justifyContent: 'center',
                           gap: '6px'
                         }}>
-                          {/* הצגת סקיצת 2 קווים מקבילים לקטע ישר בגודל 2/3, ושמירה על הרכיב הדינמי לשאר */}
-                          {isStraight ? (
-                            <svg width={40} height={30} viewBox="0 0 60 45" style={{ display: 'block' }}>
-                              <line x1="22" y1="4" x2="22" y2="41" stroke="#000" strokeWidth="2.5" strokeLinecap="round" />
-                              <line x1="38" y1="4" x2="38" y2="41" stroke="#000" strokeWidth="2.5" strokeLinecap="round" />
-                            </svg>
-                          ) : (
-                            <ProductionPartSketch row={row} width={40} height={30} />
-                          )}
+                          <ProductionPartSketch row={row} width={40} height={30} />
                           
                           <span style={{ 
                             fontSize: '11px', 
