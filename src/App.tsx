@@ -365,10 +365,14 @@ export default function App() {
   };
 
   // ─── ייצוא JSON ───
-  const exportToJSON = () => {
-    const defaultName = `sharara-${selectedClient || 'project'}-${new Date().toISOString().slice(0, 10)}`;
-    const fileName = prompt('שמור קובץ JSON בשם:', defaultName);
-    if (fileName === null) return;
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [exportFileName, setExportFileName] = useState('');
+  const handleExportJSON = () => {
+    const defaultName = `sharara-${selectedClient || 'project'}-${selectedProject || ''}-${new Date().toISOString().slice(0, 10)}`.replace(/--/g, '-');
+    setExportFileName(defaultName);
+    setShowExportDialog(true);
+  };
+  const doExportJSON = () => {
     const data = {
       sheets,
       clientsData,
@@ -382,11 +386,12 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${fileName || defaultName}.json`;
+    a.download = `${exportFileName || 'sharara-export'}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    setShowExportDialog(false);
   };
 
   // ─── ייבוא JSON ───
@@ -1627,7 +1632,7 @@ export default function App() {
           <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', justifyContent: 'flex-start' }}>
             <button onClick={loadSampleData} title="טען נתוני דוגמה לבדיקה מהירה" style={{ backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>📋 טען דוגמה</button>
             <button onClick={importFromJSON} title="ייבוא נתוני פרויקט מקובץ JSON" style={{ backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>📂 ייבוא מקובץ</button>
-            <button onClick={exportToJSON} title="שמור נתוני פרויקט לקובץ JSON עם שם מותאם" style={{ backgroundColor: '#0891b2', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>💾 שמור קובץ</button>
+            <button onClick={handleExportJSON} title="שמור נתוני פרויקט לקובץ JSON עם שם מותאם" style={{ backgroundColor: '#0891b2', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>💾 שמור קובץ</button>
             <button onClick={resetProject} title="איפוס מלא של הפרויקט" style={{ backgroundColor: '#dc2626', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>🗑️ איפוס</button>
           </div>
           <div style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '16px', marginBottom: '24px' }}>
@@ -3469,6 +3474,27 @@ export default function App() {
         calculateArea={calculateArea}
         calculateThickness={calculateThickness}
       />
+
+      {/* דיאלוג שמירת קובץ JSON */}
+      {showExportDialog && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }} onClick={() => setShowExportDialog(false)}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '24px', minWidth: '400px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', color: '#0f172a' }}>💾 שמור קובץ JSON</h3>
+            <label style={{ fontSize: '13px', color: '#64748b', display: 'block', marginBottom: '6px' }}>שם הקובץ:</label>
+            <input
+              value={exportFileName}
+              onChange={(e) => setExportFileName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') doExportJSON(); }}
+              autoFocus
+              style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '14px', boxSizing: 'border-box' }}
+            />
+            <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'flex-start' }}>
+              <button onClick={doExportJSON} style={{ backgroundColor: '#10b981', color: '#ffffff', border: 'none', padding: '8px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>שמור והורד</button>
+              <button onClick={() => setShowExportDialog(false)} style={{ backgroundColor: '#64748b', color: '#ffffff', border: 'none', padding: '8px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>ביטול</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
