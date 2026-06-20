@@ -2061,17 +2061,20 @@ export default function App() {
                 </div>
               )}
 
-              {/* ─── Company details ─── */}
-              {isEditingMyCompany && (
-                <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
-                  <div style={{ fontWeight: 'bold', color: '#92400e', marginBottom: '12px', fontSize: '14px' }}>🏢 פרטי העסק</div>
+              {/* ─── Company details (always visible) ─── */}
+              <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <div style={{ fontWeight: 'bold', color: '#92400e', marginBottom: '12px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span>🏢 פרטי העסק</span>
+                  <span style={{ fontSize: '10px', color: '#b45309', fontWeight: 'normal' }}>{isEditingMyCompany ? 'מצב עריכה — שנה את הפרטים למטה' : 'לחץ על כפתור "עסק" בעמודה למעלה לעריכה'}</span>
+                </div>
+                
+                {/* שורה 1: לוגו בצד ימין + פרטים בצד שמאל */}
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
                   
-                  {/* שורה 1: לוגו בצד ימין + פרטים בצד שמאל */}
-                  <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-                    
-                    {/* צד ימין: לוגו */}
-                    <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ padding: '8px', backgroundColor: '#fff', borderRadius: '6px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
+                  {/* צד ימין: לוגו */}
+                  <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ padding: '8px', backgroundColor: '#fff', borderRadius: '6px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
+                      {isEditingMyCompany && (
                         <input
                           type="file"
                           accept="image/*"
@@ -2089,18 +2092,20 @@ export default function App() {
                             reader.readAsDataURL(file);
                           }}
                         />
-                        {companyLogo ? (
-                          <img
-                            src={companyLogo}
-                            alt="לוגו נוכחי"
-                            style={{ maxHeight: '100px', maxWidth: '180px', objectFit: 'contain', borderRadius: '4px' }}
-                          />
-                        ) : (
-                          <div style={{ width: '180px', height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '12px', border: '2px dashed #cbd5e1', borderRadius: '4px' }}>
-                            אין לוגו
-                          </div>
-                        )}
-                      </div>
+                      )}
+                      {companyLogo ? (
+                        <img
+                          src={companyLogo}
+                          alt="לוגו נוכחי"
+                          style={{ maxHeight: '100px', maxWidth: '180px', objectFit: 'contain', borderRadius: '4px' }}
+                        />
+                      ) : (
+                        <div style={{ width: '180px', height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '12px', border: '2px dashed #cbd5e1', borderRadius: '4px' }}>
+                          אין לוגו
+                        </div>
+                      )}
+                    </div>
+                    {isEditingMyCompany && (
                       <div style={{ display: 'flex', gap: '6px' }}>
                         <button
                           onClick={() => document.getElementById('logoUpload')?.click()}
@@ -2117,39 +2122,55 @@ export default function App() {
                           </button>
                         )}
                       </div>
-                    </div>
+                    )}
+                  </div>
 
-                    {/* צד שמאל: שדות פרטים */}
-                    <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                      {([
-                        ['שם בעברית', 'name'], ['כיתוב אנגלי', 'engName'],
-                        ['טלפון', 'phone'], ['נייד', 'mobile'],
-                        ['פקס', 'fax'], ['אימייל', 'email'],
-                        ['אתר', 'website'], ['כתובת', 'address'],
-                      ] as [string, keyof typeof myCompanyDetails][]).map(([label, key]) => (
-                        <div key={key}>
-                          <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', display: 'block', marginBottom: '3px' }}>{label}:</label>
+                  {/* צד שמאל: שדות פרטים */}
+                  <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    {([
+                      ['שם בעברית', 'name'], ['כיתוב אנגלי', 'engName'],
+                      ['טלפון', 'phone'], ['נייד', 'mobile'],
+                      ['פקס', 'fax'], ['אימייל', 'email'],
+                      ['אתר', 'website'], ['כתובת', 'address'],
+                    ] as [string, keyof typeof myCompanyDetails][]).map(([label, key]) => (
+                      <div key={key}>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', display: 'block', marginBottom: '3px' }}>{label}:</label>
+                        {isEditingMyCompany ? (
                           <input type="text" value={myCompanyDetails[key] as string} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, [key]: e.target.value})} style={{ width: '100%', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff' }} />
-                        </div>
-                      ))}
-                      <div style={{ gridColumn: 'span 2' }}>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', display: 'block', marginBottom: '3px' }}>לוגן:</label>
+                        ) : (
+                          <div style={{ padding: '6px 8px', backgroundColor: '#fff', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '13px', minHeight: '20px', color: '#1e293b' }}>{myCompanyDetails[key] as string || '—'}</div>
+                        )}
+                      </div>
+                    ))}
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', display: 'block', marginBottom: '3px' }}>לוגן:</label>
+                      {isEditingMyCompany ? (
                         <input type="text" value={myCompanyDetails.subtitle} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, subtitle: e.target.value})} style={{ width: '100%', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff' }} />
-                      </div>
-                      <div style={{ gridColumn: 'span 2' }}>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', display: 'block', marginBottom: '3px' }}>דואר למשלוחים:</label>
-                        <input type="text" value={myCompanyDetails.pobox} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, pobox: e.target.value})} style={{ width: '100%', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff' }} />
-                      </div>
-                      {(myCompanyDetails.serviceLines ?? []).map((line: string, index: number) => (
-                        <div key={index} style={{ gridColumn: 'span 2' }}>
-                          <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', display: 'block', marginBottom: '3px' }}>{`שירות ${index + 1}:`}</label>
-                          <input type="text" value={line} onChange={(e) => { const next = [...(myCompanyDetails.serviceLines ?? ['', '', ''])]; next[index] = e.target.value; setMyCompanyDetails({ ...myCompanyDetails, serviceLines: next }); }} style={{ width: '100%', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff' }} />
-                        </div>
-                      ))}
+                      ) : (
+                        <div style={{ padding: '6px 8px', backgroundColor: '#fff', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '13px', minHeight: '20px', color: '#1e293b' }}>{myCompanyDetails.subtitle || '—'}</div>
+                      )}
                     </div>
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', display: 'block', marginBottom: '3px' }}>דואר למשלוחים:</label>
+                      {isEditingMyCompany ? (
+                        <input type="text" value={myCompanyDetails.pobox} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, pobox: e.target.value})} style={{ width: '100%', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff' }} />
+                      ) : (
+                        <div style={{ padding: '6px 8px', backgroundColor: '#fff', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '13px', minHeight: '20px', color: '#1e293b' }}>{myCompanyDetails.pobox || '—'}</div>
+                      )}
+                    </div>
+                    {(myCompanyDetails.serviceLines ?? []).map((line: string, index: number) => (
+                      <div key={index} style={{ gridColumn: 'span 2' }}>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', display: 'block', marginBottom: '3px' }}>{`שירות ${index + 1}:`}</label>
+                        {isEditingMyCompany ? (
+                          <input type="text" value={line} onChange={(e) => { const next = [...(myCompanyDetails.serviceLines ?? ['', '', ''])]; next[index] = e.target.value; setMyCompanyDetails({ ...myCompanyDetails, serviceLines: next }); }} style={{ width: '100%', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff' }} />
+                        ) : (
+                          <div style={{ padding: '6px 8px', backgroundColor: '#fff', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '13px', minHeight: '20px', color: '#1e293b' }}>{line || '—'}</div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
-              )}
+              </div>
             </>
           )}
           <div style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '16px', marginBottom: '24px' }}>
