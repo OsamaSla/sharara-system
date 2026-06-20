@@ -1997,8 +1997,8 @@ export default function App() {
                 <button onClick={async () => { await loadFirebaseBackups(); setShowBackupsList(!showBackupsList); }} title="גיבויים בענן" style={{ backgroundColor: '#059669', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>☁️ גיבויים</button>
                 <button onClick={resetProject} title="איפוס" style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>🗑️ איפוס</button>
                 <div style={{ width: '1px', height: '14px', backgroundColor: '#a7f3d0', margin: '0 2px' }} />
-                <button onClick={() => { setShowChangeAdminPasscode(!showChangeAdminPasscode); setShowChangeAppCredentials(false); }} style={{ backgroundColor: showChangeAdminPasscode ? '#475569' : '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>🔑 קוד</button>
-                <button onClick={() => { setShowChangeAppCredentials(!showChangeAppCredentials); setNewAppUser(appLoginUser); setNewAppPass(appLoginPass); setShowChangeAdminPasscode(false); }} style={{ backgroundColor: showChangeAppCredentials ? '#7c3aed' : '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>👤 כניסה</button>
+                <button onClick={() => { setShowChangeAdminPasscode(!showChangeAdminPasscode); setShowChangeAppCredentials(false); setIsEditingMyCompany(false); }} style={{ backgroundColor: showChangeAdminPasscode ? '#475569' : '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>🔑 קוד</button>
+                <button onClick={() => { setShowChangeAppCredentials(!showChangeAppCredentials); setNewAppUser(appLoginUser); setNewAppPass(appLoginPass); setShowChangeAdminPasscode(false); setIsEditingMyCompany(false); }} style={{ backgroundColor: showChangeAppCredentials ? '#7c3aed' : '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>👤 כניסה</button>
                 <button onClick={() => { setIsEditingMyCompany(!isEditingMyCompany); setShowChangeAdminPasscode(false); setShowChangeAppCredentials(false); }} style={{ backgroundColor: isEditingMyCompany ? '#d97706' : '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>🏢 עסק</button>
                 <button onClick={() => { setIsAdmin(false); sessionStorage.removeItem('sharara_isAdmin'); }} title="התנתק" style={{ backgroundColor: '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>🚪</button>
               </div>
@@ -2134,37 +2134,37 @@ export default function App() {
                       ['אתר', 'website'], ['כתובת', 'address'],
                     ] as [string, keyof typeof myCompanyDetails][]).map(([label, key]) => (
                       <div key={key}>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', display: 'block', marginBottom: '3px' }}>{label}:</label>
+                        <label style={{ fontSize: '12px', color: '#334155', fontWeight: '600', display: 'block', marginBottom: '3px' }}>{label}:</label>
                         {isEditingMyCompany ? (
-                          <input type="text" value={myCompanyDetails[key] as string} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, [key]: e.target.value})} style={{ width: '100%', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff' }} />
+                          <input type="text" value={myCompanyDetails[key] as string} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, [key]: e.target.value})} style={{ width: '100%', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#ffffff', color: '#0f172a' }} />
                         ) : (
-                          <div style={{ padding: '6px 8px', backgroundColor: '#fff', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '13px', minHeight: '20px', color: '#1e293b' }}>{myCompanyDetails[key] as string || '—'}</div>
+                          <div style={{ padding: '6px 8px', backgroundColor: '#ffffff', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '13px', minHeight: '20px', color: '#0f172a' }}>{myCompanyDetails[key] as string || '—'}</div>
                         )}
                       </div>
                     ))}
                     <div style={{ gridColumn: 'span 2' }}>
-                      <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', display: 'block', marginBottom: '3px' }}>לוגן:</label>
+                      <label style={{ fontSize: '12px', color: '#334155', fontWeight: '600', display: 'block', marginBottom: '3px' }}>לוגן:</label>
                       {isEditingMyCompany ? (
-                        <input type="text" value={myCompanyDetails.subtitle} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, subtitle: e.target.value})} style={{ width: '100%', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff' }} />
+                        <input type="text" value={myCompanyDetails.subtitle} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, subtitle: e.target.value})} style={{ width: '100%', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#ffffff', color: '#0f172a' }} />
                       ) : (
-                        <div style={{ padding: '6px 8px', backgroundColor: '#fff', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '13px', minHeight: '20px', color: '#1e293b' }}>{myCompanyDetails.subtitle || '—'}</div>
+                        <div style={{ padding: '6px 8px', backgroundColor: '#ffffff', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '13px', minHeight: '20px', color: '#0f172a' }}>{myCompanyDetails.subtitle || '—'}</div>
                       )}
                     </div>
                     <div style={{ gridColumn: 'span 2' }}>
-                      <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', display: 'block', marginBottom: '3px' }}>דואר למשלוחים:</label>
+                      <label style={{ fontSize: '12px', color: '#334155', fontWeight: '600', display: 'block', marginBottom: '3px' }}>דואר למשלוחים:</label>
                       {isEditingMyCompany ? (
-                        <input type="text" value={myCompanyDetails.pobox} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, pobox: e.target.value})} style={{ width: '100%', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff' }} />
+                        <input type="text" value={myCompanyDetails.pobox} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, pobox: e.target.value})} style={{ width: '100%', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#ffffff', color: '#0f172a' }} />
                       ) : (
-                        <div style={{ padding: '6px 8px', backgroundColor: '#fff', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '13px', minHeight: '20px', color: '#1e293b' }}>{myCompanyDetails.pobox || '—'}</div>
+                        <div style={{ padding: '6px 8px', backgroundColor: '#ffffff', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '13px', minHeight: '20px', color: '#0f172a' }}>{myCompanyDetails.pobox || '—'}</div>
                       )}
                     </div>
                     {(myCompanyDetails.serviceLines ?? []).map((line: string, index: number) => (
                       <div key={index} style={{ gridColumn: 'span 2' }}>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', display: 'block', marginBottom: '3px' }}>{`שירות ${index + 1}:`}</label>
+                        <label style={{ fontSize: '12px', color: '#334155', fontWeight: '600', display: 'block', marginBottom: '3px' }}>{`שירות ${index + 1}:`}</label>
                         {isEditingMyCompany ? (
-                          <input type="text" value={line} onChange={(e) => { const next = [...(myCompanyDetails.serviceLines ?? ['', '', ''])]; next[index] = e.target.value; setMyCompanyDetails({ ...myCompanyDetails, serviceLines: next }); }} style={{ width: '100%', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#fff' }} />
+                          <input type="text" value={line} onChange={(e) => { const next = [...(myCompanyDetails.serviceLines ?? ['', '', ''])]; next[index] = e.target.value; setMyCompanyDetails({ ...myCompanyDetails, serviceLines: next }); }} style={{ width: '100%', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#ffffff', color: '#0f172a' }} />
                         ) : (
-                          <div style={{ padding: '6px 8px', backgroundColor: '#fff', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '13px', minHeight: '20px', color: '#1e293b' }}>{line || '—'}</div>
+                          <div style={{ padding: '6px 8px', backgroundColor: '#ffffff', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '13px', minHeight: '20px', color: '#0f172a' }}>{line || '—'}</div>
                         )}
                       </div>
                     ))}
