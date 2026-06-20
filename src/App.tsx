@@ -366,6 +366,9 @@ export default function App() {
 
   // ─── ייצוא JSON ───
   const exportToJSON = () => {
+    const defaultName = `sharara-${selectedClient || 'project'}-${new Date().toISOString().slice(0, 10)}`;
+    const fileName = prompt('שמור קובץ JSON בשם:', defaultName);
+    if (fileName === null) return;
     const data = {
       sheets,
       clientsData,
@@ -379,7 +382,7 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `sharara-export-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `${fileName || defaultName}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1624,6 +1627,7 @@ export default function App() {
           <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', justifyContent: 'flex-start' }}>
             <button onClick={loadSampleData} title="טען נתוני דוגמה לבדיקה מהירה" style={{ backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>📋 טען דוגמה</button>
             <button onClick={importFromJSON} title="ייבוא נתוני פרויקט מקובץ JSON" style={{ backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>📂 ייבוא מקובץ</button>
+            <button onClick={exportToJSON} title="שמור נתוני פרויקט לקובץ JSON עם שם מותאם" style={{ backgroundColor: '#0891b2', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>💾 שמור קובץ</button>
             <button onClick={resetProject} title="איפוס מלא של הפרויקט" style={{ backgroundColor: '#dc2626', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>🗑️ איפוס</button>
           </div>
           <div style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '16px', marginBottom: '24px' }}>
