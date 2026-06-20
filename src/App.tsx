@@ -1357,11 +1357,21 @@ export default function App() {
     }
   };
 
-  function exportToExcel() {
+  async function exportToExcel() {
     const wb = new ExcelJS.Workbook();
     wb.creator = 'שרארה מערכות מיזוג';
     wb.created = new Date();
     const dateStr = new Date().toISOString().slice(0, 10);
+
+    // Load logo image
+    let logoImageId: number | undefined;
+    try {
+      const resp = await fetch(logoSrc);
+      const buf = await resp.arrayBuffer();
+      logoImageId = wb.addImage({ buffer: Buffer.from(buf), extension: 'png' });
+    } catch (e) {
+      console.warn('Could not load logo for Excel:', e);
+    }
     const infoLine = `לקוח: ${clientDetails.name}  |  פרויקט: ${selectedProject}  |  תאריך: ${docDate}  |  מס' מסמך: ${docNumber}`;
 
     sheets.forEach((sheet, si) => {
@@ -1382,6 +1392,14 @@ export default function App() {
       titleRow.alignment = { horizontal: 'right', vertical: 'middle' };
       titleRow.height = 30;
       rNum++;
+
+      // Add logo
+      if (logoImageId !== undefined) {
+        ws.addImage(logoImageId, {
+          tl: { col: 0, row: 0.2 },
+          ext: { width: 120, height: 60 },
+        });
+      }
 
       ws.mergeCells(rNum, 1, rNum, maxCols);
       const infoRow = ws.addRow([infoLine]);
