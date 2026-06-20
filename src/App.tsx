@@ -299,6 +299,13 @@ export default function App() {
   const [undoStack, setUndoStack] = useState<Sheet[][]>([]);
   const [redoStack, setRedoStack] = useState<Sheet[][]>([]);
 
+  const [lastHoveredRowId, setLastHoveredRowId] = useState<string | null>(null);
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [partPresets, setPartPresets] = useState<{name: string, data: Omit<RowData, 'id'>}[]>(() => {
+    try { return JSON.parse(localStorage.getItem('sharara-presets') || '[]'); } catch { return []; }
+  });
+
   // אפקטים לשמירה אוטומטית בענן (Firestore)
   useEffect(() => {
     if (isLoading) return;
@@ -332,13 +339,6 @@ export default function App() {
     document.documentElement.setAttribute('data-print-tab', activeTab);
     window.print();
   };
-
-  const [lastHoveredRowId, setLastHoveredRowId] = useState<string | null>(null);
-  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [partPresets, setPartPresets] = useState<{name: string, data: Omit<RowData, 'id'>}[]>(() => {
-    try { return JSON.parse(localStorage.getItem('sharara-presets') || '[]'); } catch { return []; }
-  });
 
   // מאזין גלובלי למקשי מקלדת Ctrl+Z ו-Ctrl+Y לביצוע UNDO/REDO בזמן עריכה
   useEffect(() => {
