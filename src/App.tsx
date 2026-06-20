@@ -1937,47 +1937,57 @@ export default function App() {
           {!isAdmin ? (
             <div style={{ marginBottom: '16px' }}>
               {!showAdminLogin ? (
-                <button onClick={() => setShowAdminLogin(true)} title="כניסת מנהל" style={{ backgroundColor: '#475569', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>🔒 כניסת מנהל</button>
+                <button onClick={() => setShowAdminLogin(true)} title="כניסת מנהל" style={{ backgroundColor: '#475569', color: '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>🔒 כניסת מנהל</button>
               ) : (
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', backgroundColor: '#f1f5f9', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', backgroundColor: '#f1f5f9', padding: '14px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '13px', color: '#475569', fontWeight: 'bold' }}>קוד מנהל:</span>
-                  <input type="password" value={adminPasscodeInput} onChange={(e) => setAdminPasscodeInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { if (adminPasscodeInput === adminPasscode) { setIsAdmin(true); sessionStorage.setItem('sharara_isAdmin', 'true'); setShowAdminLogin(false); setAdminPasscodeInput(''); } else { alert('❌ קוד שגוי'); } } }} maxLength={6} style={{ width: '100px', padding: '6px 10px', border: '1px solid #94a3b8', borderRadius: '4px', fontSize: '14px', textAlign: 'center', letterSpacing: '4px' }} autoFocus />
-                  <button onClick={() => { if (adminPasscodeInput === adminPasscode) { setIsAdmin(true); sessionStorage.setItem('sharara_isAdmin', 'true'); setShowAdminLogin(false); setAdminPasscodeInput(''); } else { alert('❌ קוד שגוי'); } }} style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>אישור</button>
-                  <button onClick={() => { setShowAdminLogin(false); setAdminPasscodeInput(''); }} style={{ backgroundColor: '#94a3b8', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>ביטול</button>
+                  <input type="password" value={adminPasscodeInput} onChange={(e) => setAdminPasscodeInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { if (adminPasscodeInput === adminPasscode) { setIsAdmin(true); sessionStorage.setItem('sharara_isAdmin', 'true'); setShowAdminLogin(false); setAdminPasscodeInput(''); } else { alert('❌ קוד שגוי'); } } }} maxLength={6} style={{ width: '100px', padding: '8px 10px', border: '1px solid #94a3b8', borderRadius: '4px', fontSize: '14px', textAlign: 'center', letterSpacing: '4px' }} autoFocus />
+                  <button onClick={() => { if (adminPasscodeInput === adminPasscode) { setIsAdmin(true); sessionStorage.setItem('sharara_isAdmin', 'true'); setShowAdminLogin(false); setAdminPasscodeInput(''); } else { alert('❌ קוד שגוי'); } }} style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>אישור</button>
+                  <button onClick={() => { setShowAdminLogin(false); setAdminPasscodeInput(''); }} style={{ backgroundColor: '#94a3b8', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>ביטול</button>
                 </div>
               )}
             </div>
           ) : (
             <>
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', justifyContent: 'flex-start', flexWrap: 'wrap', alignItems: 'center' }}>
-                <span style={{ fontSize: '11px', color: '#10b981', fontWeight: 'bold', backgroundColor: '#ecfdf5', padding: '4px 8px', borderRadius: '4px', border: '1px solid #a7f3d0' }}>✓ מנהל</span>
-                <button onClick={loadSampleData} title="טען נתוני דוגמה לבדיקה מהירה" style={{ backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>📋 טען דוגמה</button>
-                <button onClick={importFromJSON} title="ייבוא נתוני פרויקט מקובץ JSON" style={{ backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>📂 ייבוא מקובץ</button>
-                <button onClick={handleExportJSON} title="שמור נתוני פרויקט לקובץ JSON + ענן" style={{ backgroundColor: '#0891b2', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>💾 ייצוא לקובץ</button>
-                <button onClick={async () => { await loadFirebaseBackups(); setShowBackupsList(!showBackupsList); }} title="צפייה בגיבויים השמורים בענן" style={{ backgroundColor: '#059669', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>☁️ גיבויים בענן</button>
-                <button onClick={resetProject} title="איפוס מלא של הפרויקט" style={{ backgroundColor: '#dc2626', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>🗑️ איפוס</button>
-                <button onClick={() => { setIsAdmin(false); sessionStorage.removeItem('sharara_isAdmin'); }} title="התנתק מניהול" style={{ backgroundColor: '#94a3b8', color: '#ffffff', border: 'none', padding: '8px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>🚪</button>
+              {/* ─── Header: admin badge + logout ─── */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', paddingBottom: '12px', borderBottom: '2px solid #e2e8f0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '12px', color: '#10b981', fontWeight: 'bold', backgroundColor: '#ecfdf5', padding: '5px 12px', borderRadius: '6px', border: '1px solid #a7f3d0' }}>✓ מצב מנהל פעיל</span>
+                </div>
+                <button onClick={() => { setIsAdmin(false); sessionStorage.removeItem('sharara_isAdmin'); }} title="התנתק מניהול" style={{ backgroundColor: '#94a3b8', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>🚪 סגור ניהול</button>
               </div>
 
-              {/* פאנל גיבויים בענן */}
+              {/* ─── Section: נתוני פרויקט ─── */}
+              <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '14px 16px', marginBottom: '12px' }}>
+                <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569', margin: '0 0 10px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>📁 נתוני פרויקט</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '8px' }}>
+                  <button onClick={loadSampleData} title="טען נתוני דוגמה לבדיקה מהירה" style={{ backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', padding: '10px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>📋 טען דוגמה</button>
+                  <button onClick={importFromJSON} title="ייבוא נתוני פרויקט מקובץ JSON" style={{ backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '10px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>📂 ייבוא מקובץ</button>
+                  <button onClick={handleExportJSON} title="שמור נתוני פרויקט לקובץ JSON + ענן" style={{ backgroundColor: '#0891b2', color: '#ffffff', border: 'none', padding: '10px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>💾 ייצוא לקובץ</button>
+                  <button onClick={async () => { await loadFirebaseBackups(); setShowBackupsList(!showBackupsList); }} title="צפייה בגיבויים השמורים בענן" style={{ backgroundColor: '#059669', color: '#ffffff', border: 'none', padding: '10px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>☁️ גיבויים בענן</button>
+                  <button onClick={resetProject} title="איפוס מלא של הפרויקט" style={{ backgroundColor: '#dc2626', color: '#ffffff', border: 'none', padding: '10px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>🗑️ איפוס</button>
+                </div>
+              </div>
+
+              {/* ─── פאנל גיבויים בענן ─── */}
               {showBackupsList && (
-                <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
-                  <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#065f46', margin: '0 0 12px 0' }}>☁️ גיבויים בענן</h3>
+                <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '14px 16px', marginBottom: '12px' }}>
+                  <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#065f46', margin: '0 0 10px 0' }}>☁️ גיבויים בענן</h4>
                   {loadingBackups ? (
-                    <p style={{ color: '#64748b', fontSize: '13px' }}>טוען גיבויים...</p>
+                    <p style={{ color: '#64748b', fontSize: '12px' }}>טוען גיבויים...</p>
                   ) : backups.length === 0 ? (
-                    <p style={{ color: '#64748b', fontSize: '13px' }}>לא נמצאו גיבויים — בצע ייצוא כדי לגבות בענן</p>
+                    <p style={{ color: '#64748b', fontSize: '12px' }}>לא נמצאו גיבויים — בצע ייצוא כדי לגבות בענן</p>
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       {backups.map((backup) => (
-                        <div key={backup.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ffffff', padding: '10px 14px', borderRadius: '6px', border: '1px solid #d1fae5' }}>
+                        <div key={backup.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ffffff', padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1fae5' }}>
                           <div style={{ fontSize: '12px', color: '#0f172a' }}>
                             <strong>{backup.name}</strong>
                             <span style={{ color: '#64748b', marginRight: '8px' }}>{backup.client} — {backup.project}</span>
                             <span style={{ color: '#94a3b8', marginRight: '8px' }}>({backup.sheetCount} דפים)</span>
                             <span style={{ color: '#9ca3af', fontSize: '11px' }}>{backup.savedAt ? new Date(backup.savedAt).toLocaleString('he-IL') : ''}</span>
                           </div>
-                          <div style={{ display: 'flex', gap: '6px' }}>
+                          <div style={{ display: 'flex', gap: '4px' }}>
                             <button onClick={() => restoreFromFirebaseBackup(backup.id)} style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>שחזר</button>
                             <button onClick={() => deleteFirebaseBackup(backup.id)} style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>🗑️</button>
                           </div>
@@ -1988,15 +1998,18 @@ export default function App() {
                 </div>
               )}
 
-              {/* שינוי קוד מנהל */}
-              <div style={{ marginBottom: '16px' }}>
-                {!showChangeAdminPasscode ? (
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    <button onClick={() => setShowChangeAdminPasscode(true)} style={{ backgroundColor: '#475569', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '11px' }}>🔑 שנה קוד מנהל</button>
-                    <button onClick={() => { setNewAppUser(appLoginUser); setNewAppPass(appLoginPass); setShowChangeAppCredentials(true); }} style={{ backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '11px' }}>👤 שנה פרטי כניסה לאתר</button>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', backgroundColor: '#f1f5f9', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', flexWrap: 'wrap' }}>
+              {/* ─── Section: הגדרות מערכת ─── */}
+              <div style={{ backgroundColor: '#fefce8', border: '1px solid #fde68a', borderRadius: '8px', padding: '14px 16px', marginBottom: '12px' }}>
+                <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#92400e', margin: '0 0 10px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>⚙️ הגדרות מערכת</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px' }}>
+                  <button onClick={() => { setShowChangeAdminPasscode(!showChangeAdminPasscode); setShowChangeAppCredentials(false); setIsEditingMyCompany(false); }} style={{ backgroundColor: showChangeAdminPasscode ? '#475569' : '#64748b', color: '#ffffff', border: 'none', padding: '10px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>🔑 שנה קוד מנהל</button>
+                  <button onClick={() => { setShowChangeAppCredentials(!showChangeAppCredentials); setNewAppUser(appLoginUser); setNewAppPass(appLoginPass); setShowChangeAdminPasscode(false); setIsEditingMyCompany(false); }} style={{ backgroundColor: showChangeAppCredentials ? '#7c3aed' : '#64748b', color: '#ffffff', border: 'none', padding: '10px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>👤 פרטי כניסה לאתר</button>
+                  <button onClick={() => { setIsEditingMyCompany(!isEditingMyCompany); setShowChangeAdminPasscode(false); setShowChangeAppCredentials(false); }} style={{ backgroundColor: isEditingMyCompany ? '#d97706' : '#64748b', color: '#ffffff', border: 'none', padding: '10px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>🏢 פרטי העסק</button>
+                </div>
+
+                {/* ─── Change admin passcode ─── */}
+                {showChangeAdminPasscode && (
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', marginTop: '12px', backgroundColor: '#ffffff', padding: '12px', borderRadius: '6px', border: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       <label style={{ fontSize: '11px', color: '#64748b' }}>קוד חדש:</label>
                       <input type="password" value={newAdminPasscode} onChange={(e) => setNewAdminPasscode(e.target.value)} style={{ width: '100px', padding: '6px', border: '1px solid #94a3b8', borderRadius: '4px', fontSize: '13px', textAlign: 'center' }} />
@@ -2005,113 +2018,99 @@ export default function App() {
                       <label style={{ fontSize: '11px', color: '#64748b' }}>אישור קוד:</label>
                       <input type="password" value={newAdminPasscodeConfirm} onChange={(e) => setNewAdminPasscodeConfirm(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { if (newAdminPasscode.length >= 4 && newAdminPasscode === newAdminPasscodeConfirm) { setAdminPasscode(newAdminPasscode); localStorage.setItem('sharara_adminPasscode', newAdminPasscode); setShowChangeAdminPasscode(false); setNewAdminPasscode(''); setNewAdminPasscodeConfirm(''); alert('✅ קוד המנהל עודכן'); } else { alert('❌ הקוד צריך להיות לפחות 4 תווים ולתואם'); } } }} style={{ width: '100px', padding: '6px', border: '1px solid #94a3b8', borderRadius: '4px', fontSize: '13px', textAlign: 'center' }} />
                     </div>
-                    <div style={{ display: 'flex', gap: '6px', alignSelf: 'flex-end' }}>
-                      <button onClick={() => { if (newAdminPasscode.length >= 4 && newAdminPasscode === newAdminPasscodeConfirm) { setAdminPasscode(newAdminPasscode); localStorage.setItem('sharara_adminPasscode', newAdminPasscode); setShowChangeAdminPasscode(false); setNewAdminPasscode(''); setNewAdminPasscodeConfirm(''); alert('✅ קוד המנהל עודכן'); } else { alert('❌ הקוד צריך להיות לפחות 4 תווים ולתואם'); } }} style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>שמור</button>
-                      <button onClick={() => { setShowChangeAdminPasscode(false); setNewAdminPasscode(''); setNewAdminPasscodeConfirm(''); }} style={{ backgroundColor: '#94a3b8', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}>ביטול</button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* שינוי פרטי כניסה לאתר */}
-              {showChangeAppCredentials && (
-                <div style={{ backgroundColor: '#faf5ff', border: '1px solid #d8b4fe', borderRadius: '8px', padding: '12px', marginBottom: '16px' }}>
-                  <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: '#6b21a8', margin: '0 0 10px 0' }}>👤 פרטי כניסה לאתר (שם משתמש + סיסמה)</h3>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <label style={{ fontSize: '11px', color: '#64748b' }}>שם משתמש חדש:</label>
-                      <input type="text" value={newAppUser} onChange={(e) => setNewAppUser(e.target.value)} style={{ width: '130px', padding: '6px', border: '1px solid #94a3b8', borderRadius: '4px', fontSize: '13px' }} />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <label style={{ fontSize: '11px', color: '#64748b' }}>סיסמה חדשה:</label>
-                      <input type="password" value={newAppPass} onChange={(e) => setNewAppPass(e.target.value)} style={{ width: '110px', padding: '6px', border: '1px solid #94a3b8', borderRadius: '4px', fontSize: '13px', textAlign: 'center' }} />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <label style={{ fontSize: '11px', color: '#64748b' }}>אישור סיסמה:</label>
-                      <input type="password" value={newAppPassConfirm} onChange={(e) => setNewAppPassConfirm(e.target.value)} style={{ width: '110px', padding: '6px', border: '1px solid #94a3b8', borderRadius: '4px', fontSize: '13px', textAlign: 'center' }} />
-                    </div>
                     <div style={{ display: 'flex', gap: '6px' }}>
-                      <button onClick={() => {
-                        if (!newAppUser.trim()) { alert('❌ שם משתמש לא יכול להיות ריק'); return; }
-                        if (newAppPass.length < 4) { alert('❌ הסיסמה חייבת להיות לפחות 4 תווים'); return; }
-                        if (newAppPass !== newAppPassConfirm) { alert('❌ הסיסמאות אינן תואמות'); return; }
-                        setAppLoginUser(newAppUser.trim());
-                        setAppLoginPass(newAppPass);
-                        localStorage.setItem('sharara_appLoginUser', newAppUser.trim());
-                        localStorage.setItem('sharara_appLoginPass', newAppPass);
-                        setShowChangeAppCredentials(false);
-                        setNewAppPass('');
-                        setNewAppPassConfirm('');
-                        alert('✅ פרטי הכניסה לאתר עודכנו');
-                      }} style={{ backgroundColor: '#7c3aed', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>שמור</button>
-                      <button onClick={() => { setShowChangeAppCredentials(false); setNewAppPass(''); setNewAppPassConfirm(''); }} style={{ backgroundColor: '#94a3b8', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}>ביטול</button>
+                      <button onClick={() => { if (newAdminPasscode.length >= 4 && newAdminPasscode === newAdminPasscodeConfirm) { setAdminPasscode(newAdminPasscode); localStorage.setItem('sharara_adminPasscode', newAdminPasscode); setShowChangeAdminPasscode(false); setNewAdminPasscode(''); setNewAdminPasscodeConfirm(''); alert('✅ קוד המנהל עודכן'); } else { alert('❌ הקוד צריך להיות לפחות 4 תווים ולתואם'); } }} style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>שמור</button>
+                      <button onClick={() => { setShowChangeAdminPasscode(false); setNewAdminPasscode(''); setNewAdminPasscodeConfirm(''); }} style={{ backgroundColor: '#94a3b8', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}>ביטול</button>
                     </div>
                   </div>
-                  <p style={{ fontSize: '10px', color: '#94a3b8', margin: '6px 0 0 0' }}>השינוי ייכנס לתוקף בהתחברות הבאה של המשתמשים</p>
-                </div>
-              )}
-              {/* עריכת פרטי עסק */}
-              <div style={{ marginBottom: '16px' }}>
-                {!showChangeAppCredentials && !showChangeAdminPasscode && (
-                  <button onClick={() => { setIsEditingMyCompany(!isEditingMyCompany); }} style={{ backgroundColor: isEditingMyCompany ? '#475569' : '#d97706', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>🏢 {isEditingMyCompany ? 'סגור עריכת פרטי עסק' : 'ערוך פרטי לוגו וטלפונים/מיילים של העסק'}</button>
                 )}
+
+                {/* ─── Change app credentials ─── */}
+                {showChangeAppCredentials && (
+                  <div style={{ marginTop: '12px', backgroundColor: '#ffffff', padding: '12px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <label style={{ fontSize: '11px', color: '#64748b' }}>שם משתמש:</label>
+                        <input type="text" value={newAppUser} onChange={(e) => setNewAppUser(e.target.value)} style={{ width: '130px', padding: '6px', border: '1px solid #94a3b8', borderRadius: '4px', fontSize: '13px' }} />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <label style={{ fontSize: '11px', color: '#64748b' }}>סיסמה חדשה:</label>
+                        <input type="password" value={newAppPass} onChange={(e) => setNewAppPass(e.target.value)} style={{ width: '110px', padding: '6px', border: '1px solid #94a3b8', borderRadius: '4px', fontSize: '13px', textAlign: 'center' }} />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <label style={{ fontSize: '11px', color: '#64748b' }}>אישור סיסמה:</label>
+                        <input type="password" value={newAppPassConfirm} onChange={(e) => setNewAppPassConfirm(e.target.value)} style={{ width: '110px', padding: '6px', border: '1px solid #94a3b8', borderRadius: '4px', fontSize: '13px', textAlign: 'center' }} />
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button onClick={() => {
+                          if (!newAppUser.trim()) { alert('❌ שם משתמש לא יכול להיות ריק'); return; }
+                          if (newAppPass.length < 4) { alert('❌ הסיסמה חייבת להיות לפחות 4 תווים'); return; }
+                          if (newAppPass !== newAppPassConfirm) { alert('❌ הסיסמאות אינן תואמות'); return; }
+                          setAppLoginUser(newAppUser.trim());
+                          setAppLoginPass(newAppPass);
+                          localStorage.setItem('sharara_appLoginUser', newAppUser.trim());
+                          localStorage.setItem('sharara_appLoginPass', newAppPass);
+                          setShowChangeAppCredentials(false);
+                          setNewAppPass('');
+                          setNewAppPassConfirm('');
+                          alert('✅ פרטי הכניסה לאתר עודכנו');
+                        }} style={{ backgroundColor: '#7c3aed', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>שמור</button>
+                        <button onClick={() => { setShowChangeAppCredentials(false); setNewAppPass(''); setNewAppPassConfirm(''); }} style={{ backgroundColor: '#94a3b8', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}>ביטול</button>
+                      </div>
+                    </div>
+                    <p style={{ fontSize: '10px', color: '#94a3b8', margin: '6px 0 0 0' }}>השינוי ייכנס לתוקף בהתחברות הבאה של המשתמשים</p>
+                  </div>
+                )}
+
+                {/* ─── Company details editor ─── */}
                 {isEditingMyCompany && (
-                  <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '16px', marginTop: '10px' }}>
-                    <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: '#92400e', margin: '0 0 12px 0' }}>🏢 עריכת פרטי לוגו ונייר המכתבים הרשמי של העסק</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div style={{ marginTop: '12px', backgroundColor: '#ffffff', padding: '14px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                    <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 10px 0' }}>עריכת פרטי לוגו ונייר המכתבים הרשמי</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                       <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>שם העסק בעברית:</label>
-                        <input type="text" value={myCompanyDetails.name} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, name: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                        <label style={{ fontSize: '10px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>שם העסק בעברית:</label>
+                        <input type="text" value={myCompanyDetails.name} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, name: e.target.value})} style={{ width: '100%', padding: '5px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', boxSizing: 'border-box' }} />
                       </div>
                       <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>כיתוב אנגלי / שנת הקמה:</label>
-                        <input type="text" value={myCompanyDetails.engName} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, engName: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                        <label style={{ fontSize: '10px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>כיתוב אנגלי:</label>
+                        <input type="text" value={myCompanyDetails.engName} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, engName: e.target.value})} style={{ width: '100%', padding: '5px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', boxSizing: 'border-box' }} />
                       </div>
                       <div style={{ gridColumn: 'span 2' }}>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>תיאור העסק / סלוגן:</label>
-                        <input type="text" value={myCompanyDetails.subtitle} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, subtitle: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                        <label style={{ fontSize: '10px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>תיאור העסק / סלוגן:</label>
+                        <input type="text" value={myCompanyDetails.subtitle} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, subtitle: e.target.value})} style={{ width: '100%', padding: '5px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', boxSizing: 'border-box' }} />
                       </div>
                       <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>אימייל:</label>
-                        <input type="text" value={myCompanyDetails.email} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, email: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                        <label style={{ fontSize: '10px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>אימייל:</label>
+                        <input type="text" value={myCompanyDetails.email} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, email: e.target.value})} style={{ width: '100%', padding: '5px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', boxSizing: 'border-box' }} />
                       </div>
                       <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>אתר אינטרנט:</label>
-                        <input type="text" value={myCompanyDetails.website} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, website: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                        <label style={{ fontSize: '10px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>אתר אינטרנט:</label>
+                        <input type="text" value={myCompanyDetails.website} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, website: e.target.value})} style={{ width: '100%', padding: '5px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', boxSizing: 'border-box' }} />
                       </div>
                       <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>טלפון משרד:</label>
-                        <input type="text" value={myCompanyDetails.phone} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, phone: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                        <label style={{ fontSize: '10px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>טלפון משרד:</label>
+                        <input type="text" value={myCompanyDetails.phone} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, phone: e.target.value})} style={{ width: '100%', padding: '5px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', boxSizing: 'border-box' }} />
                       </div>
                       <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>מספר פקס:</label>
-                        <input type="text" value={myCompanyDetails.fax} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, fax: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                        <label style={{ fontSize: '10px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>פקס:</label>
+                        <input type="text" value={myCompanyDetails.fax} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, fax: e.target.value})} style={{ width: '100%', padding: '5px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', boxSizing: 'border-box' }} />
                       </div>
                       <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>מספר נייד:</label>
-                        <input type="text" value={myCompanyDetails.mobile} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, mobile: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                        <label style={{ fontSize: '10px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>נייד:</label>
+                        <input type="text" value={myCompanyDetails.mobile} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, mobile: e.target.value})} style={{ width: '100%', padding: '5px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', boxSizing: 'border-box' }} />
                       </div>
                       <div>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>כתובת העסק והמפעל:</label>
-                        <input type="text" value={myCompanyDetails.address} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, address: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                        <label style={{ fontSize: '10px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>כתובת העסק:</label>
+                        <input type="text" value={myCompanyDetails.address} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, address: e.target.value})} style={{ width: '100%', padding: '5px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', boxSizing: 'border-box' }} />
                       </div>
                       <div style={{ gridColumn: 'span 2' }}>
-                        <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>דואר למשלוחים:</label>
-                        <input type="text" value={myCompanyDetails.pobox} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, pobox: e.target.value})} style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                        <label style={{ fontSize: '10px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>דואר למשלוחים:</label>
+                        <input type="text" value={myCompanyDetails.pobox} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, pobox: e.target.value})} style={{ width: '100%', padding: '5px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', boxSizing: 'border-box' }} />
                       </div>
                       {(myCompanyDetails.serviceLines ?? []).map((line: string, index: number) => (
                         <div key={index} style={{ gridColumn: 'span 2' }}>
-                          <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '3px' }}>{`שורת שירותים ${index + 1} (הפרד ב-*):`}</label>
-                          <input
-                            type="text"
-                            value={line}
-                            onChange={(e) => {
-                              const nextLines = [...(myCompanyDetails.serviceLines ?? ['', '', ''])];
-                              nextLines[index] = e.target.value;
-                              setMyCompanyDetails({ ...myCompanyDetails, serviceLines: nextLines });
-                            }}
-                            style={{ width: '100%', padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a' }}
-                          />
+                          <label style={{ fontSize: '10px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>{`שורת שירותים ${index + 1} (הפרד ב-*):`}</label>
+                          <input type="text" value={line} onChange={(e) => { const nextLines = [...(myCompanyDetails.serviceLines ?? ['', '', ''])]; nextLines[index] = e.target.value; setMyCompanyDetails({ ...myCompanyDetails, serviceLines: nextLines }); }} style={{ width: '100%', padding: '5px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', boxSizing: 'border-box' }} />
                         </div>
                       ))}
                     </div>
