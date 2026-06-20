@@ -2257,15 +2257,6 @@ export default function App() {
                     <button onClick={handlePrint} style={{ backgroundColor: '#475569', color: '#ffffff', border: 'none', padding: '5px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>הדפס</button>
                   </div>
 
-                  {/* קבוצה תחתונה: ניהול נתונים */}
-                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexShrink: 0 }}>
-                    <span style={{ color: '#64748b', fontSize: '10px', marginLeft: '4px' }}>נתונים:</span>
-                    <button onClick={loadSampleData} title="טען נתוני דוגמה לבדיקה" style={{ backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>📋 דוגמה</button>
-                    <button onClick={exportToJSON} title="ייצוא נתוני פרויקט לקובץ JSON" style={{ backgroundColor: '#0891b2', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>💾 ייצוא</button>
-                    <button onClick={importFromJSON} title="ייבוא נתוני פרויקט מקובץ JSON" style={{ backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>📂 ייבוא</button>
-                    <button onClick={resetProject} title="איפוס מלא של הפרויקט" style={{ backgroundColor: '#dc2626', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>🗑️ איפוס</button>
-                  </div>
-
 
                 </div>
 
