@@ -48,10 +48,8 @@ export default function PrintableReport({
     { label: '#', w: '5%' },
     { label: "מס' חלק", w: '10%' },
     { label: 'סוג אביזר', w: '15%' },
-    { label: 'פירוט', w: '25%' },
-    { label: 'אורך (מטר)', w: '12%' },
-    { label: 'כמות', w: '10%' },
-    { label: 'הערות', w: '23%' },
+    { label: 'פירוט', w: '20%' },
+    { label: 'הערות', w: '50%' },
   ];
 
   return (
@@ -185,9 +183,7 @@ export default function PrintableReport({
                           <td><span dir="ltr">{row.partNumber}</span></td>
                           <td>{displayType}</td>
                           <td className="pt-detail"><bdi>{detail}</bdi></td>
-                          <td>{(row.type === 'שרשורי' || row.type === 'חיבור גמיש') ? row.length : '–'}</td>
-                          <td>{qty}</td>
-                          <td>{autoNotes}</td>
+                          <td className="pt-detail"><bdi>{autoNotes}</bdi></td>
                         </tr>
                       );
                     })}

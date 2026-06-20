@@ -1,5 +1,5 @@
 // ──────────────────────────────────────────────
-// דוגמת氆据 — פרויקט מדידה שלם עם כל סוגי החלקים
+// דוגמת נתונים — פרויקט מדידה שלם עם כל סוגי החלקים
 // ──────────────────────────────────────────────
 
 let _id = 100;
@@ -23,7 +23,7 @@ const row = (overrides: Record<string, any>): Record<string, any> => ({
 // ──────────────────────────────────────────────
 const sheet1Rows = [
   // קטעים ישרים — גדלים שונים
-  row({ partNumber: 'P001', type: 'קטע ישר', width1: 1.0, height1: 0.5, length: 3.0, acoustic: true, external: false, panels: 2, notes: 'מעבר ל办公室' }),
+  row({ partNumber: 'P001', type: 'קטע ישר', width1: 1.0, height1: 0.5, length: 3.0, acoustic: true, external: false, panels: 2, notes: 'מעבר למשרד' }),
   row({ partNumber: 'P002', type: 'קטע ישר', width1: 0.8, height1: 0.4, length: 2.5, acoustic: false, external: false, panels: 2, dofan: 1 }),
   row({ partNumber: 'P003', type: 'קטע ישר', width1: 0.6, height1: 0.3, length: 1.5, acoustic: false, external: false, panels: 2 }),
   row({ partNumber: 'P004', type: 'קטע ישר', width1: 1.2, height1: 0.6, length: 2.0, acoustic: true, external: true, panels: 4, notes: 'בידוד כפול' }),
