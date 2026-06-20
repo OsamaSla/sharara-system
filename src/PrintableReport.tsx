@@ -1,4 +1,5 @@
 import type { RowData, Sheet } from './App';
+import logoSrc from './assets/logo.png';
 
 interface PrintableReportProps {
   sheets: Sheet[];
@@ -51,7 +52,7 @@ export default function PrintableReport({
             <tr className="pt-logo-row">
               <th colSpan={headers.length}>
                 <div className="pt-header">
-                    <img src="./logo.png" alt="לוגו" className="pt-logo" />
+                    <img src={logoSrc} alt="לוגו" className="pt-logo" />
                   <span className="pt-title">שרארה — דוח מדידות תעלות פח</span>
                 </div>
               </th>
@@ -104,7 +105,7 @@ export default function PrintableReport({
                   <td>{row.rBig || '–'}</td>
                   <td>{row.rSmall || '–'}</td>
                   <td>{row.shatuzar ? '✓' : '–'}</td>
-                  <td>{row.flexible || '–'}</td>
+                  <td>{row.flexible && row.length ? (row.flexible * row.length).toFixed(2) : (row.flexible || '–')}</td>
                   <td>{row.acoustic ? '✓' : '–'}</td>
                   <td>{row.external ? '✓' : '–'}</td>
                   <td>{row.sharshuriType !== 'ללא' ? row.sharshuriType : '–'}</td>

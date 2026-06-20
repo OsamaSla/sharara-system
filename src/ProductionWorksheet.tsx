@@ -121,7 +121,6 @@ export default function ProductionWorksheet({
                     <>
                       <th style={{ textAlign: 'center' }}>רוחב (מ"מ)</th>
                       <th style={{ textAlign: 'center' }}>גובה (מ"מ)</th>
-                      <th style={{ textAlign: 'center' }}>אורך (מ"מ)</th>
                       <th style={{ textAlign: 'center' }}>סטייה (מ"מ)</th>
                     </>
                   )}
@@ -157,14 +156,19 @@ export default function ProductionWorksheet({
                     </>
                   )}
                   
+                  {/* הוספת עמודה למספר חלקים עבור כל הסוגים */}
+                  <th style={{ textAlign: 'center' }}>מס' חלקים</th>
                   <th style={{ textAlign: 'center', width: '10%' }}>עובי פח</th>
                   {isStraight && <th style={{ textAlign: 'center', width: '8%' }}>דופן</th>}
                 </tr>
               </thead>
               <tbody>
-                {uniquePartRows.map((item) => {
+                {uniquePartRows.map((item, index) => {
                   const currentIdx = globalRowCounter++;
                   const { row, partNumbers, quantity, thick } = item;
+
+                  // Generating automatic part number
+                  const generatedPartNumber = `${sheetName}-${currentIdx}`;
 
                   // סטייל אחיד ומודגש לכל תאי הנתונים בשורה לדרישת אחידות הגודל
                   const cellDataStyle: React.CSSProperties = {
@@ -177,7 +181,7 @@ export default function ProductionWorksheet({
                     <tr key={row.id} className="production-table-row">
                       <td style={{ textAlign: 'center', fontSize: '13px' }}>{currentIdx}</td>
                       <td style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '14px' }} dir="ltr">
-                        {partNumbers.join(', ') || '—'}
+                        {generatedPartNumber}
                       </td>
                       <td style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '14px', backgroundColor: '#f9f9f9', color: '#000' }}>
                         {quantity}
@@ -226,7 +230,6 @@ export default function ProductionWorksheet({
                         <>
                           <td style={cellDataStyle}>{row.width1 || '—'}</td>
                           <td style={cellDataStyle}>{row.height1 || '—'}</td>
-                          <td style={cellDataStyle}>{row.length || '—'}</td>
                           <td style={cellDataStyle}>{row.rSmall || '—'}</td>
                         </>
                       )}
@@ -242,8 +245,8 @@ export default function ProductionWorksheet({
                         <>
                           <td style={cellDataStyle}>{row.width1 || '—'}</td>
                           <td style={cellDataStyle}>{row.height1 || '—'}</td>
-                          <td style={cellDataStyle}>{row.width2 || '—'}</td>
-                          <td style={cellDataStyle}>{row.height2 || '—'}</td>
+                          <td style={row.width2 ? cellDataStyle : {textAlign: 'center', color: '#ccc', fontWeight: 'bold'}}>{row.width2 || '—'}</td>
+                          <td style={row.height2 ? cellDataStyle : {textAlign: 'center', color: '#ccc', fontWeight: 'bold'}}>{row.height2 || '—'}</td>
                           <td style={cellDataStyle}>{row.length || '—'}</td>
                         </>
                       )}
@@ -261,6 +264,9 @@ export default function ProductionWorksheet({
                           <td style={cellDataStyle}>{row.length || '—'}</td>
                         </>
                       )}
+
+                      {/* נתון מס' חלקים */}
+                      <td style={cellDataStyle}>{row.panels || '—'}</td>
 
                       {/* תיקון עובי הפח שיופיע באותו הגודל המודגש */}
                       <td style={cellDataStyle} dir="ltr">

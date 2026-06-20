@@ -1,3 +1,7 @@
 node_modules/
 dist/
 *.zip
+.vscode/
+*.cjs
+public/logo_hex.txt
+CLAUDE.md

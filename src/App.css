@@ -19,15 +19,12 @@
 
   .active-tab-summary .no-print,
   .active-tab-invoice .no-print,
-  .active-tab-pricelist .no-print {
+  .active-tab-pricelist .no-print,
+  .active-tab-production .no-print {
     display: block !important;
     background: #ffffff !important;
     padding: 0 !important;
     margin: 0 !important;
-  }
-
-  .active-tab-production .no-print {
-    display: none !important;
   }
 
   .active-tab-summary .printable-report,

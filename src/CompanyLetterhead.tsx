@@ -57,8 +57,7 @@ export default function CompanyLetterhead({
     <div className={`company-letterhead ${className}`.trim()} dir="rtl" lang="he">
       <div className="cl-top">
         <div className="cl-brand-row">
-          <span className="cl-eng-name" dir="ltr">{details.engName}</span>
-          <Logo width={100} height={40} />
+          <Logo width={140} height={56} />
         </div>
         <h1 className="cl-name">{details.name}</h1>
         <p className="cl-subtitle">{subtitle}</p>
