@@ -2173,6 +2173,7 @@ export default function App() {
               </div>
             </>
           )}
+          {!isAdmin && (<>
           <div style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '16px', marginBottom: '24px' }}>
             <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#0f172a', margin: 0 }}>שלב א': זיהוי והגדרת לקוח ופרויקט</h2>
             <p style={{ fontSize: '13px', color: '#64748b', margin: '4px 0 0 0' }}>יש לבחור או להקים לקוח ופרויקט לפני תחילת הזנת המדידות בטבלה.</p>
@@ -2602,6 +2603,7 @@ export default function App() {
           >
             <CheckCircle2 size={20} /> אישור וכניסה לטבלת המדידות
           </button>
+          </>)}
         </div>
       ) : (
         /* שלב 2: תצוגת המערכת והטבלאות לאחר נעילת הישות הפיננסית */
