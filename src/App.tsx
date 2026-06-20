@@ -310,8 +310,8 @@ export default function App() {
   const [showChangeAdminPasscode, setShowChangeAdminPasscode] = useState(false);
   const [newAdminPasscode, setNewAdminPasscode] = useState('');
   const [newAdminPasscodeConfirm, setNewAdminPasscodeConfirm] = useState('');
-  const [appLoginUser, setAppLoginUser] = useState(() => localStorage.getItem('sharara_appLoginUser') || 'שרארה');
-  const [appLoginPass, setAppLoginPass] = useState(() => localStorage.getItem('sharara_appLoginPass') || '2020');
+  const [appLoginUser, setAppLoginUser] = useState(() => localStorage.getItem('sharara_appLoginUser') || '0');
+  const [appLoginPass, setAppLoginPass] = useState(() => localStorage.getItem('sharara_appLoginPass') || '0000');
   const [showChangeAppCredentials, setShowChangeAppCredentials] = useState(false);
   const [newAppUser, setNewAppUser] = useState('');
   const [newAppPass, setNewAppPass] = useState('');
