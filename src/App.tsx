@@ -1346,6 +1346,17 @@ export default function App() {
   };
 
   // ── ייצוא דף מדידה לאקסל מעוצב ──
+  const styleAccessoryHeaderRow = (row: ExcelJS.Row, colCount: number) => {
+    row.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11, name: 'Assistant' };
+    row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4A5568' } };
+    row.alignment = { horizontal: 'center', vertical: 'middle' };
+    row.height = 28;
+    for (let i = 1; i <= colCount; i++) {
+      const cell = row.getCell(i);
+      cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+    }
+  };
+
   function exportToExcel() {
     const wb = new ExcelJS.Workbook();
     wb.creator = 'שרארה מערכות מיזוג';
@@ -1355,44 +1366,118 @@ export default function App() {
 
     sheets.forEach((sheet, si) => {
       const ws = wb.addWorksheet(`דף ${si+1} - ${sheet.name}`);
-      const cols = 21;
-      ws.mergeCells(1, 1, 1, cols);
+      const regularRows = sheet.rows.filter(r => !['שתוצר','מתאם','שרשורי','חיבור גמיש'].includes(r.type));
+      const accessoryRows = sheet.rows.filter(r => ['שתוצר','מתאם','שרשורי','חיבור גמיש'].includes(r.type));
+
+      const hasTransition = regularRows.some(r => r.type === 'מעבר');
+      const hasElbow = regularRows.some(r => r.type === 'קשת');
+      const hasInsulation = regularRows.some(r => r.acoustic || r.external);
+
+      // Header
+      let rNum = 1;
+      const maxCols = 17;
+      ws.mergeCells(rNum, 1, rNum, maxCols);
       const titleRow = ws.addRow([`שרארה — דף מדידה: ${sheet.name}`]);
       titleRow.font = { bold: true, size: 14, name: 'Assistant', color: { argb: 'FF1F4E79' } };
       titleRow.alignment = { horizontal: 'right', vertical: 'middle' };
       titleRow.height = 30;
-      ws.mergeCells(2, 1, 2, cols);
+      rNum++;
+
+      ws.mergeCells(rNum, 1, rNum, maxCols);
       const infoRow = ws.addRow([infoLine]);
       infoRow.font = { size: 10, name: 'Assistant', italic: true, color: { argb: 'FF555555' } };
       infoRow.alignment = { horizontal: 'right', vertical: 'middle' };
       infoRow.height = 20;
+      rNum++;
 
-      const headers = ['#','מס\' חלק','סוג/פירוט','רוחב','גובה','רוחב 2','גובה 2','אורך (מטר)','רדיוס גדול','רדיוס קטן','שתוצר','גמיש (מ"א)','אקוסטי','חיצוני','קוטר שרשורי','שרשורי (מ"א)','סוג מתאם','מתאם (כמות)','עובי פח','דופן','שטח (מ"ר)'];
-      const hRow = ws.addRow(headers);
-      styleHeaderRow(hRow, cols);
+      // ─── Regular parts table ───
+      if (regularRows.length > 0) {
+        const regHeaders = ['#','מס\' חלק','סוג חלק','רוחב','גובה'];
+        if (hasTransition) regHeaders.push('רוחב 2','גובה 2');
+        regHeaders.push('אורך');
+        if (hasElbow) regHeaders.push('רדיוס גדול','רדיוס קטן');
+        if (hasInsulation) regHeaders.push('אקוסטי','חיצוני');
+        regHeaders.push('עובי פח','דופן','מס\' חלקים','שטח (מ"ר)','הערות');
 
-      sheet.rows.forEach((row, idx) => {
-        const thick = calculateThickness(row.width1, row.height1, row.manualThickness);
-        const area = calculateArea(row);
-        const displayType = row.notes && ['לאמד S','צינור עגול','קופסת פיזור','מדף אש'].includes(row.notes) ? row.notes : row.type;
-        let detail = `${displayType} ${row.notes === 'צינור עגול' ? `קוטר ${row.width1}` : `${row.width1}x${row.height1}`}`;
-        if (row.type === 'מעבר') detail += ` / ${row.width2}x${row.height2}`;
-        if (row.length > 0) detail += ` L=${row.length}`;
+        const regColCount = regHeaders.length;
+        const hRow = ws.addRow(regHeaders);
+        styleHeaderRow(hRow, regColCount);
+        rNum++;
 
-        const dRow = ws.addRow([
-          idx+1, row.partNumber||'', detail,
-          row.width1, row.height1, row.width2, row.height2, row.length,
-          row.rBig, row.rSmall,
-          row.shatuzar ? '✓' : '', row.flexible && row.length ? (row.flexible * row.length) : '',
-          row.acoustic ? '✓' : '', row.external ? '✓' : '',
-          row.sharshuriType !== 'ללא' ? row.sharshuriType : '', row.length||'',
-          row.adapterType !== 'ללא' ? row.adapterType : '', row.adapterQty||'',
-          thick.toFixed(2), row.panels||'', area.toFixed(3)
-        ]);
-        styleDataRow(dRow, cols, idx % 2 === 1);
-      });
+        regularRows.forEach((row, idx) => {
+          const thick = calculateThickness(row.width1, row.height1, row.manualThickness);
+          const area = calculateArea(row);
+          const displayType = row.notes && ['לאמד S','צינור עגול','קופסת פיזור','מדף אש'].includes(row.notes) ? row.notes : row.type;
+          let detail = `${displayType} ${row.notes === 'צינור עגול' ? `קוטר ${row.width1}` : `${row.width1}x${row.height1}`}`;
+          if (row.type === 'מעבר') detail += ` / ${row.width2}x${row.height2}`;
+          if (row.length > 0) detail += ` L=${row.length}`;
 
-      [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21].forEach((c,i) => { ws.getColumn(c).width = [5,10,28,8,8,8,8,10,10,10,7,7,7,7,10,8,10,8,8,7,8][i]; });
+          const dRowData: (string | number)[] = [
+            idx+1, row.partNumber||'', detail,
+            row.width1, row.height1,
+          ];
+          if (hasTransition) dRowData.push(row.type === 'מעבר' ? row.width2 : '', row.type === 'מעבר' ? row.height2 : '');
+          dRowData.push(row.type === 'קשת' ? '' : row.length);
+          if (hasElbow) dRowData.push(row.type === 'קשת' ? row.rBig : '', row.type === 'קשת' ? row.rSmall : '');
+          if (hasInsulation) dRowData.push(row.acoustic ? '✓' : '', row.external ? '✓' : '');
+          dRowData.push(thick.toFixed(2), row.dofan||'', row.panels||1, area.toFixed(3), row.notes||'');
+
+          const dRow = ws.addRow(dRowData);
+          styleDataRow(dRow, regColCount, idx % 2 === 1);
+          rNum++;
+        });
+
+        // Add spacing
+        rNum++;
+      }
+
+      // ─── Accessories table ───
+      if (accessoryRows.length > 0) {
+        const accHeaders = ['#','מס\' חלק','סוג אביזר','פירוט','אורך (מטר)','כמות','הערות'];
+        const accColCount = accHeaders.length;
+
+        const accHRow = ws.addRow(accHeaders);
+        styleAccessoryHeaderRow(accHRow, accColCount);
+        rNum++;
+
+        accessoryRows.forEach((row, idx) => {
+          const displayType = row.type;
+          let detail = '';
+          if (row.type === 'שתוצר') detail = 'יחידות';
+          else if (row.type === 'מתאם') detail = row.adapterType || 'ללא';
+          else if (row.type === 'שרשורי') detail = `קוטר ${row.sharshuriType}`;
+          else if (row.type === 'חיבור גמיש') detail = `${row.flexible || 0} יחידות`;
+
+          const qty = row.type === 'מתאם' ? row.adapterQty
+            : row.type === 'שתוצר' ? row.panels
+            : row.type === 'חיבור גמיש' ? row.flexible
+            : '';
+
+          const autoNotes = row.type === 'שתוצר' ? 'שתוצר'
+            : row.type === 'מתאם' ? `מתאם: ${row.adapterType}`
+            : row.type === 'שרשורי' ? `שרשורי: קוטר ${row.sharshuriType}, אורך ${row.length}`
+            : row.type === 'חיבור גמיש' ? `גמיש: ${row.flexible} יח', אורך ${row.length} מ'`
+            : row.notes;
+
+          const dRow = ws.addRow([
+            idx+1, row.partNumber||'', displayType, detail,
+            (row.type === 'שרשורי' || row.type === 'חיבור גמיש') ? row.length : '',
+            qty || '', autoNotes
+          ]);
+          styleDataRow(dRow, accColCount, idx % 2 === 1);
+          rNum++;
+        });
+      }
+
+      // Column widths for regular columns
+      const colWidths = [5, 10, 28, 8, 8];
+      if (hasTransition) colWidths.push(8, 8);
+      colWidths.push(10);
+      if (hasElbow) colWidths.push(10, 10);
+      if (hasInsulation) colWidths.push(7, 7);
+      colWidths.push(8, 7, 7, 8, 15);
+
+      colWidths.forEach((w, i) => { ws.getColumn(i+1).width = w; });
     });
     downloadWorkbook(wb, `sharara_${dateStr}.xlsx`);
   }

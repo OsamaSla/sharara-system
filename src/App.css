@@ -299,29 +299,16 @@
   line-height: 1.3;
 }
 
-.print-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 7.5pt;
-  page-break-inside: auto;
+.pt-sheet-section {
+  page-break-after: always;
 }
 
-.print-table thead {
-  display: table-header-group;
+.pt-sheet-section:last-child {
+  page-break-after: auto;
 }
 
-.print-table tbody tr {
-  page-break-inside: avoid;
-  break-inside: avoid;
-}
-
-.print-table tfoot {
-  display: table-footer-group;
-}
-
-.pt-logo-row th {
-  padding: 4mm 0 2mm;
-  border: none;
+.pt-header-block {
+  margin-bottom: 3mm;
 }
 
 .pt-header {
@@ -348,11 +335,6 @@
   margin-top: 10px;
 }
 
-.pt-info-row th {
-  padding: 1mm 0;
-  border: none;
-}
-
 .pt-info {
   display: flex;
   flex-wrap: wrap;
@@ -365,13 +347,29 @@
   border-bottom: 1px solid #999;
 }
 
-.pt-sheet-title-row th {
+.pt-sheet-title {
   font-size: 9pt;
   font-weight: bold;
   padding: 2mm 0 1mm;
-  border: none;
   text-align: start;
   color: #1f4e79;
+}
+
+/* ── Print Tables ── */
+.print-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 7.5pt;
+  page-break-inside: auto;
+}
+
+.print-table thead {
+  display: table-header-group;
+}
+
+.print-table tbody tr {
+  page-break-inside: avoid;
+  break-inside: avoid;
 }
 
 .pt-col-headers th {
@@ -382,6 +380,31 @@
   border: 0.5pt solid #1f4e79;
   text-align: center;
   white-space: nowrap;
+}
+
+.pt-regular-header th {
+  background-color: #1f4e79;
+}
+
+.pt-accessory-header th {
+  background-color: #4a5568;
+}
+
+.pt-table-accessory {
+  margin-top: 2mm;
+}
+
+.pt-accessory-section {
+  margin-top: 2mm;
+}
+
+.pt-accessory-subtitle {
+  font-size: 8pt;
+  font-weight: bold;
+  color: #4a5568;
+  padding: 1mm 0;
+  border-bottom: 1px solid #4a5568;
+  margin-bottom: 1mm;
 }
 
 .print-table td {
@@ -406,19 +429,17 @@
   text-overflow: ellipsis;
 }
 
-.pt-page-break {
-  page-break-before: always;
+.pt-empty-sheet {
+  text-align: center;
+  color: #94a3b8;
+  font-style: italic;
+  padding: 5mm;
+  font-size: 9pt;
 }
 
-.pt-page-break td {
-  border: none;
-  padding: 0;
-  height: 0;
-}
-
-.pt-footer-row td {
-  border: none;
-  padding: 3mm 0 2mm;
+/* ── Footer ── */
+.pt-footer-block {
+  margin-top: 3mm;
 }
 
 .pt-footer {
@@ -440,13 +461,20 @@
   white-space: nowrap;
 }
 
-.pt-stamp {
-  text-align: center;
-  font-size: 7pt;
-  color: #888;
-  padding: 2mm 0;
-  border-top: 1px solid #ccc;
-  margin-top: 1mm;
+.pt-page-break-spacer {
+  height: 10mm;
+}
+
+@media print {
+  .printable-report {
+    display: block !important;
+  }
+  .pt-sheet-section {
+    page-break-after: always;
+  }
+  .pt-sheet-section:last-child {
+    page-break-after: auto;
+  }
 }
 
 /* ── Preview Overlay ── */
