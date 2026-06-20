@@ -3,6 +3,7 @@ import './App.css';
 import { Trash2, FileSpreadsheet, Layers, CreditCard, Building2, Briefcase, User, Phone, Mail, CheckCircle2, FileDown } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import PrintableReport from './PrintableReport';
+import { SAMPLE_SNAPSHOT } from './sampleData';
 import CompanyLetterhead from './CompanyLetterhead';
 import ProductionWorksheet from './ProductionWorksheet';
 import { db } from './firebase';
@@ -338,6 +339,108 @@ export default function App() {
   const handlePrint = () => {
     document.documentElement.setAttribute('data-print-tab', activeTab);
     window.print();
+  };
+
+  // ─── טעינת נתוני דוגמה ───
+  const loadSampleData = () => {
+    if (!confirm('האם לטעון נתוני דוגמה?\n⚠️ כל הנתונים הנוכחיים יוחלפו.')) return;
+    const snap = SAMPLE_SNAPSHOT;
+    setSheets(snap.sheets.map(s => ({ ...s, rows: s.rows.map(r => ({ ...r })) })));
+    setClientsData(snap.clientsData);
+    setProjectDocNumbers(snap.projectDocNumbers);
+    setProjectDocDates(snap.projectDocDates);
+    setActiveSheetId(snap.sheets[0].id);
+    setSelectedClient(snap.selectedClient);
+    setSelectedProject(snap.selectedProject);
+    setClientDetails(snap.clientsData[snap.selectedClient] || { phone: '', email: '', contact: '', regDate: '', projects: [] });
+    setUndoStack([]);
+    setRedoStack([]);
+    setSelectedRowIds(new Set());
+    setLastHoveredRowId(null);
+    setLastSaved(new Date());
+    setLoadedClientProject({ client: snap.selectedClient, project: snap.selectedProject });
+    setIsSessionInitialized(true);
+    setIsAddingPart(false);
+    setActiveTab('measure');
+  };
+
+  // ─── ייצוא JSON ───
+  const exportToJSON = () => {
+    const data = {
+      sheets,
+      clientsData,
+      pricesList,
+      myCompanyDetails,
+      projectDocNumbers,
+      projectDocDates,
+      exportedAt: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sharara-export-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // ─── ייבוא JSON ───
+  const importFromJSON = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e: any) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target?.result as string);
+          if (data.sheets) setSheets(data.sheets);
+          if (data.clientsData) setClientsData(data.clientsData);
+          if (data.pricesList) setPricesList(data.pricesList);
+          if (data.myCompanyDetails) setMyCompanyDetails(data.myCompanyDetails);
+          if (data.projectDocNumbers) setProjectDocNumbers(data.projectDocNumbers);
+          if (data.projectDocDates) setProjectDocDates(data.projectDocDates);
+          setUndoStack([]);
+          setRedoStack([]);
+          setLastSaved(new Date());
+          alert('✅ הנתונים יובאו בהצלחה!');
+        } catch (err) {
+          alert('❌ שגיאה בקריאת קובץ JSON');
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
+
+  // ─── איפוס מלא ───
+  const resetProject = () => {
+    if (!confirm('⚠️ האם לאפס את כל הפרויקט?\n\nפעולה זו תמחק את כל נתוני המדידות, הלקוחות והפרויקטים.\nלא ניתן לבטל פעולה זו!')) return;
+    const freshSheet: Sheet = { id: '1', name: 'דף מדידה #1', rows: [
+      { id: '1', partNumber: 'P001', type: 'קטע ישר', width1: 0.5, height1: 0.4, width2: 0, height2: 0, length: 1.0, rBig: 0, rSmall: 0, shatuzar: false, flexible: 0, acoustic: true, external: false, sharshuriType: 'ללא', sharshuriLen: 0, adapterType: 'ללא', adapterQty: 0, notes: '', manualThickness: 0, rBig2: 0, panels: 0, dofan: 0 }
+    ]};
+    setSheets([freshSheet]);
+    setClientsData({});
+    setProjectDocNumbers({});
+    setProjectDocDates({});
+    setActiveSheetId('1');
+    setSelectedClient('');
+    setSelectedProject('');
+    setClientDetails({ phone: '', email: '', contact: '', regDate: '', projects: [] });
+    setUndoStack([]);
+    setRedoStack([]);
+    setLastSaved(new Date());
+    setLoadedClientProject({ client: '', project: '' });
+    setIsSessionInitialized(false);
+    setActiveTab('measure');
+    setInvoicePriceOverrides({});
+    setPartPresets([]);
+    localStorage.removeItem('sharara-presets');
+    alert('✅ הפרויקט אופס בהצלחה!');
   };
 
   // שמירת מזהה הלקוח שממנו ייבאנו פרטים בעת יצירת לקוח חדש
@@ -1517,6 +1620,12 @@ export default function App() {
       {/* שלב 1: מסך הגדרת לקוח ופרויקט (חוסם את הטבלה עד למילוי) */}
       {!isSessionInitialized ? (
         <div style={{ maxWidth: '800px', margin: '40px auto', padding: '32px', backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' }}>
+          {/* כפתורי ניהול נתונים */}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', justifyContent: 'flex-start' }}>
+            <button onClick={loadSampleData} title="טען נתוני דוגמה לבדיקה מהירה" style={{ backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>📋 טען דוגמה</button>
+            <button onClick={importFromJSON} title="ייבוא נתוני פרויקט מקובץ JSON" style={{ backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>📂 ייבוא מקובץ</button>
+            <button onClick={resetProject} title="איפוס מלא של הפרויקט" style={{ backgroundColor: '#dc2626', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>🗑️ איפוס</button>
+          </div>
           <div style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '16px', marginBottom: '24px' }}>
             <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#0f172a', margin: 0 }}>שלב א': זיהוי והגדרת לקוח ופרויקט</h2>
             <p style={{ fontSize: '13px', color: '#64748b', margin: '4px 0 0 0' }}>יש לבחור או להקים לקוח ופרויקט לפני תחילת הזנת המדידות בטבלה.</p>
@@ -2146,6 +2255,15 @@ export default function App() {
                     <button onClick={exportToExcel} style={{ backgroundColor: '#16a34a', color: '#ffffff', border: 'none', padding: '5px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>Excel</button>
                     <button onClick={() => setIsPreviewMode(true)} style={{ backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', padding: '5px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>תצוגה</button>
                     <button onClick={handlePrint} style={{ backgroundColor: '#475569', color: '#ffffff', border: 'none', padding: '5px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>הדפס</button>
+                  </div>
+
+                  {/* קבוצה תחתונה: ניהול נתונים */}
+                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexShrink: 0 }}>
+                    <span style={{ color: '#64748b', fontSize: '10px', marginLeft: '4px' }}>נתונים:</span>
+                    <button onClick={loadSampleData} title="טען נתוני דוגמה לבדיקה" style={{ backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>📋 דוגמה</button>
+                    <button onClick={exportToJSON} title="ייצוא נתוני פרויקט לקובץ JSON" style={{ backgroundColor: '#0891b2', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>💾 ייצוא</button>
+                    <button onClick={importFromJSON} title="ייבוא נתוני פרויקט מקובץ JSON" style={{ backgroundColor: '#0284c7', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>📂 ייבוא</button>
+                    <button onClick={resetProject} title="איפוס מלא של הפרויקט" style={{ backgroundColor: '#dc2626', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>🗑️ איפוס</button>
                   </div>
 
 
