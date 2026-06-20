@@ -396,8 +396,12 @@ export default function App() {
     URL.revokeObjectURL(url);
 
     // Also save to Firebase
-    await saveToFirebaseBackup(exportFileName);
-    await loadFirebaseBackups();
+    const saved = await saveToFirebaseBackup(exportFileName);
+    if (saved) {
+      await loadFirebaseBackups();
+    } else {
+      alert('⚠️ הקובץ נשמר מקומית אך הגיבוי בענן נכשל.\nבדוק את חיבור האינטרנט או את ההגדרות של חוסם המודעות.');
+    }
     setShowExportDialog(false);
   };
 
@@ -474,7 +478,7 @@ export default function App() {
       projectDocDates,
     };
     try {
-      await setDoc(doc(db, 'appData', `backups/${name}`), snapshot);
+      await setDoc(doc(db, 'appBackups', name), snapshot);
       return true;
     } catch (error) {
       console.error('Error saving backup:', error);
@@ -485,7 +489,7 @@ export default function App() {
   const loadFirebaseBackups = async () => {
     setLoadingBackups(true);
     try {
-      const snapshot = await getDocs(collection(db, 'appData/backups'));
+      const snapshot = await getDocs(collection(db, 'appBackups'));
       const list = snapshot.docs.map(d => {
         const data = d.data();
         return {
@@ -509,7 +513,7 @@ export default function App() {
   const restoreFromFirebaseBackup = async (backupId: string) => {
     if (!confirm('האם לשחזר גיבוי זה?\n⚠️ הנתונים הנוכחיים יוחלפו.')) return;
     try {
-      const docSnap = await getDoc(doc(db, 'appData', `backups/${backupId}`));
+      const docSnap = await getDoc(doc(db, 'appBackups', backupId));
       if (docSnap.exists()) {
         const data = docSnap.data();
         if (data.sheets) setSheets(data.sheets);
@@ -535,7 +539,7 @@ export default function App() {
   const deleteFirebaseBackup = async (backupId: string) => {
     if (!confirm(`למחוק את הגיבוי "${backupId}"?`)) return;
     try {
-      await deleteDoc(doc(db, 'appData', `backups/${backupId}`));
+      await deleteDoc(doc(db, 'appBackups', backupId));
       setBackups(backups.filter(b => b.id !== backupId));
     } catch (error) {
       console.error('Error deleting backup:', error);
