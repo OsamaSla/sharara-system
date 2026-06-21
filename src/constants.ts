@@ -1,4 +1,4 @@
-import type { PriceItem } from './App';
+import type { PriceItem } from './types';
 
 // ──────────────────────────────────────────────
 // נתוני ברירת מחדל — לקוחות, מחירים, פרטי חברה

@@ -1,4 +1,4 @@
-import type { RowData, Sheet } from './App';
+import type { RowData, Sheet } from './types';
 import logoSrc from './assets/logo.png';
 
 const ACCESSORY_TYPES = ['שתוצר','מתאם','שרשורי','חיבור גמיש'];

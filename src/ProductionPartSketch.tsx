@@ -1,4 +1,4 @@
-import type { RowData } from './App';
+import type { RowData } from './types';
 
 interface ProductionPartSketchProps {
   row: RowData;

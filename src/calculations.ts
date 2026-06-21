@@ -1,4 +1,4 @@
-import type { RowData, Sheet, PriceItem } from './App';
+import type { RowData, Sheet, PriceItem } from './types';
 
 // ──────────────────────────────────────────────
 // חישובים טהורים — ללא תלויות React
@@ -36,8 +36,10 @@ export const calculateArea = (row: RowData): number => {
 };
 
 export const getPrice = (name: string, pricesList: PriceItem[]): number => {
-  const item = pricesList.find(p => p.detail === name);
-  return item ? item.price : 0;
+  const exact = pricesList.find(p => p.detail === name);
+  if (exact) return exact.price;
+  const partial = pricesList.find(p => p.detail.includes(name) || name.includes(p.detail));
+  return partial ? partial.price : 0;
 };
 
 export const getRowWarnings = (row: RowData): string[] => {

@@ -1,4 +1,4 @@
-import type { RowData } from './App';
+import type { RowData } from './types';
 import type { CompanyDetails } from './CompanyLetterhead';
 import CompanyLetterhead from './CompanyLetterhead';
 import ProductionPartSketch, { getPartDisplayName } from './ProductionPartSketch';
