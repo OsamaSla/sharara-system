@@ -934,11 +934,26 @@
     margin-bottom: 0;
   }
 
+  .production-group-section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
   .production-table {
     font-size: 9px;
   }
 
   .production-table-row {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .summary-sheet-block {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-document {
     break-inside: avoid;
     page-break-inside: avoid;
   }

@@ -11,6 +11,7 @@ import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from 'firebase/fi
 import logoSrc from './assets/logo.png';
 import { EXISTING_DATA, DEFAULT_PRICES, DEFAULT_COMPANY, DEFAULT_ROW, DEFAULT_SHEET } from './constants';
 import { calculateThickness, calculateArea, getPrice as getPriceFromCalc, getRowWarnings, getDetailedSheetCosts as getDetailedSheetCostsFromCalc, getProjectTotals as getProjectTotalsFromCalc, getSubtotal as getSubtotalFromCalc, getSheetTotals } from './calculations';
+import { applyLogoAndHeader, setNumericFormat, setCurrencyFormat, formatHeaderTitle, addSumFormula, alignColumnsRight } from './ExcelExportUtils';
 
 // ─── Types ───
 export interface RowData {
@@ -1096,38 +1097,7 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
-  const styleHeaderRow = (row: ExcelJS.Row, colCount: number) => {
-    row.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11, name: 'Assistant' };
-    row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E79' } };
-    row.alignment = { horizontal: 'center', vertical: 'middle' };
-    row.height = 28;
-    for (let i = 1; i <= colCount; i++) {
-      const cell = row.getCell(i);
-      cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-    }
-  };
-
-  const styleDataRow = (row: ExcelJS.Row, colCount: number, isEven: boolean) => {
-    row.height = 20;
-    if (isEven) row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEBF5FB' } };
-    row.alignment = { vertical: 'middle', horizontal: 'center' };
-    for (let i = 1; i <= colCount; i++) {
-      const cell = row.getCell(i);
-      cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-    }
-  };
-
   // ── ייצוא דף מדידה לאקסל מעוצב ──
-  const styleAccessoryHeaderRow = (row: ExcelJS.Row, colCount: number) => {
-    row.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11, name: 'Assistant' };
-    row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4A5568' } };
-    row.alignment = { horizontal: 'center', vertical: 'middle' };
-    row.height = 28;
-    for (let i = 1; i <= colCount; i++) {
-      const cell = row.getCell(i);
-      cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-    }
-  };
 
   async function exportToExcel() {
     const wb = new ExcelJS.Workbook();
@@ -1135,8 +1105,7 @@ export default function App() {
     wb.created = new Date();
     const dateStr = new Date().toISOString().slice(0, 10);
 
-    // Load logo image
-    let logoImageId: number | undefined;
+    let logoImageId;
     try {
       if (companyLogo) {
         const base64Data = companyLogo.split(',')[1];
@@ -1149,15 +1118,11 @@ export default function App() {
         const buf = await resp.arrayBuffer();
         logoImageId = wb.addImage({ buffer: new Uint8Array(buf), extension: 'png' });
       }
-    } catch (e) {
-      console.warn('Could not load logo for Excel:', e);
-    }
-    const infoLine = `לקוח: ${clientDetails.name}  |  פרויקט: ${selectedProject}  |  תאריך: ${docDate}  |  מס' מסמך: ${docNumber}`;
+    } catch (e) { console.warn('Logo load failed:', e); }
 
     sheets.forEach((sheet, si) => {
       const ws = wb.addWorksheet(`דף ${si+1} - ${sheet.name}`, {
-        pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
-        properties: { defaultRowHeight: 15 },
+        pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 }
       });
       const regularRows = sheet.rows.filter(r => !['שתוצר','מתאם','שרשורי','חיבור גמיש'].includes(r.type));
       const accessoryRows = sheet.rows.filter(r => ['שתוצר','מתאם','שרשורי','חיבור גמיש'].includes(r.type));
@@ -1166,45 +1131,29 @@ export default function App() {
       const hasElbow = regularRows.some(r => r.type === 'קשת');
       const hasInsulation = regularRows.some(r => r.acoustic || r.external);
 
-      // Header
-      let rNum = 1;
-      const maxCols = 17;
-      ws.mergeCells(rNum, 1, rNum, maxCols);
-      const titleRow = ws.addRow([`שרארה — דף מדידה: ${sheet.name}`]);
-      titleRow.font = { bold: true, size: 14, name: 'Assistant', color: { argb: 'FF1F4E79' } };
-      titleRow.alignment = { horizontal: 'right', vertical: 'middle' };
-      titleRow.height = 30;
-      rNum++;
-
-      // Add logo
-      if (logoImageId !== undefined) {
-        ws.addImage(logoImageId, {
-          tl: { col: 0, row: 0.2 },
-          ext: { width: 120, height: 60 },
-        });
-      }
-
-      ws.mergeCells(rNum, 1, rNum, maxCols);
-      const infoRow = ws.addRow([infoLine]);
-      infoRow.font = { size: 10, name: 'Assistant', italic: true, color: { argb: 'FF555555' } };
-      infoRow.alignment = { horizontal: 'right', vertical: 'middle' };
-      infoRow.height = 20;
-      rNum++;
-
-      // ─── Regular parts table ───
+      let maxCols = 5;
       if (regularRows.length > 0) {
-        const regHeaders = ['#','מס\' חלק','סוג חלק','רוחב','גובה'];
+        maxCols = 10;
+        if (hasTransition) maxCols += 2;
+        if (hasElbow) maxCols += 2;
+        if (hasInsulation) maxCols += 2;
+      } else if (accessoryRows.length > 0) {
+        maxCols = 7;
+      }
+      
+      applyLogoAndHeader(ws, logoImageId, `שרארה — דף מדידה: ${sheet.name}`, clientDetails.name, selectedProject, docDate, maxCols);
+
+      let rNum = 5;
+
+      if (regularRows.length > 0) {
+        const regHeaders = ['#',"מס' חלק",'סוג חלק','רוחב','גובה'];
         if (hasTransition) regHeaders.push('רוחב 2','גובה 2');
         regHeaders.push('אורך');
         if (hasElbow) regHeaders.push('רדיוס גדול','רדיוס קטן');
         if (hasInsulation) regHeaders.push('אקוסטי','חיצוני');
-        regHeaders.push('עובי פח','דופן','מס\' חלקים','שטח (מ"ר)','הערות');
+        regHeaders.push('עובי פח','דופן',"מס' חלקים",'שטח (מ"ר)','הערות');
 
-        const regColCount = regHeaders.length;
-        const hRow = ws.addRow(regHeaders);
-        styleHeaderRow(hRow, regColCount);
-        rNum++;
-
+        const tableRows = [];
         regularRows.forEach((row, idx) => {
           const thick = calculateThickness(row.width1, row.height1, row.manualThickness);
           const area = calculateArea(row);
@@ -1213,7 +1162,7 @@ export default function App() {
           if (row.type === 'מעבר') detail += ` / ${row.width2}x${row.height2}`;
           if (row.length > 0) detail += ` L=${row.length}`;
 
-          const dRowData: (string | number)[] = [
+          const dRowData = [
             idx+1, row.partNumber||'', detail,
             row.width1, row.height1,
           ];
@@ -1221,28 +1170,42 @@ export default function App() {
           dRowData.push(row.type === 'קשת' ? '' : row.length);
           if (hasElbow) dRowData.push(row.type === 'קשת' ? row.rBig : '', row.type === 'קשת' ? row.rSmall : '');
           if (hasInsulation) dRowData.push(row.acoustic ? '✓' : '', row.external ? '✓' : '');
-          dRowData.push(thick.toFixed(2), row.dofan||'', row.panels||1, area.toFixed(3), row.notes||'');
-
-          const dRow = ws.addRow(dRowData);
-          styleDataRow(dRow, regColCount, idx % 2 === 1);
-          rNum++;
+          dRowData.push(thick, row.dofan||'', row.panels||1, area, row.notes||'');
+          tableRows.push(dRowData);
         });
 
-        // Add spacing
-        rNum++;
+        ws.addTable({
+          name: `RegTable_${si}`,
+          ref: `A${rNum}`,
+          headerRow: true,
+          totalsRow: false,
+          style: { theme: 'TableStyleLight9', showRowStripes: true },
+          columns: regHeaders.map(formatHeaderTitle).map(h => ({ name: h, filterButton: false })),
+          rows: tableRows
+        });
+
+        const dataStart = rNum + 1;
+        const dataEnd = rNum + tableRows.length;
+        
+        let areaCol = maxCols - 1;
+        let thickCol = maxCols - 3;
+        let dofanCol = maxCols - 2;
+        
+        setNumericFormat(ws, areaCol, dataStart, dataEnd);
+        setNumericFormat(ws, thickCol, dataStart, dataEnd);
+        
+        let tRow = ws.getRow(dataEnd + 1);
+        tRow.getCell(areaCol - 1).value = 'סה"כ:';
+        tRow.font = { bold: true };
+        addSumFormula(ws, tRow, areaCol, dataStart, dataEnd);
+        addSumFormula(ws, tRow, dofanCol, dataStart, dataEnd);
+
+        rNum = dataEnd + 3; // space for accessories
       }
 
-      // ─── Accessories table ───
       if (accessoryRows.length > 0) {
-        const accHeaders = ['#','מס\' חלק','סוג אביזר','פירוט','אורך','כמות','הערות'];
-        const accColCount = accHeaders.length;
-
-        const accHRow = ws.addRow(accHeaders);
-        styleAccessoryHeaderRow(accHRow, accColCount);
-        // Merge last 3 header columns for הערות
-        ws.mergeCells(rNum, 5, rNum, 7);
-        rNum++;
-
+        const accHeaders = ['#',"מס' חלק",'סוג אביזר','פירוט','אורך','כמות','הערות'];
+        const tableRows = [];
         accessoryRows.forEach((row, idx) => {
           const displayType = row.type;
           let detail = '';
@@ -1262,25 +1225,38 @@ export default function App() {
             : row.type === 'חיבור גמיש' ? `גמיש: ${row.flexible} יח', אורך ${row.length} מ'`
             : row.notes;
 
-          const dRow = ws.addRow([
-            idx+1, row.partNumber||'', displayType, detail, autoNotes, '', ''
-          ]);
-          // Merge last 3 columns for notes in each data row
-          ws.mergeCells(rNum, 5, rNum, 7);
-          styleDataRow(dRow, accColCount, idx % 2 === 1);
-          rNum++;
+          tableRows.push([idx+1, row.partNumber||'', displayType, detail, row.length || '', qty, autoNotes || '']);
         });
+
+        ws.addTable({
+          name: `AccTable_${si}`,
+          ref: `A${rNum}`,
+          headerRow: true,
+          totalsRow: false,
+          style: { theme: 'TableStyleLight9', showRowStripes: true },
+          columns: accHeaders.map(formatHeaderTitle).map(h => ({ name: h, filterButton: false })),
+          rows: tableRows
+        });
+
+        const accDataEnd = rNum + tableRows.length;
+        let accQtyCol = 6;
+        let accTotalRow = ws.getRow(accDataEnd + 1);
+        accTotalRow.getCell(5).value = 'סה"כ:';
+        accTotalRow.font = { bold: true, name: 'Assistant' };
+        addSumFormula(ws, accTotalRow, accQtyCol, rNum + 1, accDataEnd);
+        rNum = accDataEnd + 3;
       }
 
-      // Column widths for regular columns
-      const colWidths = [5, 10, 28, 8, 8];
-      if (hasTransition) colWidths.push(8, 8);
-      colWidths.push(10);
-      if (hasElbow) colWidths.push(10, 10);
-      if (hasInsulation) colWidths.push(7, 7);
-      colWidths.push(8, 7, 7, 8, 15);
-
-      colWidths.forEach((w, i) => { ws.getColumn(i+1).width = w; });
+      // Smart column widths per export type
+      const notesCol = maxCols;
+      const colWidths: Record<number, number> = {};
+      for (let i = 1; i < maxCols; i++) colWidths[i] = 12;
+      colWidths[notesCol] = 28;
+      colWidths[3] = 28;
+      Object.entries(colWidths).forEach(([c, w]) => {
+        ws.getColumn(Number(c)).width = w;
+        ws.getColumn(Number(c)).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      });
     });
     downloadWorkbook(wb, `sharara_${dateStr}.xlsx`);
   }
@@ -1291,10 +1267,9 @@ export default function App() {
     wb.creator = 'שרארה מערכות מיזוג';
     wb.created = new Date();
     const dateStr = new Date().toISOString().slice(0, 10);
-    const infoLine = `לקוח: ${clientDetails.name}  |  פרויקט: ${selectedProject}  |  תאריך: ${docDate}`;
+    const pageSetup = { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 };
 
-    // Load logo
-    let logoImageId: number | undefined;
+    let logoImageId;
     try {
       if (companyLogo) {
         const base64Data = companyLogo.split(',')[1];
@@ -1309,32 +1284,17 @@ export default function App() {
       }
     } catch (e) { console.warn('Logo load failed:', e); }
 
-    const pageSetup = { paperSize: 9, orientation: 'landscape' as const, fitToPage: true, fitToWidth: 1, fitToHeight: 0 };
-
-    // Accumulate totals for summary sheet
-    const allRowTotals: { detail: string; area: number; insulation: number; adapter: number; dofan: number; shatuzar: number; flexible: number; sharshuri: number; thick125: number }[] = [];
+    const allRowTotals = [];
 
     sheets.forEach((sheet, si) => {
       const ws = wb.addWorksheet(`ריכוז ${si+1}`, { pageSetup });
       const cols = 12;
-      ws.mergeCells(1, 1, 1, cols);
-      const titleRow = ws.addRow([`ריכוז כמויות — ${sheet.name}`]);
-      titleRow.font = { bold: true, size: 14, name: 'Assistant', color: { argb: 'FF1F4E79' } };
-      titleRow.alignment = { horizontal: 'right', vertical: 'middle' };
-      titleRow.height = 30;
-      if (logoImageId !== undefined) ws.addImage(logoImageId, { tl: { col: 0, row: 0.2 }, ext: { width: 120, height: 60 } });
-      ws.mergeCells(2, 1, 2, cols);
-      const infoRow = ws.addRow([infoLine]);
-      infoRow.font = { size: 10, name: 'Assistant', italic: true, color: { argb: 'FF555555' } };
-      infoRow.alignment = { horizontal: 'right', vertical: 'middle' };
-      infoRow.height = 20;
+      applyLogoAndHeader(ws, logoImageId, `ריכוז כמויות — ${sheet.name}`, clientDetails.name, selectedProject, docDate, cols);
 
-      const headers = ['#','מס\' חלק','פירוט','פח (מ"ר)','בידוד (מ"ר)','מתאם (יח\')','דופן','שתוצר (יח\')','גמיש (מ"א)','שרשורי (מ"א)','פח 1.25 (מ"ר)','הערות'];
-      const hRow = ws.addRow(headers);
-      styleHeaderRow(hRow, cols);
-
-      // Per-sheet totals
+      const headers = ['#',"מס' חלק",'פירוט','פח (מ"ר)','בידוד (מ"ר)',"מתאם (יח')",'דופן',"שתוצר (יח')",'גמיש (מ"א)','שרשורי (מ"א)','פח 1.25 (מ"ר)','הערות'].map(formatHeaderTitle);
+      
       const sheetTotals = { area: 0, insulation: 0, adapter: 0, dofan: 0, shatuzar: 0, flexible: 0, sharshuri: 0, thick125: 0 };
+      const tableRows = [];
 
       sheet.rows.forEach((row, idx) => {
         const thick = calculateThickness(row.width1, row.height1, row.manualThickness);
@@ -1360,77 +1320,121 @@ export default function App() {
         sheetTotals.sharshuri += sharshuriMeters;
         sheetTotals.thick125 += is125 && area > 0 ? area : 0;
 
-        const dRow = ws.addRow([
+        tableRows.push([
           idx+1, row.partNumber||'', detail,
-          regArea > 0 ? regArea.toFixed(2) : '',
-          insulArea > 0 ? insulArea.toFixed(2) : '',
+          regArea > 0 ? regArea : '',
+          insulArea > 0 ? insulArea : '',
           adapterCount || '',
           row.dofan||'',
           row.shatuzar ? 1 : '',
           flexMeters || '',
           sharshuriMeters || '',
-          (is125 && area > 0) ? area.toFixed(2) : '',
+          (is125 && area > 0) ? area : '',
           row.notes||''
         ]);
-        styleDataRow(dRow, cols, idx % 2 === 1);
       });
 
-      // Sheet totals row
-      const tRow = ws.addRow(['', '', 'סה"כ:', sheetTotals.area.toFixed(2), sheetTotals.insulation.toFixed(2), sheetTotals.adapter || '', sheetTotals.dofan || '', sheetTotals.shatuzar || '', sheetTotals.flexible.toFixed(2), sheetTotals.sharshuri.toFixed(2), sheetTotals.thick125.toFixed(2), '']);
-      tRow.font = { bold: true, size: 11, name: 'Assistant', color: { argb: 'FF1F4E79' } };
-      tRow.height = 22;
-      for (let i = 1; i <= cols; i++) {
-        tRow.getCell(i).border = { top: { style: 'double' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-        tRow.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8F0FE' } };
-      }
+      const tableStartRow = 5;
+      ws.addTable({
+        name: `SumTable_${si}`,
+        ref: `A${tableStartRow}`,
+        headerRow: true,
+        totalsRow: false,
+        style: { theme: 'TableStyleLight9', showRowStripes: true },
+        columns: headers.map(h => ({ name: h, filterButton: false })),
+        rows: tableRows
+      });
 
-      [1,2,3,4,5,6,7,8,9,10,11,12].forEach((c,i) => { ws.getColumn(c).width = [5,10,28,10,10,10,7,10,10,10,12,18][i]; });
+      const dataStart = tableStartRow + 1;
+      const dataEnd = tableStartRow + tableRows.length;
+
+      setNumericFormat(ws, 4, dataStart, dataEnd);
+      setNumericFormat(ws, 5, dataStart, dataEnd);
+      setNumericFormat(ws, 9, dataStart, dataEnd);
+      setNumericFormat(ws, 10, dataStart, dataEnd);
+      setNumericFormat(ws, 11, dataStart, dataEnd);
+
+      const totalRow = ws.getRow(dataEnd + 1);
+      totalRow.getCell(3).value = 'סה"כ:';
+      totalRow.font = { bold: true };
+      
+      addSumFormula(ws, totalRow, 4, dataStart, dataEnd);
+      addSumFormula(ws, totalRow, 5, dataStart, dataEnd);
+      addSumFormula(ws, totalRow, 6, dataStart, dataEnd);
+      addSumFormula(ws, totalRow, 7, dataStart, dataEnd);
+      addSumFormula(ws, totalRow, 8, dataStart, dataEnd);
+      addSumFormula(ws, totalRow, 9, dataStart, dataEnd);
+      addSumFormula(ws, totalRow, 10, dataStart, dataEnd);
+      addSumFormula(ws, totalRow, 11, dataStart, dataEnd);
+
+      for (let i = 1; i <= cols; i++) {
+        ws.getColumn(i).width = 12;
+        ws.getColumn(i).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      }
+      ws.getColumn(3).width = 28;  // פירוט
+      ws.getColumn(12).width = 28; // הערות
+
+      // Right-align text columns: פירוט(3), הערות(12)
+      alignColumnsRight(ws, [3, 12], dataStart, dataEnd);
 
       allRowTotals.push({ detail: `דף ${si+1}: ${sheet.name}`, ...sheetTotals });
     });
 
-    // ─── Summary sheet at the end ───
+    // Summary sheet at the end
     const sumWs = wb.addWorksheet('ריכוז כללי', { pageSetup });
     const sumCols = 10;
-    sumWs.mergeCells(1, 1, 1, sumCols);
-    const sumTitle = sumWs.addRow(['ריכוז כללי לכל דפי הריכוז']);
-    sumTitle.font = { bold: true, size: 14, name: 'Assistant', color: { argb: 'FF1F4E79' } };
-    sumTitle.alignment = { horizontal: 'right', vertical: 'middle' };
-    sumTitle.height = 30;
-    if (logoImageId !== undefined) sumWs.addImage(logoImageId, { tl: { col: 0, row: 0.2 }, ext: { width: 120, height: 60 } });
-    sumWs.mergeCells(2, 1, 2, sumCols);
-    const sumInfo = sumWs.addRow([infoLine]);
-    sumInfo.font = { size: 10, name: 'Assistant', italic: true, color: { argb: 'FF555555' } };
-    sumInfo.alignment = { horizontal: 'right', vertical: 'middle' };
-    sumInfo.height = 20;
+    applyLogoAndHeader(sumWs, logoImageId, 'ריכוז כללי לכל דפי הריכוז', clientDetails.name, selectedProject, docDate, sumCols);
 
-    const sumHeaders = ['#','גיליון','פח (מ"ר)','בידוד (מ"ר)','מתאם (יח\')','דופן','שתוצר (יח\')','גמיש (מ"א)','שרשורי (מ"א)','פח 1.25 (מ"ר)'];
-    const sumHRow = sumWs.addRow(sumHeaders);
-    styleHeaderRow(sumHRow, sumCols);
+    const sumHeaders = ['#','גיליון','פח (מ"ר)','בידוד (מ"ר)',"מתאם (יח')",'דופן',"שתוצר (יח')",'גמיש (מ"א)','שרשורי (מ"א)','פח 1.25 (מ"ר)'].map(formatHeaderTitle);
+    
+    const tableStartRow = 5;
+    const tableRows = allRowTotals.map((rt, idx) => [
+      idx+1, rt.detail, 
+      rt.area || '', rt.insulation || '', rt.adapter || '', 
+      rt.dofan || '', rt.shatuzar || '', rt.flexible || '', 
+      rt.sharshuri || '', rt.thick125 || ''
+    ]);
 
-    const grandTotals = { area: 0, insulation: 0, adapter: 0, dofan: 0, shatuzar: 0, flexible: 0, sharshuri: 0, thick125: 0 };
-    allRowTotals.forEach((rt, idx) => {
-      const r = sumWs.addRow([idx+1, rt.detail, rt.area.toFixed(2), rt.insulation.toFixed(2), rt.adapter || '', rt.dofan || '', rt.shatuzar || '', rt.flexible.toFixed(2), rt.sharshuri.toFixed(2), rt.thick125.toFixed(2)]);
-      styleDataRow(r, sumCols, idx % 2 === 1);
-      grandTotals.area += rt.area;
-      grandTotals.insulation += rt.insulation;
-      grandTotals.adapter += rt.adapter;
-      grandTotals.dofan += rt.dofan;
-      grandTotals.shatuzar += rt.shatuzar;
-      grandTotals.flexible += rt.flexible;
-      grandTotals.sharshuri += rt.sharshuri;
-      grandTotals.thick125 += rt.thick125;
+    sumWs.addTable({
+      name: 'GrandSummaryTable',
+      ref: `A${tableStartRow}`,
+      headerRow: true,
+      totalsRow: false,
+      style: { theme: 'TableStyleLight9', showRowStripes: true },
+      columns: sumHeaders.map(h => ({ name: h, filterButton: false })),
+      rows: tableRows
     });
 
-    const gtRow = sumWs.addRow(['', 'סה"כ הכללי:', grandTotals.area.toFixed(2), grandTotals.insulation.toFixed(2), grandTotals.adapter || '', grandTotals.dofan || '', grandTotals.shatuzar || '', grandTotals.flexible.toFixed(2), grandTotals.sharshuri.toFixed(2), grandTotals.thick125.toFixed(2)]);
-    gtRow.font = { bold: true, size: 12, name: 'Assistant', color: { argb: 'FF1F4E79' } };
-    gtRow.height = 26;
-    for (let i = 1; i <= sumCols; i++) {
-      gtRow.getCell(i).border = { top: { style: 'double' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-      gtRow.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8F0FE' } };
-    }
+    const dataStart = tableStartRow + 1;
+    const dataEnd = tableStartRow + tableRows.length;
 
-    [1,2,3,4,5,6,7,8,9,10].forEach((c,i) => { sumWs.getColumn(c).width = [5,28,10,10,10,7,10,10,10,12][i]; });
+    setNumericFormat(sumWs, 3, dataStart, dataEnd);
+    setNumericFormat(sumWs, 4, dataStart, dataEnd);
+    setNumericFormat(sumWs, 8, dataStart, dataEnd);
+    setNumericFormat(sumWs, 9, dataStart, dataEnd);
+    setNumericFormat(sumWs, 10, dataStart, dataEnd);
+
+    const grandTotalRow = sumWs.getRow(dataEnd + 1);
+    grandTotalRow.getCell(2).value = 'סה"כ:';
+    grandTotalRow.font = { bold: true };
+    
+    addSumFormula(sumWs, grandTotalRow, 3, dataStart, dataEnd);
+    addSumFormula(sumWs, grandTotalRow, 4, dataStart, dataEnd);
+    addSumFormula(sumWs, grandTotalRow, 5, dataStart, dataEnd);
+    addSumFormula(sumWs, grandTotalRow, 6, dataStart, dataEnd);
+    addSumFormula(sumWs, grandTotalRow, 7, dataStart, dataEnd);
+    addSumFormula(sumWs, grandTotalRow, 8, dataStart, dataEnd);
+    addSumFormula(sumWs, grandTotalRow, 9, dataStart, dataEnd);
+    addSumFormula(sumWs, grandTotalRow, 10, dataStart, dataEnd);
+
+    for (let i = 1; i <= sumCols; i++) {
+      sumWs.getColumn(i).width = 14;
+      sumWs.getColumn(i).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    }
+    sumWs.getColumn(2).width = 22; // גיליון
+
+    // Right-align "גיליון" column
+    alignColumnsRight(sumWs, [2], dataStart, dataEnd);
 
     downloadWorkbook(wb, `sharara_summary_${dateStr}.xlsx`);
   }
@@ -1441,11 +1445,10 @@ export default function App() {
     wb.creator = 'שרארה מערכות מיזוג';
     wb.created = new Date();
     const dateStr = new Date().toISOString().slice(0, 10);
-    const ws = wb.addWorksheet('חשבון פרופורמה', { pageSetup: { paperSize: 9, orientation: 'landscape' as const, fitToPage: true, fitToWidth: 1, fitToHeight: 0 } });
+    const ws = wb.addWorksheet('חשבון פרופורמה', { pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 } });
     const cols = 5;
 
-    // Load logo
-    let logoImageId: number | undefined;
+    let logoImageId;
     try {
       if (companyLogo) {
         const base64Data = companyLogo.split(',')[1];
@@ -1460,60 +1463,57 @@ export default function App() {
       }
     } catch (e) { console.warn('Logo load failed:', e); }
 
-    ws.mergeCells(1, 1, 1, cols);
-    const titleRow = ws.addRow(['חשבון פרופורמה']);
-    titleRow.font = { bold: true, size: 16, name: 'Assistant', color: { argb: 'FF1F4E79' } };
-    titleRow.alignment = { horizontal: 'right', vertical: 'middle' };
-    titleRow.height = 34;
-    if (logoImageId !== undefined) ws.addImage(logoImageId, { tl: { col: 0, row: 0.2 }, ext: { width: 120, height: 60 } });
-
-    ws.mergeCells(2, 1, 2, cols);
-    const infoRow = ws.addRow([`לקוח: ${clientDetails.name}  |  פרויקט: ${selectedProject}  |  תאריך: ${docDate}  |  מס' מסמך: ${docNumber}`]);
-    infoRow.font = { size: 10, name: 'Assistant', italic: true, color: { argb: 'FF555555' } };
-    infoRow.alignment = { horizontal: 'right', vertical: 'middle' };
-    infoRow.height = 20;
+    applyLogoAndHeader(ws, logoImageId, 'חשבון פרופורמה', clientDetails.name, selectedProject, docDate, cols);
 
     const allTotals = { t08: 0, t10: 0, t125: 0, flexible: 0, acoustic: 0, external: 0, sharshuri4: 0, sharshuri6: 0, sharshuri8: 0, sharshuri10: 0, sharshuri12: 0, sharshuri14: 0, adapterQty: 0, shatuzar: 0 };
-    sheets.forEach(s => { const t = getSheetTotals(s); Object.keys(allTotals).forEach(k => allTotals[k as keyof typeof allTotals] += t[k as keyof typeof t]); });
-    const gp = (k: string) => getInvoicePrice(k);
-    const items: { label: string; qty: number; unit: string; price: number; total: number }[] = [];
+    sheets.forEach(s => { const t = getSheetTotals(s); Object.keys(allTotals).forEach(k => allTotals[k] += t[k]); });
+    const gp = (k) => getInvoicePrice(k);
+    const items = [];
     if (allTotals.t08 > 0) items.push({ label: 'פח מגולוון עובי 0.8 מ"מ', qty: allTotals.t08, unit: 'מ"ר', price: gp('פח 0.8'), total: allTotals.t08 * gp('פח 0.8') });
     if (allTotals.t10 > 0) items.push({ label: 'פח מגולוון עובי 1.0 מ"מ', qty: allTotals.t10, unit: 'מ"ר', price: gp('פח 1.0'), total: allTotals.t10 * gp('פח 1.0') });
     if (allTotals.t125 > 0) items.push({ label: 'פח מגולוון עובי 1.25 מ"מ', qty: allTotals.t125, unit: 'מ"ר', price: gp('פח 1.25'), total: allTotals.t125 * gp('פח 1.25') });
-    if (allTotals.shatuzar > 0) items.push({ label: 'שתוצר עגול לתעלות', qty: allTotals.shatuzar, unit: 'יח\'', price: gp('שתוצר עגול'), total: allTotals.shatuzar * gp('שתוצר עגול') });
+    if (allTotals.shatuzar > 0) items.push({ label: 'שתוצר עגול לתעלות', qty: allTotals.shatuzar, unit: "יח'", price: gp('שתוצר עגול'), total: allTotals.shatuzar * gp('שתוצר עגול') });
     if (allTotals.flexible > 0) items.push({ label: 'חיבור גמיש מונע רעידות', qty: allTotals.flexible, unit: 'מ"א', price: gp('חיבור גמיש'), total: allTotals.flexible * gp('חיבור גמיש') });
     if (allTotals.acoustic > 0) items.push({ label: 'בידוד אקוסטי', qty: allTotals.acoustic, unit: 'מ"ר', price: gp('בידוד אקוסטי'), total: allTotals.acoustic * gp('בידוד אקוסטי') });
     if (allTotals.external > 0) items.push({ label: 'בידוד חיצוני', qty: allTotals.external, unit: 'מ"ר', price: gp('בידוד חיצוני'), total: allTotals.external * gp('בידוד חיצוני') });
     const sumSharshuri = allTotals.sharshuri4 + allTotals.sharshuri6 + allTotals.sharshuri8 + allTotals.sharshuri10 + allTotals.sharshuri12 + allTotals.sharshuri14;
     if (sumSharshuri > 0) items.push({ label: 'שרשוריות', qty: sumSharshuri, unit: 'מ"א', price: gp('שרשוריות'), total: sumSharshuri * gp('שרשוריות') });
-    if (allTotals.adapterQty > 0) items.push({ label: 'מתאמים', qty: allTotals.adapterQty, unit: 'יח\'', price: gp('מתאמים'), total: allTotals.adapterQty * gp('מתאמים') });
+    if (allTotals.adapterQty > 0) items.push({ label: 'מתאמים', qty: allTotals.adapterQty, unit: "יח'", price: gp('מתאמים'), total: allTotals.adapterQty * gp('מתאמים') });
 
-    const headers = ['תיאור', 'כמות', 'יחידה', 'מחיר ליחידה', 'סה"כ'];
-    const hRow = ws.addRow(headers);
-    styleHeaderRow(hRow, cols);
-
-    items.forEach((item, idx) => {
-      const dRow = ws.addRow([item.label, item.qty.toFixed(2), item.unit, item.price.toFixed(2), item.total.toFixed(2)]);
-      styleDataRow(dRow, cols, idx % 2 === 1);
+    const headers = ['תיאור', 'כמות', 'יחידה', 'מחיר ליחידה', 'סה"כ'].map(formatHeaderTitle);
+    
+    const tableStartRow = 5;
+    ws.addTable({
+      name: 'InvoiceTable',
+      ref: `A${tableStartRow}`,
+      headerRow: true,
+      totalsRow: false,
+      style: { theme: 'TableStyleLight9', showRowStripes: true },
+      columns: headers.map(h => ({ name: h, filterButton: false })),
+      rows: items.map(item => [item.label, item.qty, item.unit, item.price, item.total]),
     });
 
-    const grandTotal = items.reduce((s, i) => s + i.total, 0);
-    const totalRow = ws.addRow(['', '', '', 'סה"כ לתשלום:', grandTotal.toFixed(2)]);
-    totalRow.font = { bold: true, size: 12, name: 'Assistant', color: { argb: 'FF1F4E79' } };
-    totalRow.alignment = { horizontal: 'center', vertical: 'middle' };
-    totalRow.height = 28;
-    totalRow.getCell(4).alignment = { horizontal: 'right', vertical: 'middle' };
-    totalRow.getCell(5).alignment = { horizontal: 'center', vertical: 'middle' };
-    for (let i = 1; i <= cols; i++) {
-      totalRow.getCell(i).border = { top: { style: 'double' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-      totalRow.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8F0FE' } };
-    }
+    const dataStart = tableStartRow + 1;
+    const dataEnd = tableStartRow + items.length;
 
-    ws.getColumn(1).width = 32;
-    ws.getColumn(2).width = 12;
-    ws.getColumn(3).width = 8;
-    ws.getColumn(4).width = 14;
-    ws.getColumn(5).width = 14;
+    setNumericFormat(ws, 2, dataStart, dataEnd); 
+    setCurrencyFormat(ws, 4, dataStart, dataEnd);
+    setCurrencyFormat(ws, 5, dataStart, dataEnd);
+
+    const grandTotalRow = dataEnd + 1;
+    const totalRow = ws.getRow(grandTotalRow);
+    totalRow.getCell(4).value = 'סה"כ:';
+    totalRow.font = { bold: true, size: 12 };
+    totalRow.getCell(4).alignment = { horizontal: 'right', vertical: 'middle' };
+    
+    addSumFormula(ws, totalRow, 5, dataStart, dataEnd);
+    
+    for (let i = 1; i <= cols; i++) {
+      ws.getColumn(i).width = 16;
+      ws.getColumn(i).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    }
+    ws.getColumn(1).width = 35; // תיאור
+    ws.getColumn(5).width = 18; // סה"כ
 
     downloadWorkbook(wb, `sharara_invoice_${dateStr}.xlsx`);
   }
@@ -1524,11 +1524,10 @@ export default function App() {
     wb.creator = 'שרארה מערכות מיזוג';
     wb.created = new Date();
     const dateStr = new Date().toISOString().slice(0, 10);
-    const ws = wb.addWorksheet('מחירון', { pageSetup: { paperSize: 9, orientation: 'landscape' as const, fitToPage: true, fitToWidth: 1, fitToHeight: 0 } });
+    const ws = wb.addWorksheet('מחירון', { pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 } });
     const cols = 2;
 
-    // Load logo
-    let logoImageId: number | undefined;
+    let logoImageId;
     try {
       if (companyLogo) {
         const base64Data = companyLogo.split(',')[1];
@@ -1543,32 +1542,143 @@ export default function App() {
       }
     } catch (e) { console.warn('Logo load failed:', e); }
 
-    ws.mergeCells(1, 1, 1, cols);
-    const titleRow = ws.addRow(['מחירון — שרארה מערכות מיזוג']);
-    titleRow.font = { bold: true, size: 14, name: 'Assistant', color: { argb: 'FF1F4E79' } };
-    titleRow.alignment = { horizontal: 'right', vertical: 'middle' };
-    titleRow.height = 30;
-    if (logoImageId !== undefined) ws.addImage(logoImageId, { tl: { col: 0, row: 0.2 }, ext: { width: 120, height: 60 } });
-    ws.mergeCells(2, 1, 2, cols);
-    const infoRow = ws.addRow([`תאריך: ${docDate}  |  מס' מסמך: ${docNumber}`]);
-    infoRow.font = { size: 10, name: 'Assistant', italic: true, color: { argb: 'FF555555' } };
-    infoRow.alignment = { horizontal: 'right', vertical: 'middle' };
-    infoRow.height = 20;
+    applyLogoAndHeader(ws, logoImageId, 'מחירון — שרארה מערכות מיזוג', clientDetails.name, selectedProject, docDate, cols);
 
-    const headers = ['שם פריט/שירות', 'מחיר (₪)'];
-    const hRow = ws.addRow(headers);
-    styleHeaderRow(hRow, cols);
-
-    pricesList.forEach((p, idx) => {
-      const dRow = ws.addRow([p.detail, p.price]);
-      styleDataRow(dRow, cols, idx % 2 === 1);
+    const headers = ['שם פריט/שירות', 'מחיר (₪)'].map(formatHeaderTitle);
+    
+    const tableStart = 5;
+    ws.addTable({
+      name: 'PriceListTable',
+      ref: `A${tableStart}`,
+      headerRow: true,
+      totalsRow: false,
+      style: { theme: 'TableStyleLight9', showRowStripes: true },
+      columns: headers.map(h => ({ name: h, filterButton: false })),
+      rows: pricesList.map(p => [p.detail, p.price])
     });
 
-    ws.getColumn(1).width = 38;
-    ws.getColumn(2).width = 16;
+    const dataStart = tableStart + 1;
+    const dataEnd = tableStart + pricesList.length;
+
+    setCurrencyFormat(ws, 2, dataStart, dataEnd);
+
+    for (let i = 1; i <= cols; i++) {
+      ws.getColumn(i).width = 25;
+      ws.getColumn(i).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    }
+    ws.getColumn(2).width = 16; // מחיר
 
     downloadWorkbook(wb, `sharara_pricelist_${dateStr}.xlsx`);
   }
+
+  // ── ייצוא דף ייצור לאקסל מעוצב ──
+  const exportProductionToExcel = async () => {
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'שרארה מערכות מיזוג';
+    wb.created = new Date();
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const ws = wb.addWorksheet('דף ייצור', { pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 } });
+    const cols = 9;
+
+    let logoImageId;
+    try {
+      if (companyLogo) {
+        const base64Data = companyLogo.split(',')[1];
+        const binaryStr = atob(base64Data);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+        logoImageId = wb.addImage({ buffer: bytes, extension: 'png' });
+      } else {
+        const resp = await fetch(logoSrc);
+        const buf = await resp.arrayBuffer();
+        logoImageId = wb.addImage({ buffer: new Uint8Array(buf), extension: 'png' });
+      }
+    } catch (e) { console.warn('Logo load failed:', e); }
+
+    applyLogoAndHeader(ws, logoImageId, 'דף ייצור — תעלות ואביזרים', clientDetails.name, selectedProject, docDate, cols);
+
+    const regularRows = activeSheet.rows.filter(r => !['שתוצר','מתאם','שרשורי','חיבור גמיש'].includes(r.type));
+    const accessoryRows = activeSheet.rows.filter(r => ['שתוצר','מתאם','שרשורי','חיבור גמיש'].includes(r.type));
+
+    let currentRow = 5;
+
+    if (regularRows.length > 0) {
+      const headers = ['#', "מס' חלק", 'סוג חלק', 'רוחב (מ"מ)', 'גובה (מ"מ)', 'אורך (מ"מ)', "מס' חלקים", 'עובי פח', 'דופן'].map(formatHeaderTitle);
+      const tableRows = regularRows.map((row, idx) => {
+        const thick = calculateThickness(row.width1, row.height1, row.manualThickness);
+        const displayType = row.notes && ['לאמד S','צינור עגול','קופסת פיזור','מדף אש'].includes(row.notes) ? row.notes : row.type;
+        return [
+          idx + 1,
+          row.partNumber || '',
+          displayType,
+          row.width1 || '',
+          row.height1 || '',
+          row.length || '',
+          row.panels || 1,
+          thick,
+          row.dofan || ''
+        ];
+      });
+
+      ws.addTable({
+        name: 'ProductionRegTable',
+        ref: `A${currentRow}`,
+        headerRow: true,
+        totalsRow: false,
+        style: { theme: 'TableStyleLight9', showRowStripes: true },
+        columns: headers.map(h => ({ name: h, filterButton: false })),
+        rows: tableRows
+      });
+
+      const dataStart = currentRow + 1;
+      const dataEnd = currentRow + tableRows.length;
+      setNumericFormat(ws, 8, dataStart, dataEnd);
+      currentRow = dataEnd + 3;
+    }
+
+    if (accessoryRows.length > 0) {
+      const accHeaders = ['#', "מס' חלק", 'סוג אביזר', 'פירוט', 'אורך', 'כמות', 'הערות'].map(formatHeaderTitle);
+      const accTableRows = accessoryRows.map((row, idx) => {
+        let detail = '';
+        if (row.type === 'שתוצר') detail = 'יחידות';
+        else if (row.type === 'מתאם') detail = row.adapterType || 'ללא';
+        else if (row.type === 'שרשורי') detail = `קוטר ${row.sharshuriType}`;
+        else if (row.type === 'חיבור גמיש') detail = `${row.flexible || 0} יחידות`;
+
+        const qty = row.type === 'מתאם' ? row.adapterQty
+          : row.type === 'שתוצר' ? row.panels
+          : row.type === 'חיבור גמיש' ? row.flexible
+          : '';
+
+        const autoNotes = row.type === 'שתוצר' ? 'שתוצר'
+          : row.type === 'מתאם' ? `מתאם: ${row.adapterType}`
+          : row.type === 'שרשורי' ? `שרשורי: קוטר ${row.sharshuriType}, אורך ${row.length}`
+          : row.type === 'חיבור גמיש' ? `גמיש: ${row.flexible} יח', אורך ${row.length} מ'`
+          : row.notes;
+
+        return [idx + 1, row.partNumber || '', row.type, detail, row.length || '', qty, autoNotes || ''];
+      });
+
+      ws.addTable({
+        name: 'ProductionAccTable',
+        ref: `A${currentRow}`,
+        headerRow: true,
+        totalsRow: false,
+        style: { theme: 'TableStyleLight9', showRowStripes: true },
+        columns: accHeaders.map(h => ({ name: h, filterButton: false })),
+        rows: accTableRows
+      });
+    }
+
+    // Column widths
+    const colWidths: Record<number, number> = { 1: 6, 2: 16, 3: 18, 4: 14, 5: 14, 6: 14, 7: 12, 8: 12, 9: 12 };
+    Object.entries(colWidths).forEach(([c, w]) => {
+      ws.getColumn(Number(c)).width = w;
+      ws.getColumn(Number(c)).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    });
+
+    downloadWorkbook(wb, `sharara_production_${activeSheet.name}_${dateStr}.xlsx`);
+  };
 
   if (!isLoggedIn) {
     return (
@@ -3649,6 +3759,24 @@ export default function App() {
                     }}
                   >
                     🖨️ הדפס דפי ייצור / שמור כ-PDF
+                  </button>
+                  <button
+                    onClick={exportProductionToExcel}
+                    style={{
+                      padding: '10px 24px',
+                      backgroundColor: '#16a34a',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <FileDown size={14} /> Excel
                   </button>
                 </div>
 
