@@ -76,7 +76,7 @@ export default function PrintableReport({
             {/* Header block (logo + info) */}
             <div className="pt-header-block">
               <div className="pt-header">
-                <img src={logoSrc} alt="לוגו" className="pt-logo" />
+                <img src={logoSrc} alt="לוגו" className="pt-logo" style={{ printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' }} />
                 <span className="pt-title">שרארה — דוח מדידות תעלות פח</span>
               </div>
               <div className="pt-info">
@@ -121,13 +121,13 @@ export default function PrintableReport({
                         <td className="pt-detail"><bdi>{detail}</bdi></td>
                         <td>{row.width1}</td>
                         <td>{row.height1}</td>
-                        {hasTransition && <td>{row.type === 'מעבר' ? row.width2 : '–'}</td>}
-                        {hasTransition && <td>{row.type === 'מעבר' ? row.height2 : '–'}</td>}
+                        <td>{hasTransition ? (row.type === 'מעבר' ? row.width2 : '–') : ''}</td>
+                        <td>{hasTransition ? (row.type === 'מעבר' ? row.height2 : '–') : ''}</td>
                         <td>{row.type === 'קשת' ? '–' : row.length}</td>
-                        {hasElbow && <td>{row.type === 'קשת' ? row.rBig : '–'}</td>}
-                        {hasElbow && <td>{row.type === 'קשת' ? row.rSmall : '–'}</td>}
-                        {hasInsulation && <td>{row.acoustic ? '✓' : '–'}</td>}
-                        {hasInsulation && <td>{row.external ? '✓' : '–'}</td>}
+                        <td>{hasElbow ? (row.type === 'קשת' ? row.rBig : '–') : ''}</td>
+                        <td>{hasElbow ? (row.type === 'קשת' ? row.rSmall : '–') : ''}</td>
+                        <td>{hasInsulation ? (row.acoustic ? '✓' : '–') : ''}</td>
+                        <td>{hasInsulation ? (row.external ? '✓' : '–') : ''}</td>
                         <td>{thick.toFixed(2)}</td>
                         <td>{row.dofan || '–'}</td>
                         <td>{row.panels || 1}</td>

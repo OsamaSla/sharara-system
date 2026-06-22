@@ -175,32 +175,18 @@ export default function ProductionPartSketch({ row, width = 130, height = 95 }: 
         </>
       )}
 
-      {/* ═══════════ מעבר ═══════════ */}
-      {key === 'transition' && (
-        <>
-          <polygon points="18,28 102,28 90,70 30,70" fill="url(#steelGradV)" stroke="#374151" strokeWidth="1.5" />
-          <line x1="18" y1="28" x2="30" y2="70" stroke="#374151" strokeWidth="1.5" />
-          <line x1="102" y1="28" x2="90" y2="70" stroke="#374151" strokeWidth="1.5" />
-          <line x1="18" y1="28" x2="102" y2="28" stroke="#374151" strokeWidth="1.5" />
-          <line x1="30" y1="70" x2="90" y2="70" stroke="#374151" strokeWidth="1.5" />
-          <line x1="40" y1="30" x2="38" y2="68" stroke="#9ca3af" strokeWidth="0.5" strokeDasharray="3,2" />
-          <line x1="70" y1="30" x2="72" y2="68" stroke="#9ca3af" strokeWidth="0.5" strokeDasharray="3,2" />
-          <rect x="12" y="26" width="6" height="4" fill="none" stroke="#374151" strokeWidth="0.8" rx="0.5" />
-          <rect x="24" y="68" width="6" height="4" fill="none" stroke="#374151" strokeWidth="0.8" rx="0.5" />
-          <rect x="102" y="26" width="6" height="4" fill="none" stroke="#374151" strokeWidth="0.8" rx="0.5" />
-          <rect x="90" y="68" width="6" height="4" fill="none" stroke="#374151" strokeWidth="0.8" rx="0.5" />
-          <line x1="14" y1="28" x2="14" y2="70" stroke="#64748b" strokeWidth="0.7" markerStart="url(#arrowStart)" markerEnd="url(#arrowEnd)" />
-          <text x="8" y="50" textAnchor="middle" fontSize="5.5" fill="#475569" fontFamily="Rubik, sans-serif" fontWeight="500" transform="rotate(-90,8,50)">פתח 1</text>
-          <line x1="112" y1="28" x2="112" y2="70" stroke="#64748b" strokeWidth="0.7" markerStart="url(#arrowStart)" markerEnd="url(#arrowEnd)" />
-          <text x="118" y="50" textAnchor="middle" fontSize="5.5" fill="#475569" fontFamily="Rubik, sans-serif" fontWeight="500" transform="rotate(90,118,50)">פתח 2</text>
-          <line x1="55" y1="18" x2="55" y2="24" stroke="#2563eb" strokeWidth="0.7" />
-          <line x1="55" y1="76" x2="55" y2="82" stroke="#2563eb" strokeWidth="0.7" />
-          <line x1="55" y1="24" x2="55" y2="76" stroke="#2563eb" strokeWidth="0.7" strokeDasharray="2,1.5" />
-          <text x="60" y="52" fontSize="6" fill="#2563eb" fontFamily="Rubik, sans-serif" fontWeight="600">אורך</text>
-          <polygon points="120,46 124,48 120,50" fill="#94a3b8" />
-          <line x1="106" y1="48" x2="120" y2="48" stroke="#94a3b8" strokeWidth="0.6" />
-        </>
-      )}
+     {/* ═══════════ מעבר ═══════════ */}
+{key === 'transition' && (
+  <g width="120" height="60">
+    <path 
+      d="M 25,15 L 95,15 L 80,45 L 40,45 Z" 
+      fill="#d1d5db" 
+      stroke="#374151" 
+      strokeWidth="1.5" 
+      strokeLinejoin="round"
+    />
+  </g>
+)}
 
       {/* ═══════════ לאמד S (היסט גובה) ═══════════ */}
       {key === 'lamed-s' && (

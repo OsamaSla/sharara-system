@@ -80,37 +80,25 @@
   }
 
   /* ══════════════════════════════════════════
-     5. PAGE ORIENTATION — via @page on spacers
+     5. PAGE ORIENTATION — via @page on parent tabs
      ══════════════════════════════════════════ */
   .portrait-print { page: portrait-page; }
   .landscape-print { page: landscape-page; }
 
   .print-orientation-spacer {
     display: none !important;
-  }
-  .print-orientation-spacer.landscape-print {
-    display: block !important;
     height: 0 !important;
-    line-height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
     margin: 0 !important;
     padding: 0 !important;
     border: 0 !important;
-    overflow: hidden !important;
-    page: landscape-page;
-  }
-  .print-orientation-spacer.portrait-print {
-    display: block !important;
-    height: 0 !important;
     line-height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: 0 !important;
-    overflow: hidden !important;
-    page: portrait-page;
   }
 
   .active-tab-summary,
-  .active-tab-production {
+  .active-tab-production,
+  .active-tab-measure {
     page: landscape-page;
     width: 100% !important;
     max-width: none !important;
@@ -158,6 +146,11 @@
     width: 100% !important;
   }
 
+  .app-content-wrapper {
+    min-height: auto !important;
+    height: auto !important;
+  }
+
   /* ══════════════════════════════════════════
      7. COMPANY LETTERHEAD — compact, keep together
      ══════════════════════════════════════════ */
@@ -173,6 +166,13 @@
   .company-letterhead .cl-links { font-size: 9px !important; gap: 24px !important; padding: 3px 0 !important; }
   .company-letterhead .cl-bottom { font-size: 7.5px !important; gap: 8px !important; padding-top: 4px !important; line-height: 1.35 !important; }
   .company-letterhead .cl-logo-img { max-height: 40px !important; max-width: 100px !important; }
+  .cl-logo-img,
+  .pt-logo {
+    display: block !important;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
 
   /* ══════════════════════════════════════════
      8. SUMMARY PAGE — page breaks between sheets
@@ -273,13 +273,51 @@
   }
 
   /* ══════════════════════════════════════════
-     12. PRINTABLE REPORT (measurement only)
+     12. BLANK PAGE PREVENTION — kill empty layout containers
+         NEVER kill table cells, rows, images, or SVGs
      ══════════════════════════════════════════ */
+  :not(td):not(th):not(tr):not(img):not(svg):not(path):not(rect):not(.pt-logo):not(.cl-logo-img):empty {
+    display: none !important;
+  }
+
+  /* ══════════════════════════════════════════
+     13. PRINTABLE REPORT — break control
+     ══════════════════════════════════════════ */
+  .printable-report table,
+  .printable-report tr,
+  .printable-report img,
+  .printable-report .company-letterhead {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
   .pt-sheet-section {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .pt-sheet-section:not(:last-child) {
     page-break-after: always;
+    break-after: always;
   }
   .pt-sheet-section:last-child {
     page-break-after: auto;
+    break-after: auto;
+  }
+
+  /* ══════════════════════════════════════════
+     14. SVG SKETCHES — force visibility in PDF
+     ══════════════════════════════════════════ */
+  svg.prod-sketch {
+    display: block !important;
+    overflow: visible !important;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  .production-table td:has(svg.prod-sketch) {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
   }
 }
 
@@ -289,14 +327,6 @@
   font-family: 'Assistant', 'Rubik', 'Arial', sans-serif;
   direction: rtl;
   line-height: 1.3;
-}
-
-.pt-sheet-section {
-  page-break-after: always;
-}
-
-.pt-sheet-section:last-child {
-  page-break-after: auto;
 }
 
 .pt-header-block {

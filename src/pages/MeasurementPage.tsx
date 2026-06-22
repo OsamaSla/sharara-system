@@ -126,7 +126,7 @@ export default function MeasurementPage({
   getRowWarnings,
 }: MeasurementPageProps) {
   return (
-    <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #cbd5e1', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', width: '100%' }}>
+    <div className="print-document" style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #cbd5e1', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', width: '100%' }}>
 
       <div style={{ backgroundColor: '#1e293b', color: '#ffffff', padding: '12px 16px', borderTopLeftRadius: '7px', borderTopRightRadius: '7px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'nowrap' }}>
 
@@ -623,13 +623,13 @@ export default function MeasurementPage({
                     <th style={{ padding: '12px 8px', width: '140px' }}>סוג חלק</th>
                     <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#f8fafc' }}>רוחב</th>
                     <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#f8fafc' }}>גובה</th>
-                    {hasTransition && <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#e2f5ec' }}>רוחב 2</th>}
-                    {hasTransition && <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#e2f5ec' }}>גובה 2</th>}
+                    <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: hasTransition ? '#e2f5ec' : 'transparent', width: hasTransition ? '65px' : undefined }}>{hasTransition ? 'רוחב 2' : ''}</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: hasTransition ? '#e2f5ec' : 'transparent', width: hasTransition ? '65px' : undefined }}>{hasTransition ? 'גובה 2' : ''}</th>
                     <th style={{ padding: '12px 8px', textAlign: 'center' }}>אורך (מטר)</th>
-                    {hasElbow && <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#fff7ed' }}>רדיוס גדול</th>}
-                    {hasElbow && <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#fff7ed' }}>רדיוס קטן</th>}
-                    {hasInsulation && <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#faf5ff' }}>אקוסטי</th>}
-                    {hasInsulation && <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#faf5ff' }}>חיצוני</th>}
+                    <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: hasElbow ? '#fff7ed' : 'transparent', width: hasElbow ? '65px' : undefined }}>{hasElbow ? 'רדיוס גדול' : ''}</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: hasElbow ? '#fff7ed' : 'transparent', width: hasElbow ? '65px' : undefined }}>{hasElbow ? 'רדיוס קטן' : ''}</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: hasInsulation ? '#faf5ff' : 'transparent' }}>{hasInsulation ? 'אקוסטי' : ''}</th>
+                    <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: hasInsulation ? '#faf5ff' : 'transparent' }}>{hasInsulation ? 'חיצוני' : ''}</th>
                     <th style={{ padding: '12px 8px', textAlign: 'center' }}>עובי פח</th>
                     <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#fefce8', color: '#854d0e', fontWeight: 'bold' }}>דופן</th>
                     <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#fefce8', color: '#854d0e', fontWeight: 'bold' }}>מס' חלקים</th>
@@ -651,13 +651,25 @@ export default function MeasurementPage({
                       </td>
                       <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#f8fafc' }}><input type="number" value={row.width1 || ''} onChange={(e) => updateRow(row.id, 'width1', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} /></td>
                       <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#f8fafc' }}><input type="number" value={row.height1 || ''} onChange={(e) => updateRow(row.id, 'height1', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} /></td>
-                      {hasTransition && <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#f4fbf7' }}><input type="number" value={row.width2 || ''} disabled={row.type !== 'מעבר'} onChange={(e) => updateRow(row.id, 'width2', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.type !== 'מעבר' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} /></td>}
-                      {hasTransition && <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#f4fbf7' }}><input type="number" value={row.height2 || ''} disabled={row.type !== 'מעבר'} onChange={(e) => updateRow(row.id, 'height2', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.type !== 'מעבר' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} /></td>}
+                      <td style={{ padding: '8px', textAlign: 'center', backgroundColor: hasTransition ? '#f4fbf7' : 'transparent' }}>
+                        {hasTransition && <input type="number" value={row.width2 || ''} disabled={row.type !== 'מעבר'} onChange={(e) => updateRow(row.id, 'width2', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.type !== 'מעבר' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} />}
+                      </td>
+                      <td style={{ padding: '8px', textAlign: 'center', backgroundColor: hasTransition ? '#f4fbf7' : 'transparent' }}>
+                        {hasTransition && <input type="number" value={row.height2 || ''} disabled={row.type !== 'מעבר'} onChange={(e) => updateRow(row.id, 'height2', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.type !== 'מעבר' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} />}
+                      </td>
                       <td style={{ padding: '8px', textAlign: 'center' }}><input type="number" value={['קשת'].includes(row.type) ? '' : (row.length || '')} disabled={['קשת'].includes(row.type)} onChange={(e) => updateRow(row.id, 'length', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: ['קשת'].includes(row.type) ? '#e2e8f0' : '#ffffff', color: '#0f172a', cursor: ['קשת'].includes(row.type) ? 'not-allowed' : 'auto' }} /></td>
-                      {hasElbow && <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#fffaf3' }}><input type="number" value={row.rBig || ''} disabled={row.type !== 'קשת'} onChange={(e) => updateRow(row.id, 'rBig', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.type !== 'קשת' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} /></td>}
-                      {hasElbow && <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#fffaf3' }}><input type="number" value={row.type === 'קשת' && row.rSmall ? row.rSmall : ''} disabled={row.type !== 'קשת'} onChange={(e) => updateRow(row.id, 'rSmall', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.type !== 'קשת' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} /></td>}
-                      {hasInsulation && <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#faf5ff' }}><input type="checkbox" checked={row.acoustic} onChange={(e) => updateRow(row.id, 'acoustic', e.target.checked)} style={{ cursor: 'pointer' }} /></td>}
-                      {hasInsulation && <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#faf5ff' }}><input type="checkbox" checked={row.external} onChange={(e) => updateRow(row.id, 'external', e.target.checked)} style={{ cursor: 'pointer' }} /></td>}
+                      <td style={{ padding: '8px', textAlign: 'center', backgroundColor: hasElbow ? '#fffaf3' : 'transparent' }}>
+                        {hasElbow && <input type="number" value={row.rBig || ''} disabled={row.type !== 'קשת'} onChange={(e) => updateRow(row.id, 'rBig', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.type !== 'קשת' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} />}
+                      </td>
+                      <td style={{ padding: '8px', textAlign: 'center', backgroundColor: hasElbow ? '#fffaf3' : 'transparent' }}>
+                        {hasElbow && <input type="number" value={row.type === 'קשת' && row.rSmall ? row.rSmall : ''} disabled={row.type !== 'קשת'} onChange={(e) => updateRow(row.id, 'rSmall', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.type !== 'קשת' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} />}
+                      </td>
+                      <td style={{ padding: '8px', textAlign: 'center', backgroundColor: hasInsulation ? '#faf5ff' : 'transparent' }}>
+                        {hasInsulation && <input type="checkbox" checked={row.acoustic} onChange={(e) => updateRow(row.id, 'acoustic', e.target.checked)} style={{ cursor: 'pointer' }} />}
+                      </td>
+                      <td style={{ padding: '8px', textAlign: 'center', backgroundColor: hasInsulation ? '#faf5ff' : 'transparent' }}>
+                        {hasInsulation && <input type="checkbox" checked={row.external} onChange={(e) => updateRow(row.id, 'external', e.target.checked)} style={{ cursor: 'pointer' }} />}
+                      </td>
                       <td style={{ padding: '8px', textAlign: 'center' }}>
                         <input type="number" step="0.05" value={row.manualThickness > 0 ? row.manualThickness : calculateThickness(row.width1, row.height1, row.manualThickness)} onChange={(e) => updateRow(row.id, 'manualThickness', Number(e.target.value))}
                           style={{ width: '55px', padding: '4px', textAlign: 'center', border: row.manualThickness > 0 ? '2px solid #d97706' : '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.manualThickness > 0 ? '#fffbeb' : '#ffffff', color: '#0f172a', fontWeight: row.manualThickness > 0 ? 700 : 500 }} />

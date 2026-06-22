@@ -186,13 +186,15 @@ export default function ProductionWorksheet({
                       <td style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '14px', backgroundColor: '#f9f9f9', color: '#000' }}>
                         {quantity}
                       </td>
-                      <td style={{ padding: '4px', textAlign: 'center' }}>
+                      <td style={{ padding: '4px', textAlign: 'center', printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' as any }}>
                         <div style={{
                           display: 'flex',
                           flexDirection: 'row',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          gap: '6px'
+                          gap: '6px',
+                          minWidth: '40px',
+                          minHeight: '30px',
                         }}>
                           <ProductionPartSketch row={row} width={40} height={30} />
                           
