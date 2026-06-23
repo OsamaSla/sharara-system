@@ -8,10 +8,10 @@ import ProductionWorksheet from './ProductionWorksheet';
 import { db } from './firebase';
 import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import logoSrc from './assets/logo.png';
-import { EXISTING_DATA, DEFAULT_PRICES, DEFAULT_COMPANY, DEFAULT_ROW, DEFAULT_SHEET } from './constants';
-import { calculateThickness, calculateArea, getPrice as getPriceFromCalc, getRowWarnings, getDetailedSheetCosts as getDetailedSheetCostsFromCalc, getProjectTotals as getProjectTotalsFromCalc, getSubtotal as getSubtotalFromCalc, getSheetTotals } from './calculations';
+import { EXISTING_DATA, DEFAULT_PRICES, DEFAULT_COMPANY, DEFAULT_ROW, DEFAULT_SHEET, DEFAULT_FORMULAS } from './constants';
+import { calculateThickness, calculateArea, getPrice as getPriceFromCalc, getRowWarnings, getDetailedSheetCosts as getDetailedSheetCostsFromCalc, getProjectTotals as getProjectTotalsFromCalc, getSubtotal as getSubtotalFromCalc, getSheetTotals, setFormulas as setFormulasCalc } from './calculations';
 
-import type { RowData, Sheet, PriceItem, TabId } from './types';
+import type { RowData, Sheet, PriceItem, TabId, FormulaConfig } from './types';
 import MeasurementPage from './pages/MeasurementPage';
 import SummaryPage from './pages/SummaryPage';
 import InvoicePage from './pages/InvoicePage';
@@ -282,6 +282,31 @@ export default function App() {
   const [newAppUser, setNewAppUser] = useState('');
   const [newAppPass, setNewAppPass] = useState('');
   const [newAppPassConfirm, setNewAppPassConfirm] = useState('');
+  const [activeAdminSection, setActiveAdminSection] = useState<string | null>(null);
+
+  const [formulas, setFormulas] = useState<FormulaConfig>(() => {
+    try {
+      const saved = localStorage.getItem('sharara_formulas');
+      return saved ? { ...DEFAULT_FORMULAS, ...JSON.parse(saved) } : { ...DEFAULT_FORMULAS };
+    } catch { return { ...DEFAULT_FORMULAS }; }
+  });
+
+  const [formulaDrafts, setFormulaDrafts] = useState<FormulaConfig>(() => {
+    try {
+      const saved = localStorage.getItem('sharara_formulas');
+      return saved ? { ...DEFAULT_FORMULAS, ...JSON.parse(saved) } : { ...DEFAULT_FORMULAS };
+    } catch { return { ...DEFAULT_FORMULAS }; }
+  });
+
+  useEffect(() => {
+    setFormulasCalc(formulas);
+  }, [formulas]);
+
+  const saveFormula = (type: string) => {
+    const updated = { ...formulas, [type]: formulaDrafts[type] };
+    setFormulas(updated);
+    localStorage.setItem('sharara_formulas', JSON.stringify(updated));
+  };
 
   // אפקטים לשמירה אוטומטית בענן (Firestore)
   useEffect(() => {
@@ -948,7 +973,11 @@ export default function App() {
   };
 
   const savePreset = () => {
-    const name = window.prompt('שם התבנית:', `${newPartData.type} ${newPartData.width1}x${newPartData.height1}`);
+    const isRound = newPartData.notes === 'צינור עגול';
+    const dimA = newPartData.width1;
+    const dimB = isRound ? newPartData.length : newPartData.height1;
+    const defaultName = `${newPartData.type} ${dimA}x${dimB}`;
+    const name = window.prompt('שם התבנית:', defaultName);
     if (!name) return;
     const { id, ...dataWithoutId } = newPartData;
     const updated = [...partPresets, { name, data: dataWithoutId }];
@@ -1207,6 +1236,11 @@ export default function App() {
             <button onClick={() => setActiveTab('production')} style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', backgroundColor: activeTab === 'production' ? '#3b82f6' : 'transparent', color: activeTab === 'production' ? '#ffffff' : '#94a3b8' }}>
               <FileSpreadsheet size={16} /> דפי ייצור
             </button>
+            {isAdmin && (
+              <button onClick={() => setActiveAdminSection(activeAdminSection === 'formulas' ? null : 'formulas')} style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', backgroundColor: activeAdminSection === 'formulas' ? '#2563eb' : 'transparent', color: activeAdminSection === 'formulas' ? '#ffffff' : '#94a3b8' }}>
+                📐 נוסחאות
+              </button>
+            )}
           </div>
         )}
       </header>
@@ -1237,17 +1271,18 @@ export default function App() {
                 <button onClick={loadSampleData} title="טען נתוני דוגמה" style={{ backgroundColor: '#7c3aed', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>📋 דוגמה</button>
                 <button onClick={importFromJSON} title="ייבוא מקובץ" style={{ backgroundColor: '#0284c7', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>📂 ייבוא</button>
                 <button onClick={handleExportJSON} title="ייצוא לקובץ + ענן" style={{ backgroundColor: '#0891b2', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>💾 ייצוא</button>
-                <button onClick={async () => { await loadFirebaseBackups(); setShowBackupsList(!showBackupsList); }} title="גיבויים בענן" style={{ backgroundColor: '#059669', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>☁️ גיבויים</button>
+                <button onClick={async () => { await loadFirebaseBackups(); setActiveAdminSection(activeAdminSection === 'backups' ? null : 'backups'); }} title="גיבויים בענן" style={{ backgroundColor: activeAdminSection === 'backups' ? '#059669' : '#059669', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold', outline: activeAdminSection === 'backups' ? '2px solid #166534' : 'none', outlineOffset: '1px' }}>☁️ גיבויים</button>
                 <button onClick={resetProject} title="איפוס" style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>🗑️ איפוס</button>
                 <div style={{ width: '1px', height: '14px', backgroundColor: '#a7f3d0', margin: '0 2px' }} />
-                <button onClick={() => { setShowChangeAdminPasscode(!showChangeAdminPasscode); setShowChangeAppCredentials(false); setIsEditingMyCompany(false); }} style={{ backgroundColor: showChangeAdminPasscode ? '#475569' : '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>🔑 קוד</button>
-                <button onClick={() => { setShowChangeAppCredentials(!showChangeAppCredentials); setNewAppUser(appLoginUser); setNewAppPass(appLoginPass); setShowChangeAdminPasscode(false); setIsEditingMyCompany(false); }} style={{ backgroundColor: showChangeAppCredentials ? '#7c3aed' : '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>👤 כניסה</button>
-                <button onClick={() => { setIsEditingMyCompany(!isEditingMyCompany); setShowChangeAdminPasscode(false); setShowChangeAppCredentials(false); }} style={{ backgroundColor: isEditingMyCompany ? '#d97706' : '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>🏢 עסק</button>
-                <button onClick={() => { setIsAdmin(false); sessionStorage.removeItem('sharara_isAdmin'); }} title="התנתק" style={{ backgroundColor: '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>🚪</button>
+                <button onClick={() => setActiveAdminSection(activeAdminSection === 'passcode' ? null : 'passcode')} style={{ backgroundColor: activeAdminSection === 'passcode' ? '#475569' : '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>🔑 קוד</button>
+                <button onClick={() => setActiveAdminSection(activeAdminSection === 'credentials' ? null : 'credentials')} style={{ backgroundColor: activeAdminSection === 'credentials' ? '#7c3aed' : '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>👤 כניסה</button>
+                <button onClick={() => setActiveAdminSection(activeAdminSection === 'business' ? null : 'business')} style={{ backgroundColor: activeAdminSection === 'business' ? '#d97706' : '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>🏢 עסק</button>
+                <button onClick={() => setActiveAdminSection(activeAdminSection === 'formulas' ? null : 'formulas')} style={{ backgroundColor: activeAdminSection === 'formulas' ? '#2563eb' : '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>📐 נוסחאות</button>
+                <button onClick={() => { setIsAdmin(false); sessionStorage.removeItem('sharara_isAdmin'); setActiveAdminSection(null); }} title="התנתק" style={{ backgroundColor: '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>🚪</button>
               </div>
 
-              {/* ─── גיבויים בענן (ompact) ─── */}
-              {showBackupsList && (
+              {/* ─── גיבויים בענן ─── */}
+              {activeAdminSection === 'backups' && (
                 <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '6px', padding: '8px 10px', marginBottom: '8px', fontSize: '11px' }}>
                   <div style={{ fontWeight: 'bold', color: '#065f46', marginBottom: '6px', fontSize: '11px' }}>☁️ גיבויים בענן</div>
                   {loadingBackups ? (
@@ -1275,18 +1310,18 @@ export default function App() {
               )}
 
               {/* ─── Change admin passcode ─── */}
-              {showChangeAdminPasscode && (
+              {activeAdminSection === 'passcode' && (
                 <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '8px 10px', marginBottom: '8px', display: 'flex', gap: '6px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#475569' }}>🔑 קוד מנהל חדש:</span>
                   <input type="password" value={newAdminPasscode} onChange={(e) => setNewAdminPasscode(e.target.value)} placeholder="קוד" style={{ width: '70px', padding: '3px 6px', border: '1px solid #94a3b8', borderRadius: '3px', fontSize: '11px', textAlign: 'center' }} />
-                  <input type="password" value={newAdminPasscodeConfirm} onChange={(e) => setNewAdminPasscodeConfirm(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { if (newAdminPasscode.length >= 4 && newAdminPasscode === newAdminPasscodeConfirm) { setAdminPasscode(newAdminPasscode); localStorage.setItem('sharara_adminPasscode', newAdminPasscode); setShowChangeAdminPasscode(false); setNewAdminPasscode(''); setNewAdminPasscodeConfirm(''); alert('✅'); } } }} placeholder="אישור" style={{ width: '70px', padding: '3px 6px', border: '1px solid #94a3b8', borderRadius: '3px', fontSize: '11px', textAlign: 'center' }} />
-                  <button onClick={() => { if (newAdminPasscode.length >= 4 && newAdminPasscode === newAdminPasscodeConfirm) { setAdminPasscode(newAdminPasscode); localStorage.setItem('sharara_adminPasscode', newAdminPasscode); setShowChangeAdminPasscode(false); setNewAdminPasscode(''); setNewAdminPasscodeConfirm(''); alert('✅'); } else { alert('❌'); } }} style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '3px 10px', borderRadius: '3px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>שמור</button>
-                  <button onClick={() => { setShowChangeAdminPasscode(false); setNewAdminPasscode(''); setNewAdminPasscodeConfirm(''); }} style={{ backgroundColor: '#94a3b8', color: '#fff', border: 'none', padding: '3px 10px', borderRadius: '3px', cursor: 'pointer', fontSize: '10px' }}>ביטול</button>
+                  <input type="password" value={newAdminPasscodeConfirm} onChange={(e) => setNewAdminPasscodeConfirm(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { if (newAdminPasscode.length >= 4 && newAdminPasscode === newAdminPasscodeConfirm) { setAdminPasscode(newAdminPasscode); localStorage.setItem('sharara_adminPasscode', newAdminPasscode); setActiveAdminSection(null); setNewAdminPasscode(''); setNewAdminPasscodeConfirm(''); alert('✅'); } } }} placeholder="אישור" style={{ width: '70px', padding: '3px 6px', border: '1px solid #94a3b8', borderRadius: '3px', fontSize: '11px', textAlign: 'center' }} />
+                  <button onClick={() => { if (newAdminPasscode.length >= 4 && newAdminPasscode === newAdminPasscodeConfirm) { setAdminPasscode(newAdminPasscode); localStorage.setItem('sharara_adminPasscode', newAdminPasscode); setActiveAdminSection(null); setNewAdminPasscode(''); setNewAdminPasscodeConfirm(''); alert('✅'); } else { alert('❌'); } }} style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '3px 10px', borderRadius: '3px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>שמור</button>
+                  <button onClick={() => { setActiveAdminSection(null); setNewAdminPasscode(''); setNewAdminPasscodeConfirm(''); }} style={{ backgroundColor: '#94a3b8', color: '#fff', border: 'none', padding: '3px 10px', borderRadius: '3px', cursor: 'pointer', fontSize: '10px' }}>ביטול</button>
                 </div>
               )}
 
               {/* ─── Change app credentials ─── */}
-              {showChangeAppCredentials && (
+              {activeAdminSection === 'credentials' && (
                 <div style={{ backgroundColor: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: '6px', padding: '8px 10px', marginBottom: '8px', display: 'flex', gap: '6px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#6b21a8' }}>👤 כניסה לאתר:</span>
                   <input type="text" value={newAppUser} onChange={(e) => setNewAppUser(e.target.value)} placeholder="משתמש" style={{ width: '90px', padding: '3px 6px', border: '1px solid #94a3b8', borderRadius: '3px', fontSize: '11px' }} />
@@ -1298,26 +1333,26 @@ export default function App() {
                     if (newAppPass !== newAppPassConfirm) { alert('❌'); return; }
                     setAppLoginUser(newAppUser.trim()); setAppLoginPass(newAppPass);
                     localStorage.setItem('sharara_appLoginUser', newAppUser.trim()); localStorage.setItem('sharara_appLoginPass', newAppPass);
-                    setShowChangeAppCredentials(false); setNewAppPass(''); setNewAppPassConfirm(''); alert('✅');
+                    setActiveAdminSection(null); setNewAppPass(''); setNewAppPassConfirm(''); alert('✅');
                   }} style={{ backgroundColor: '#7c3aed', color: '#fff', border: 'none', padding: '3px 10px', borderRadius: '3px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>שמור</button>
-                  <button onClick={() => { setShowChangeAppCredentials(false); setNewAppPass(''); setNewAppPassConfirm(''); }} style={{ backgroundColor: '#94a3b8', color: '#fff', border: 'none', padding: '3px 10px', borderRadius: '3px', cursor: 'pointer', fontSize: '10px' }}>ביטול</button>
+                  <button onClick={() => { setActiveAdminSection(null); setNewAppPass(''); setNewAppPassConfirm(''); }} style={{ backgroundColor: '#94a3b8', color: '#fff', border: 'none', padding: '3px 10px', borderRadius: '3px', cursor: 'pointer', fontSize: '10px' }}>ביטול</button>
                 </div>
               )}
 
-              {/* ─── Company details (always visible) ─── */}
-              <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
-                <div style={{ fontWeight: 'bold', color: '#92400e', marginBottom: '12px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span>🏢 פרטי העסק</span>
-                  <span style={{ fontSize: '10px', color: '#b45309', fontWeight: 'normal' }}>{isEditingMyCompany ? 'מצב עריכה — שנה את הפרטים למטה' : 'לחץ על כפתור "עסק" בעמודה למעלה לעריכה'}</span>
-                </div>
-                
-                {/* שורה 1: לוגו בצד ימין + פרטים בצד שמאל */}
-                <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+              {/* ─── Company details (עסק) ─── */}
+              {activeAdminSection === 'business' && (
+                <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                  <div style={{ fontWeight: 'bold', color: '#92400e', marginBottom: '12px', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>🏢 פרטי העסק</span>
+                    <span style={{ fontSize: '10px', color: '#b45309', fontWeight: 'normal' }}>מצב עריכה — שנה את הפרטים למטה</span>
+                  </div>
                   
-                  {/* צד ימין: לוגו */}
-                  <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ padding: '8px', backgroundColor: '#fff', borderRadius: '6px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
-                      {isEditingMyCompany && (
+                  {/* שורה 1: לוגו בצד ימין + פרטים בצד שמאל */}
+                  <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+                    
+                    {/* צד ימין: לוגו */}
+                    <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ padding: '8px', backgroundColor: '#fff', borderRadius: '6px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
                         <input
                           type="file"
                           accept="image/*"
@@ -1335,20 +1370,18 @@ export default function App() {
                             reader.readAsDataURL(file);
                           }}
                         />
-                      )}
-                      {companyLogo ? (
-                        <img
-                          src={companyLogo}
-                          alt="לוגו נוכחי"
-                          style={{ maxHeight: '100px', maxWidth: '180px', objectFit: 'contain', borderRadius: '4px' }}
-                        />
-                      ) : (
-                        <div style={{ width: '180px', height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '12px', border: '2px dashed #cbd5e1', borderRadius: '4px' }}>
-                          אין לוגו
-                        </div>
-                      )}
-                    </div>
-                    {isEditingMyCompany && (
+                        {companyLogo ? (
+                          <img
+                            src={companyLogo}
+                            alt="לוגו נוכחי"
+                            style={{ maxHeight: '100px', maxWidth: '180px', objectFit: 'contain', borderRadius: '4px' }}
+                          />
+                        ) : (
+                          <div style={{ width: '180px', height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '12px', border: '2px dashed #cbd5e1', borderRadius: '4px' }}>
+                            אין לוגו
+                          </div>
+                        )}
+                      </div>
                       <div style={{ display: 'flex', gap: '6px' }}>
                         <button
                           onClick={() => document.getElementById('logoUpload')?.click()}
@@ -1365,55 +1398,96 @@ export default function App() {
                           </button>
                         )}
                       </div>
-                    )}
-                  </div>
+                    </div>
 
-                  {/* צד שמאל: שדות פרטים */}
-                  <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                    {([
-                      ['שם בעברית', 'name'], ['כיתוב אנגלי', 'engName'],
-                      ['טלפון', 'phone'], ['נייד', 'mobile'],
-                      ['פקס', 'fax'], ['אימייל', 'email'],
-                      ['אתר', 'website'], ['כתובת', 'address'],
-                    ] as [string, keyof typeof myCompanyDetails][]).map(([label, key]) => (
-                      <div key={key}>
-                        <label style={{ fontSize: '12px', color: '#334155', fontWeight: '600', display: 'block', marginBottom: '3px' }}>{label}:</label>
-                        {isEditingMyCompany ? (
+                    {/* צד שמאל: שדות פרטים */}
+                    <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      {([
+                        ['שם בעברית', 'name'], ['כיתוב אנגלי', 'engName'],
+                        ['טלפון', 'phone'], ['נייד', 'mobile'],
+                        ['פקס', 'fax'], ['אימייל', 'email'],
+                        ['אתר', 'website'], ['כתובת', 'address'],
+                      ] as [string, keyof typeof myCompanyDetails][]).map(([label, key]) => (
+                        <div key={key}>
+                          <label style={{ fontSize: '12px', color: '#334155', fontWeight: '600', display: 'block', marginBottom: '3px' }}>{label}:</label>
                           <input type="text" value={myCompanyDetails[key] as string} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, [key]: e.target.value})} style={{ width: '100%', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#ffffff', color: '#0f172a' }} />
-                        ) : (
-                          <div style={{ padding: '6px 8px', backgroundColor: '#ffffff', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '13px', minHeight: '20px', color: '#0f172a' }}>{myCompanyDetails[key] as string || '—'}</div>
-                        )}
-                      </div>
-                    ))}
-                    <div style={{ gridColumn: 'span 2' }}>
-                      <label style={{ fontSize: '12px', color: '#334155', fontWeight: '600', display: 'block', marginBottom: '3px' }}>לוגן:</label>
-                      {isEditingMyCompany ? (
+                        </div>
+                      ))}
+                      <div style={{ gridColumn: 'span 2' }}>
+                        <label style={{ fontSize: '12px', color: '#334155', fontWeight: '600', display: 'block', marginBottom: '3px' }}>לוגן:</label>
                         <input type="text" value={myCompanyDetails.subtitle} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, subtitle: e.target.value})} style={{ width: '100%', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#ffffff', color: '#0f172a' }} />
-                      ) : (
-                        <div style={{ padding: '6px 8px', backgroundColor: '#ffffff', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '13px', minHeight: '20px', color: '#0f172a' }}>{myCompanyDetails.subtitle || '—'}</div>
-                      )}
-                    </div>
-                    <div style={{ gridColumn: 'span 2' }}>
-                      <label style={{ fontSize: '12px', color: '#334155', fontWeight: '600', display: 'block', marginBottom: '3px' }}>דואר למשלוחים:</label>
-                      {isEditingMyCompany ? (
-                        <input type="text" value={myCompanyDetails.pobox} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, pobox: e.target.value})} style={{ width: '100%', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#ffffff', color: '#0f172a' }} />
-                      ) : (
-                        <div style={{ padding: '6px 8px', backgroundColor: '#ffffff', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '13px', minHeight: '20px', color: '#0f172a' }}>{myCompanyDetails.pobox || '—'}</div>
-                      )}
-                    </div>
-                    {(myCompanyDetails.serviceLines ?? []).map((line: string, index: number) => (
-                      <div key={index} style={{ gridColumn: 'span 2' }}>
-                        <label style={{ fontSize: '12px', color: '#334155', fontWeight: '600', display: 'block', marginBottom: '3px' }}>{`שירות ${index + 1}:`}</label>
-                        {isEditingMyCompany ? (
-                          <input type="text" value={line} onChange={(e) => { const next = [...(myCompanyDetails.serviceLines ?? ['', '', ''])]; next[index] = e.target.value; setMyCompanyDetails({ ...myCompanyDetails, serviceLines: next }); }} style={{ width: '100%', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#ffffff', color: '#0f172a' }} />
-                        ) : (
-                          <div style={{ padding: '6px 8px', backgroundColor: '#ffffff', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '13px', minHeight: '20px', color: '#0f172a' }}>{line || '—'}</div>
-                        )}
                       </div>
-                    ))}
+                      <div style={{ gridColumn: 'span 2' }}>
+                        <label style={{ fontSize: '12px', color: '#334155', fontWeight: '600', display: 'block', marginBottom: '3px' }}>דואר למשלוחים:</label>
+                        <input type="text" value={myCompanyDetails.pobox} onChange={(e) => setMyCompanyDetails({...myCompanyDetails, pobox: e.target.value})} style={{ width: '100%', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                      </div>
+                      {(myCompanyDetails.serviceLines ?? []).map((line: string, index: number) => (
+                        <div key={index} style={{ gridColumn: 'span 2' }}>
+                          <label style={{ fontSize: '12px', color: '#334155', fontWeight: '600', display: 'block', marginBottom: '3px' }}>{`שירות ${index + 1}:`}</label>
+                          <input type="text" value={line} onChange={(e) => { const next = [...(myCompanyDetails.serviceLines ?? ['', '', ''])]; next[index] = e.target.value; setMyCompanyDetails({ ...myCompanyDetails, serviceLines: next }); }} style={{ width: '100%', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
+
+              {/* ─── Formulas Table (טבלת נוסחאות) ─── */}
+              {activeAdminSection === 'formulas' && (
+                <div style={{ backgroundColor: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                  <div style={{ fontWeight: 'bold', color: '#1e40af', marginBottom: '8px', fontSize: '14px' }}>
+                    📐 טבלת נוסחאות — עריכת משוואות חישוב
+                  </div>
+                  <p style={{ fontSize: '11px', color: '#64748b', margin: '0 0 6px 0' }}>
+                    עריכת הנוסחאות המשמשות לחישוב שטח הפח עבור כל סוג חלק. ניתן להשתמש במשתנים: width1, height1, width2, height2, length, rBig, rSmall, rBig2, dofan, panels, PI.
+                  </p>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '12px' }}>
+                      <thead>
+                        <tr style={{ backgroundColor: '#dbeafe', color: '#1e40af', fontWeight: 'bold', borderBottom: '2px solid #93c5fd' }}>
+                          <th style={{ padding: '8px 6px', textAlign: 'center', width: '40px' }}>#</th>
+                          <th style={{ padding: '8px 6px', textAlign: 'center', width: '120px' }}>סוג חלק</th>
+                          <th style={{ padding: '8px 6px' }}>נוסחאות חישוב</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.entries(formulas).map(([type, formula], idx) => (
+                          <tr key={type} style={{ borderBottom: '1px solid #e0e7ff', backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                            <td style={{ padding: '8px 6px', textAlign: 'center', color: '#94a3b8', verticalAlign: 'top' }}>{idx + 1}</td>
+                            <td style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 600, color: '#1e293b', verticalAlign: 'top' }}>{type}</td>
+                            <td style={{ padding: '8px 6px' }}>
+                              <div style={{ marginBottom: '6px' }}>
+                                <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0369a1', marginBottom: '3px' }}>נוסחת מקור (Default):</div>
+                                <div style={{ fontFamily: 'monospace', direction: 'ltr', fontSize: '12px', color: '#0f172a', backgroundColor: '#e0f2fe', padding: '6px 10px', borderRadius: '4px', border: '1px solid #bae6fd', wordBreak: 'break-all' }}>
+                                  {DEFAULT_FORMULAS[type] || '—'}
+                                </div>
+                              </div>
+                              <div>
+                                <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#7c3aed', marginBottom: '3px' }}>נוסחה מותאמת (Your Custom):</div>
+                                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                  <input
+                                    type="text"
+                                    value={formulaDrafts[type]}
+                                    onChange={(e) => setFormulaDrafts({ ...formulaDrafts, [type]: e.target.value })}
+                                    style={{ flex: 1, fontFamily: 'monospace', direction: 'ltr', padding: '6px 10px', border: '1px solid #c4b5fd', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a', boxSizing: 'border-box' }}
+                                  />
+                                  <button
+                                    onClick={() => saveFormula(type)}
+                                    style={{ padding: '6px 12px', backgroundColor: formula === formulaDrafts[type] ? '#e2e8f0' : '#8b5cf6', color: formula === formulaDrafts[type] ? '#94a3b8' : '#ffffff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '11px', whiteSpace: 'nowrap' }}
+                                    title="שמור נוסחה זו"
+                                  >
+                                    💾 שמור
+                                  </button>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </>
           )}
           {!isAdmin && (<>
@@ -1880,6 +1954,44 @@ export default function App() {
             </button>
           </section>
 
+          {isAdmin && activeAdminSection === 'formulas' && (
+            <div style={{ backgroundColor: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px', marginTop: '8px', maxWidth: '1200px', marginLeft: 'auto', marginRight: 'auto' }}>
+              <div style={{ fontWeight: 'bold', color: '#1e40af', marginBottom: '8px', fontSize: '14px' }}>
+                📐 טבלת נוסחאות — עריכת משוואות חישוב
+              </div>
+              <p style={{ fontSize: '11px', color: '#64748b', margin: '0 0 6px 0' }}>
+                עריכת הנוסחאות המשמשות לחישוב שטח הפח עבור כל סוג חלק. ניתן להשתמש במשתנים: width1, height1, width2, height2, length, rBig, rSmall, rBig2, dofan, panels, PI.
+              </p>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '12px' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#dbeafe', color: '#1e40af', fontWeight: 'bold', borderBottom: '2px solid #93c5fd' }}>
+                      <th style={{ padding: '8px 6px', textAlign: 'center', width: '40px' }}>#</th>
+                      <th style={{ padding: '8px 6px', textAlign: 'center', width: '120px' }}>סוג חלק</th>
+                      <th style={{ padding: '8px 6px' }}>נוסחה (חתך אורך / שטח)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(formulas).map(([type, formula], idx) => (
+                      <tr key={type} style={{ borderBottom: '1px solid #e0e7ff', backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                        <td style={{ padding: '6px', textAlign: 'center', color: '#94a3b8' }}>{idx + 1}</td>
+                        <td style={{ padding: '6px', textAlign: 'center', fontWeight: 600, color: '#1e293b' }}>{type}</td>
+                        <td style={{ padding: '6px' }}>
+                          <input
+                            type="text"
+                            value={formula}
+                            onChange={(e) => setFormulas({ ...formulas, [type]: e.target.value })}
+                            style={{ width: '100%', fontFamily: 'monospace', direction: 'ltr', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a', boxSizing: 'border-box' }}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           {/* אזור תוכן מרכזי - טבלאות וחישובים */}
           <main style={{ width: '100%', padding: '24px', boxSizing: 'border-box' }}>
             
@@ -1916,6 +2028,7 @@ export default function App() {
                 partPresets={partPresets}
                 savePreset={savePreset}
                 loadPreset={loadPreset}
+                deletePreset={deletePreset}
                 calculateThickness={calculateThickness}
                 calculateArea={calculateArea}
                 getPrice={getPrice}

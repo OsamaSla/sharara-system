@@ -58,6 +58,7 @@ export interface MeasurementPageProps {
   partPresets: { name: string; data: Omit<RowData, 'id'> }[];
   savePreset: () => void;
   loadPreset: (preset: { name: string; data: Omit<RowData, 'id'> }) => void;
+  deletePreset: (idx: number) => void;
 
   // Form actions
   openAddPartForm: (type: RowData['type'], defaultNotes?: string) => void;
@@ -112,6 +113,7 @@ export default function MeasurementPage({
   partPresets,
   savePreset,
   loadPreset,
+  deletePreset,
   openAddPartForm,
   saveFormPart,
   undoStack,
@@ -574,10 +576,14 @@ export default function MeasurementPage({
             <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginRight: 'auto' }}>
               <button onClick={savePreset} style={{ padding: '6px 12px', backgroundColor: '#8b5cf6', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '11px' }} title="שמור כתבנית">💾 שמור תבנית</button>
               {partPresets.length > 0 && (
-                <select onChange={(e) => { if (e.target.value !== '') loadPreset(partPresets[Number(e.target.value)]); e.target.value = ''; }} style={{ padding: '5px 8px', borderRadius: '4px', border: '1px solid #8b5cf6', fontSize: '11px', color: '#6b21a8', fontWeight: 'bold' }}>
-                  <option value="">📋 טען תבנית...</option>
-                  {partPresets.map((p, i) => <option key={i} value={i}>{p.name}</option>)}
-                </select>
+                <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  {partPresets.map((p, i) => (
+                    <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', border: '1px solid #c4b5fd', borderRadius: '4px', overflow: 'hidden', fontSize: '11px' }}>
+                      <button onClick={() => loadPreset(p)} style={{ padding: '3px 8px', backgroundColor: '#f5f3ff', border: 'none', borderRight: '1px solid #c4b5fd', cursor: 'pointer', color: '#6b21a8', fontWeight: 'bold' }} title={`טען: ${p.name}`}>📋 {p.name}</button>
+                      <button onClick={() => { if (confirm(`למחוק את התבנית "${p.name}"?`)) deletePreset(i); }} style={{ padding: '3px 5px', backgroundColor: '#fef2f2', border: 'none', cursor: 'pointer', color: '#dc2626', fontWeight: 'bold' }} title="מחק תבנית">🗑️</button>
+                    </span>
+                  ))}
+                </div>
               )}
             </div>
           </div>

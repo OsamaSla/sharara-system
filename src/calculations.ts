@@ -1,8 +1,46 @@
-import type { RowData, Sheet, PriceItem } from './types';
+import type { RowData, Sheet, PriceItem, FormulaConfig } from './types';
+import { DEFAULT_FORMULAS } from './constants';
 
 // ──────────────────────────────────────────────
 // חישובים טהורים — ללא תלויות React
 // ──────────────────────────────────────────────
+
+// ─── Formula engine ───
+let currentFormulas: FormulaConfig = { ...DEFAULT_FORMULAS };
+
+export const setFormulas = (formulas: FormulaConfig) => {
+  currentFormulas = { ...formulas };
+};
+
+export const getFormulas = (): FormulaConfig => ({ ...currentFormulas });
+
+export const evaluateFormula = (formula: string, row: RowData): number => {
+  const vars: Record<string, number> = {
+    width1: row.width1 || 0,
+    height1: row.height1 || 0,
+    width2: row.width2 || 0,
+    height2: row.height2 || 0,
+    length: row.length || 0,
+    rBig: row.rBig || 0,
+    rSmall: row.rSmall || 0,
+    rBig2: row.rBig2 || 0,
+    dofan: row.dofan || 0,
+    panels: row.panels || 1,
+  };
+
+  let expr = formula;
+  expr = expr.replace(/\bPI\b/g, `(${Math.PI})`);
+  for (const [name, value] of Object.entries(vars)) {
+    expr = expr.replace(new RegExp(`\\b${name}\\b`, 'g'), String(value));
+  }
+
+  try {
+    const result = Function(`"use strict"; return (${expr})`)();
+    return typeof result === 'number' && isFinite(result) ? result : 0;
+  } catch {
+    return 0;
+  }
+};
 
 export const calculateThickness = (w1: number, h1: number, manual?: number): number => {
   if (manual && manual > 0) return manual;
@@ -13,26 +51,18 @@ export const calculateThickness = (w1: number, h1: number, manual?: number): num
 };
 
 export const calculateArea = (row: RowData): number => {
-  const { type, width1, height1, width2, height2, length, rBig, rSmall, notes, rBig2, dofan = 0 } = row;
+  const { type, notes, width1, height1, dofan = 0 } = row;
   const panels = row.panels || 1;
 
-  if (notes && notes.includes('צינור עגול')) {
-    return (Math.PI * width1 * length);
-  }
+  let formulaKey = type;
+  if (notes && notes.includes('צינור עגול')) formulaKey = 'צינור עגול';
+  else if (notes === 'לאמד S') formulaKey = 'לאמד S';
 
-  if (notes === 'לאמד S') {
-    const r2 = rBig2 || rSmall;
-    const totalLen = length + (Math.PI / 2) * (rSmall + r2);
-    return (2 * (width1 + height1) * totalLen);
-  }
+  const formula = currentFormulas[formulaKey] || '0';
+  const baseArea = evaluateFormula(formula, row);
 
-  let areaBeforePanels = 0;
-  if (type === 'קטע ישר') areaBeforePanels = 2 * (width1 + height1) * length;
-  else if (type === 'קשת') areaBeforePanels = 2 * (width1 + height1) * (rBig + rSmall);
-  else if (type === 'מעבר') areaBeforePanels = ((width1 + width2) + (height1 + height2)) * length;
-
-  const dofanArea = dofan * width1 * height1;
-  return ((areaBeforePanels + dofanArea) * panels);
+  const dofanArea = formula.includes('dofan') ? 0 : dofan * width1 * height1;
+  return (baseArea + dofanArea) * panels;
 };
 
 export const getPrice = (name: string, pricesList: PriceItem[]): number => {

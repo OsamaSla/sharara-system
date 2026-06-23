@@ -64,6 +64,7 @@ export default function PriceListPage({
                 </td>
                 <td style={{ padding: '6px 12px', textAlign: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    {/* Input visible only on screen (hidden in print via no-print class) */}
                     <input
                       type="number"
                       value={item.price}
@@ -71,6 +72,7 @@ export default function PriceListPage({
                         const val = Number(e.target.value);
                         setPricesList(pricesList.map(p => p.id === item.id ? { ...p, price: val } : p));
                       }}
+                      className="no-print"
                       style={{
                         width: '100px',
                         padding: '6px',
@@ -83,6 +85,12 @@ export default function PriceListPage({
                         color: '#0f172a'
                       }}
                     />
+                    
+                    {/* Plain text visible only when printing the PDF */}
+                    <span className="print-only-element" style={{ fontWeight: 'bold', color: '#0f172a', display: 'none' }}>
+                      {item.price}
+                    </span>
+
                     <span style={{ fontWeight: 'bold', color: '#64748b' }}>₪</span>
                   </div>
                 </td>

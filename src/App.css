@@ -319,6 +319,7 @@
     -webkit-print-color-adjust: exact !important;
     color-adjust: exact !important;
   }
+
 }
 
 /* ── PrintableReport ── */
@@ -607,7 +608,14 @@
   margin-bottom: 25px;
 }
 
-
+@media print {
+  .active-tab-pricelist, 
+  .active-tab-pricelist * {
+    display: revert !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+}
 
 .company-letterhead--production .cl-name {
   font-size: 28px;
@@ -796,4 +804,10 @@
   width: 130px;
   margin-top: 8px;
   padding-top: 3px;
+}
+
+@media print {
+  .print-only-element {
+    display: inline-block !important;
+  }
 }

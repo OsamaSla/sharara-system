@@ -1,4 +1,4 @@
-import type { PriceItem } from './types';
+import type { PriceItem, FormulaConfig } from './types';
 
 // ──────────────────────────────────────────────
 // נתוני ברירת מחדל — לקוחות, מחירים, פרטי חברה
@@ -90,17 +90,32 @@ export const DEFAULT_ROW = {
   id: '', partNumber: '', type: 'קטע ישר' as const, width1: 0.5, height1: 0.4, width2: 0, height2: 0,
   length: 1.0, rBig: 0, rSmall: 0, shatuzar: false, flexible: 0, acoustic: true, external: false,
   sharshuriType: 'ללא' as const, sharshuriLen: 0, adapterType: 'ללא' as const, adapterQty: 0,
-  notes: '', manualThickness: 0, rBig2: 0, panels: 0, dofan: 0
+  notes: '', manualThickness: 0, rBig2: 0, panels: 0, dofan: 0,
+  productionMode: 'automatic' as const, productionOverrides: {}
 };
 
 export const DEFAULT_SHEET = {
   id: '1',
   name: 'דף מדידה #1',
-  rows: [{
-    id: '1', partNumber: 'P001', type: 'קטע ישר' as const, width1: 0.5, height1: 0.4,
-    width2: 0, height2: 0, length: 1.0, rBig: 0, rSmall: 0,
-    shatuzar: false, flexible: 0, acoustic: true, external: false,
-    sharshuriType: 'ללא' as const, sharshuriLen: 0, adapterType: 'ללא' as const, adapterQty: 0,
-    notes: '', manualThickness: 0, rBig2: 0, panels: 0, dofan: 0
-  }]
+  rows: [
+    { id: '1', partNumber: 'P001', type: 'קטע ישר' as const, width1: 0.5, height1: 0.4, width2: 0, height2: 0, length: 1.0, rBig: 0, rSmall: 0, shatuzar: false, flexible: 0, acoustic: true, external: false, sharshuriType: 'ללא' as const, sharshuriLen: 0, adapterType: 'ללא' as const, adapterQty: 0, notes: '', manualThickness: 0, rBig2: 0, panels: 0, dofan: 0, productionMode: 'automatic' as const, productionOverrides: {} },
+    { id: '2', partNumber: 'P002', type: 'קשת' as const, width1: 0.5, height1: 0.4, width2: 0, height2: 0, length: 0, rBig: 0.6, rSmall: 0.1, shatuzar: false, flexible: 0, acoustic: false, external: false, sharshuriType: 'ללא' as const, sharshuriLen: 0, adapterType: 'ללא' as const, adapterQty: 0, notes: '', manualThickness: 0, rBig2: 0, panels: 0, dofan: 0, productionMode: 'automatic' as const, productionOverrides: {} },
+    { id: '3', partNumber: 'P003', type: 'מעבר' as const, width1: 0.5, height1: 0.4, width2: 0.3, height2: 0.2, length: 0.5, rBig: 0, rSmall: 0, shatuzar: false, flexible: 0, acoustic: false, external: false, sharshuriType: 'ללא' as const, sharshuriLen: 0, adapterType: 'ללא' as const, adapterQty: 0, notes: '', manualThickness: 0, rBig2: 0, panels: 0, dofan: 0, productionMode: 'automatic' as const, productionOverrides: {} },
+    { id: '4', partNumber: 'P004', type: 'שתוצר' as const, width1: 0.5, height1: 0.4, width2: 0, height2: 0, length: 0.3, rBig: 0, rSmall: 0, shatuzar: true, flexible: 0, acoustic: false, external: false, sharshuriType: 'ללא' as const, sharshuriLen: 0, adapterType: 'ללא' as const, adapterQty: 0, notes: '', manualThickness: 0, rBig2: 0, panels: 0, dofan: 0, productionMode: 'automatic' as const, productionOverrides: {} },
+    { id: '5', partNumber: 'P005', type: 'מתאם' as const, width1: 0.3, height1: 0.3, width2: 0, height2: 0, length: 0, rBig: 0, rSmall: 0, shatuzar: false, flexible: 0, acoustic: false, external: false, sharshuriType: 'ללא' as const, sharshuriLen: 0, adapterType: '8/8 מתאם' as const, adapterQty: 2, notes: '', manualThickness: 0, rBig2: 0, panels: 0, dofan: 0, productionMode: 'automatic' as const, productionOverrides: {} },
+    { id: '6', partNumber: 'P006', type: 'שרשורי' as const, width1: 0, height1: 0, width2: 0, height2: 0, length: 2.5, rBig: 0, rSmall: 0, shatuzar: false, flexible: 0, acoustic: false, external: false, sharshuriType: '"8' as const, sharshuriLen: 0, adapterType: 'ללא' as const, adapterQty: 0, notes: '', manualThickness: 0, rBig2: 0, panels: 0, dofan: 0, productionMode: 'automatic' as const, productionOverrides: {} },
+    { id: '7', partNumber: 'P007', type: 'חיבור גמיש' as const, width1: 0.3, height1: 0.3, width2: 0, height2: 0, length: 0.8, rBig: 0, rSmall: 0, shatuzar: false, flexible: 2, acoustic: false, external: false, sharshuriType: 'ללא' as const, sharshuriLen: 0, adapterType: 'ללא' as const, adapterQty: 0, notes: '', manualThickness: 0, rBig2: 0, panels: 0, dofan: 0, productionMode: 'automatic' as const, productionOverrides: {} },
+  ]
+};
+
+export const DEFAULT_FORMULAS: FormulaConfig = {
+  'קטע ישר': '2 * (width1 + height1) * length',
+  'קשת': '2 * (width1 + height1) * (rBig + rSmall)',
+  'מעבר': '((width1 + width2) + (height1 + height2)) * length',
+  'שתוצר': '0',
+  'מתאם': '0',
+  'שרשורי': '0',
+  'חיבור גמיש': '0',
+  'צינור עגול': '(PI * width1 * length) + (dofan * width1 * height1)',
+  'לאמד S': '2 * (width1 + height1) * (length + (PI / 2) * (rSmall + rBig2))',
 };

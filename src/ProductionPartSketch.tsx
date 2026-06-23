@@ -457,32 +457,39 @@ export interface ProductionDimension {
 
 export function getProductionDimensions(row: RowData, thickness: number): ProductionDimension[] {
   const dims: ProductionDimension[] = [];
+  const overrides = row.productionOverrides || {};
+
   if (row.notes === 'צינור עגול') {
-    dims.push({ label: 'קוטר (מ"מ)', reference: row.width1 ? String(row.width1) : undefined });
-    dims.push({ label: 'אורך (מ"מ)', reference: row.length ? String(row.length) : undefined });
+    dims.push({ label: 'קוטר (מ"מ)', reference: overrides.width1 || (row.width1 ? String(row.width1) : undefined) });
+    dims.push({ label: 'אורך (מ"מ)', reference: overrides.length || (row.length ? String(row.length) : undefined) });
   } else if (row.notes === 'לאמד S') {
-    dims.push({ label: 'רוחב (מ"מ)', reference: row.width1 ? String(row.width1) : undefined });
-    dims.push({ label: 'גובה (מ"מ)', reference: row.height1 ? String(row.height1) : undefined });
-    dims.push({ label: 'אורך (מ"מ)', reference: row.length ? String(row.length) : undefined });
-    dims.push({ label: 'סטייה (מ"מ)', reference: row.rSmall ? String(row.rSmall) : undefined });
+    dims.push({ label: 'רוחב (מ"מ)', reference: overrides.width1 || (row.width1 ? String(row.width1) : undefined) });
+    dims.push({ label: 'גובה (מ"מ)', reference: overrides.height1 || (row.height1 ? String(row.height1) : undefined) });
+    dims.push({ label: 'אורך (מ"מ)', reference: overrides.length || (row.length ? String(row.length) : undefined) });
+    dims.push({ label: 'סטייה (מ"מ)', reference: overrides.rSmall || (row.rSmall ? String(row.rSmall) : undefined) });
   } else if (row.type === 'קשת') {
-    dims.push({ label: 'רוחב (מ"מ)', reference: row.width1 ? String(row.width1) : undefined });
-    dims.push({ label: 'גובה (מ"מ)', reference: row.height1 ? String(row.height1) : undefined });
-    dims.push({ label: 'R קטן (מ"מ)', reference: row.rSmall ? String(row.rSmall) : undefined });
-    dims.push({ label: 'R גדול (מ"מ)', reference: row.rBig ? String(row.rBig) : undefined });
+    dims.push({ label: 'רוחב (מ"מ)', reference: overrides.width1 || (row.width1 ? String(row.width1) : undefined) });
+    dims.push({ label: 'גובה (מ"מ)', reference: overrides.height1 || (row.height1 ? String(row.height1) : undefined) });
+    dims.push({ label: 'R קטן (מ"מ)', reference: overrides.rSmall || (row.rSmall ? String(row.rSmall) : undefined) });
+    dims.push({ label: 'R גדול (מ"מ)', reference: overrides.rBig || (row.rBig ? String(row.rBig) : undefined) });
   } else if (row.type === 'מעבר') {
-    dims.push({ label: 'חתך 1 ר×ג', reference: row.width1 ? `${row.width1}×${row.height1}` : undefined });
-    dims.push({ label: 'חתך 2 ר×ג', reference: row.width2 ? `${row.width2}×${row.height2}` : undefined });
-    dims.push({ label: 'אורך (מ"מ)', reference: row.length ? String(row.length) : undefined });
+    // For transition, handles both combined view and split override values if needed
+    const section1 = overrides.width1 && overrides.height1 ? `${overrides.width1}×${overrides.height1}` : (row.width1 ? `${row.width1}×${row.height1}` : undefined);
+    const section2 = overrides.width2 && overrides.height2 ? `${overrides.width2}×${overrides.height2}` : (row.width2 ? `${row.width2}×${row.height2}` : undefined);
+    dims.push({ label: 'חתך 1 ר×ג', reference: section1 });
+    dims.push({ label: 'חתך 2 ר×ג', reference: section2 });
+    dims.push({ label: 'אורך (מ"מ)', reference: overrides.length || (row.length ? String(row.length) : undefined) });
   } else if (row.notes === 'קופסת פיזור') {
-    dims.push({ label: 'ר×ג (מ"מ)', reference: row.width1 ? `${row.width1}×${row.height1}` : undefined });
-    dims.push({ label: 'עומק (מ"מ)', reference: row.length ? String(row.length) : undefined });
+    const sectionPlenum = overrides.width1 && overrides.height1 ? `${overrides.width1}×${overrides.height1}` : (row.width1 ? `${row.width1}×${row.height1}` : undefined);
+    dims.push({ label: 'ר×ג (מ"מ)', reference: sectionPlenum });
+    dims.push({ label: 'עומק (מ"מ)', reference: overrides.length || (row.length ? String(row.length) : undefined) });
   } else {
-    dims.push({ label: 'רוחב (מ"מ)', reference: row.width1 ? String(row.width1) : undefined });
-    dims.push({ label: 'גובה (מ"מ)', reference: row.height1 ? String(row.height1) : undefined });
-    dims.push({ label: 'אורך (מ"מ)', reference: row.length ? String(row.length) : undefined });
+    dims.push({ label: 'רוחב (מ"מ)', reference: overrides.width1 || (row.width1 ? String(row.width1) : undefined) });
+    dims.push({ label: 'גובה (מ"מ)', reference: overrides.height1 || (row.height1 ? String(row.height1) : undefined) });
+    dims.push({ label: 'אורך (מ"מ)', reference: overrides.length || (row.length ? String(row.length) : undefined) });
   }
-  dims.push({ label: 'עובי פח (מ"מ)', reference: thickness ? thickness.toFixed(2) : undefined });
-  if (row.panels > 0) dims.push({ label: 'דופן (יח\')', reference: String(row.panels) });
+  
+  dims.push({ label: 'עובי פח (מ"מ)', reference: overrides.thickness || (thickness ? thickness.toFixed(2) : undefined) });
+  if (row.panels > 0) dims.push({ label: 'דופן (יח\')', reference: overrides.panels || String(row.panels) });
   return dims;
 }

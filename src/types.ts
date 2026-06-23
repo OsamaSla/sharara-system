@@ -23,6 +23,17 @@ export interface RowData {
   notes: string;
   manualThickness: number;
   rBig2: number;
+  productionMode: 'automatic' | 'manual';
+  productionOverrides: {
+    width1?: number;
+    height1?: number;
+    width2?: number;
+    height2?: number;
+    length?: number;
+    rSmall?: number;
+    rBig?: number;
+    thickness?: number;
+  };
 }
 
 export interface Sheet {
@@ -84,3 +95,5 @@ export interface ExportOptions {
   activeSheetId?: string;
   invoicePriceOverrides?: Record<string, number>;
 }
+
+export type FormulaConfig = Record<string, string>;

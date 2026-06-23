@@ -15,6 +15,7 @@ const row = (overrides: Record<string, any>): Record<string, any> => ({
   adapterType: 'ללא', adapterQty: 0,
   notes: '', manualThickness: 0, rBig2: 0,
   panels: 0, dofan: 0,
+  productionMode: 'automatic', productionOverrides: {},
   ...overrides,
 });
 
