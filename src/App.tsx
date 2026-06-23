@@ -1954,44 +1954,6 @@ export default function App() {
             </button>
           </section>
 
-          {isAdmin && activeAdminSection === 'formulas' && (
-            <div style={{ backgroundColor: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px', marginTop: '8px', maxWidth: '1200px', marginLeft: 'auto', marginRight: 'auto' }}>
-              <div style={{ fontWeight: 'bold', color: '#1e40af', marginBottom: '8px', fontSize: '14px' }}>
-                📐 טבלת נוסחאות — עריכת משוואות חישוב
-              </div>
-              <p style={{ fontSize: '11px', color: '#64748b', margin: '0 0 6px 0' }}>
-                עריכת הנוסחאות המשמשות לחישוב שטח הפח עבור כל סוג חלק. ניתן להשתמש במשתנים: width1, height1, width2, height2, length, rBig, rSmall, rBig2, dofan, panels, PI.
-              </p>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '12px' }}>
-                  <thead>
-                    <tr style={{ backgroundColor: '#dbeafe', color: '#1e40af', fontWeight: 'bold', borderBottom: '2px solid #93c5fd' }}>
-                      <th style={{ padding: '8px 6px', textAlign: 'center', width: '40px' }}>#</th>
-                      <th style={{ padding: '8px 6px', textAlign: 'center', width: '120px' }}>סוג חלק</th>
-                      <th style={{ padding: '8px 6px' }}>נוסחה (חתך אורך / שטח)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.entries(formulas).map(([type, formula], idx) => (
-                      <tr key={type} style={{ borderBottom: '1px solid #e0e7ff', backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
-                        <td style={{ padding: '6px', textAlign: 'center', color: '#94a3b8' }}>{idx + 1}</td>
-                        <td style={{ padding: '6px', textAlign: 'center', fontWeight: 600, color: '#1e293b' }}>{type}</td>
-                        <td style={{ padding: '6px' }}>
-                          <input
-                            type="text"
-                            value={formula}
-                            onChange={(e) => setFormulas({ ...formulas, [type]: e.target.value })}
-                            style={{ width: '100%', fontFamily: 'monospace', direction: 'ltr', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a', boxSizing: 'border-box' }}
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
           {/* אזור תוכן מרכזי - טבלאות וחישובים */}
           <main style={{ width: '100%', padding: '24px', boxSizing: 'border-box' }}>
             
