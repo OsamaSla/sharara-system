@@ -288,6 +288,19 @@ export default function App() {
     setFormulasCalc(formulas);
   }, [formulas]);
 
+  const [formulaDrafts, setFormulaDrafts] = useState<FormulaConfig>(() => {
+    try {
+      const saved = localStorage.getItem('sharara_formulas');
+      return saved ? { ...DEFAULT_FORMULAS, ...JSON.parse(saved) } : { ...DEFAULT_FORMULAS };
+    } catch { return { ...DEFAULT_FORMULAS }; }
+  });
+
+  const saveFormula = (type: string) => {
+    const updated = { ...formulas, [type]: formulaDrafts[type] };
+    setFormulas(updated);
+    localStorage.setItem('sharara_formulas', JSON.stringify(updated));
+  };
+
   // אפקטים לשמירה אוטומטית בענן (Firestore)
   useEffect(() => {
     if (isLoading) return;
@@ -1249,6 +1262,7 @@ export default function App() {
                 <button onClick={() => setActiveAdminSection(activeAdminSection === 'passcode' ? null : 'passcode')} style={{ backgroundColor: activeAdminSection === 'passcode' ? '#475569' : '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>🔑 קוד</button>
                 <button onClick={() => setActiveAdminSection(activeAdminSection === 'credentials' ? null : 'credentials')} style={{ backgroundColor: activeAdminSection === 'credentials' ? '#7c3aed' : '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>👤 כניסה</button>
                 <button onClick={() => setActiveAdminSection(activeAdminSection === 'business' ? null : 'business')} style={{ backgroundColor: activeAdminSection === 'business' ? '#d97706' : '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>🏢 עסק</button>
+                <button onClick={() => setActiveAdminSection(activeAdminSection === 'formulas' ? null : 'formulas')} style={{ backgroundColor: activeAdminSection === 'formulas' ? '#2563eb' : '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>📐 נוסחאות</button>
                 <button onClick={() => { setIsAdmin(false); sessionStorage.removeItem('sharara_isAdmin'); setActiveAdminSection(null); }} title="התנתק" style={{ backgroundColor: '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>🚪</button>
               </div>
 
@@ -1399,6 +1413,63 @@ export default function App() {
                         </div>
                       ))}
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ─── Formulas Table (טבלת נוסחאות) ─── */}
+              {activeAdminSection === 'formulas' && (
+                <div style={{ backgroundColor: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                  <div style={{ fontWeight: 'bold', color: '#1e40af', marginBottom: '8px', fontSize: '14px' }}>
+                    📐 טבלת נוסחאות — עריכת משוואות חישוב
+                  </div>
+                  <p style={{ fontSize: '11px', color: '#64748b', margin: '0 0 6px 0' }}>
+                    עריכת הנוסחאות המשמשות לחישוב שטח הפח עבור כל סוג חלק. ניתן להשתמש במשתנים: width1, height1, width2, height2, length, rBig, rSmall, rBig2, dofan, panels, PI.
+                  </p>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '12px' }}>
+                      <thead>
+                        <tr style={{ backgroundColor: '#dbeafe', color: '#1e40af', fontWeight: 'bold', borderBottom: '2px solid #93c5fd' }}>
+                          <th style={{ padding: '8px 6px', textAlign: 'center', width: '40px' }}>#</th>
+                          <th style={{ padding: '8px 6px', textAlign: 'center', width: '120px' }}>סוג חלק</th>
+                          <th style={{ padding: '8px 6px' }}>נוסחאות חישוב</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.entries(formulas).map(([type, formula], idx) => (
+                          <tr key={type} style={{ borderBottom: '1px solid #e0e7ff', backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                            <td style={{ padding: '8px 6px', textAlign: 'center', color: '#94a3b8', verticalAlign: 'top' }}>{idx + 1}</td>
+                            <td style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 600, color: '#1e293b', verticalAlign: 'top' }}>{type}</td>
+                            <td style={{ padding: '8px 6px' }}>
+                              <div style={{ marginBottom: '6px' }}>
+                                <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0369a1', marginBottom: '3px' }}>נוסחת מקור (Default):</div>
+                                <div style={{ fontFamily: 'monospace', direction: 'ltr', fontSize: '12px', color: '#0f172a', backgroundColor: '#e0f2fe', padding: '6px 10px', borderRadius: '4px', border: '1px solid #bae6fd', wordBreak: 'break-all' }}>
+                                  {DEFAULT_FORMULAS[type] || '—'}
+                                </div>
+                              </div>
+                              <div>
+                                <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#7c3aed', marginBottom: '3px' }}>נוסחה מותאמת (Your Custom):</div>
+                                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                  <input
+                                    type="text"
+                                    value={formulaDrafts[type]}
+                                    onChange={(e) => setFormulaDrafts({ ...formulaDrafts, [type]: e.target.value })}
+                                    style={{ flex: 1, fontFamily: 'monospace', direction: 'ltr', padding: '6px 10px', border: '1px solid #c4b5fd', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a', boxSizing: 'border-box' }}
+                                  />
+                                  <button
+                                    onClick={() => saveFormula(type)}
+                                    style={{ padding: '6px 12px', backgroundColor: formula === formulaDrafts[type] ? '#e2e8f0' : '#8b5cf6', color: formula === formulaDrafts[type] ? '#94a3b8' : '#ffffff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '11px', whiteSpace: 'nowrap' }}
+                                    title="שמור נוסחה זו"
+                                  >
+                                    💾 שמור
+                                  </button>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               )}
