@@ -12,9 +12,7 @@ export const setFormulas = (formulas: FormulaConfig) => {
   currentFormulas = { ...formulas };
 };
 
-export const getFormulas = (): FormulaConfig => ({ ...currentFormulas });
-
-export const evaluateFormula = (formula: string, row: RowData): number => {
+const evaluateFormula = (formula: string, row: RowData): number => {
   const vars: Record<string, number> = {
     width1: row.width1 || 0,
     height1: row.height1 || 0,

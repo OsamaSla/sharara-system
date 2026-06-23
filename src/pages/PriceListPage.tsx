@@ -4,7 +4,6 @@ interface PriceListPageProps {
   pricesList: PriceItem[];
   setPricesList: React.Dispatch<React.SetStateAction<PriceItem[]>>;
   handlePrint: () => void;
-  isAdmin: boolean;
 }
 
 export default function PriceListPage({

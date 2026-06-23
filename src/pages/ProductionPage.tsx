@@ -1,4 +1,3 @@
-import React from 'react';
 import type { Sheet } from '../types';
 import type { CompanyDetails } from '../CompanyLetterhead';
 import ProductionWorksheet from '../ProductionWorksheet';

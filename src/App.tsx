@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
 import './App.css';
-import { Trash2, FileSpreadsheet, Layers, CreditCard, Building2, Briefcase, User, Phone, Mail, CheckCircle2 } from 'lucide-react';
+import { FileSpreadsheet, Layers, CreditCard, Building2, Briefcase, User, Phone, Mail, CheckCircle2 } from 'lucide-react';
 import PrintableReport from './PrintableReport';
 import { SAMPLE_SNAPSHOT } from './sampleData';
 import CompanyLetterhead from './CompanyLetterhead';
@@ -8,23 +8,16 @@ import ProductionWorksheet from './ProductionWorksheet';
 import { db } from './firebase';
 import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import logoSrc from './assets/logo.png';
-import { EXISTING_DATA, DEFAULT_PRICES, DEFAULT_COMPANY, DEFAULT_ROW, DEFAULT_SHEET, DEFAULT_FORMULAS } from './constants';
+import { EXISTING_DATA, DEFAULT_FORMULAS } from './constants';
 import { calculateThickness, calculateArea, getPrice as getPriceFromCalc, getRowWarnings, getDetailedSheetCosts as getDetailedSheetCostsFromCalc, getProjectTotals as getProjectTotalsFromCalc, getSubtotal as getSubtotalFromCalc, getSheetTotals, setFormulas as setFormulasCalc } from './calculations';
 
-import type { RowData, Sheet, PriceItem, TabId, FormulaConfig } from './types';
+import type { RowData, Sheet, PriceItem, FormulaConfig } from './types';
 import MeasurementPage from './pages/MeasurementPage';
 import SummaryPage from './pages/SummaryPage';
 import InvoicePage from './pages/InvoicePage';
 import PriceListPage from './pages/PriceListPage';
 import ProductionPage from './pages/ProductionPage';
 export type { RowData, Sheet, PriceItem };
-
-import ProductionPartSketch from './ProductionPartSketch';
-
-function SketchThumb({ type, notes, w = 30, h = 22 }: { type: string; notes?: string; w?: number; h?: number }) {
-  const row = { type, notes: notes || '', width1: 0, height1: 0, length: 0, rSmall: 0, rBig: 0, width2: 0, height2: 0, panels: 0, dofan: 0, partNumber: '', acoustic: false, external: false, manualThickness: 0, id: '', flexible: 0, adapterType: 'ללא', adapterQty: 0, shatuzar: false, sharshuriType: 'ללא', rBig2: 0 } as RowData;
-  return <ProductionPartSketch row={row} width={w} height={h} />;
-}
 
 export default function App() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -291,22 +284,9 @@ export default function App() {
     } catch { return { ...DEFAULT_FORMULAS }; }
   });
 
-  const [formulaDrafts, setFormulaDrafts] = useState<FormulaConfig>(() => {
-    try {
-      const saved = localStorage.getItem('sharara_formulas');
-      return saved ? { ...DEFAULT_FORMULAS, ...JSON.parse(saved) } : { ...DEFAULT_FORMULAS };
-    } catch { return { ...DEFAULT_FORMULAS }; }
-  });
-
   useEffect(() => {
     setFormulasCalc(formulas);
   }, [formulas]);
-
-  const saveFormula = (type: string) => {
-    const updated = { ...formulas, [type]: formulaDrafts[type] };
-    setFormulas(updated);
-    localStorage.setItem('sharara_formulas', JSON.stringify(updated));
-  };
 
   // אפקטים לשמירה אוטומטית בענן (Firestore)
   useEffect(() => {
@@ -1148,9 +1128,6 @@ export default function App() {
     );
   }
 
-  const getInvoicePrice = (key: string) => invoicePriceOverrides[key] !== undefined ? invoicePriceOverrides[key] : getPrice(key);
-  const setInvoicePrice = (key: string, value: number) => setInvoicePriceOverrides({...invoicePriceOverrides, [key]: value});
-
   return (
     <div className={`active-tab-${activeTab}`} style={{ direction: 'rtl', backgroundColor: '#f8fafc', minHeight: '100vh', fontFamily: 'Assistant, Rubik, sans-serif', color: '#1e293b', width: '100%', letterSpacing: '0.2px' }}>
       <div className="app-content-wrapper" style={{ width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -1236,11 +1213,6 @@ export default function App() {
             <button onClick={() => setActiveTab('production')} style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', backgroundColor: activeTab === 'production' ? '#3b82f6' : 'transparent', color: activeTab === 'production' ? '#ffffff' : '#94a3b8' }}>
               <FileSpreadsheet size={16} /> דפי ייצור
             </button>
-            {isAdmin && (
-              <button onClick={() => setActiveAdminSection(activeAdminSection === 'formulas' ? null : 'formulas')} style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', backgroundColor: activeAdminSection === 'formulas' ? '#2563eb' : 'transparent', color: activeAdminSection === 'formulas' ? '#ffffff' : '#94a3b8' }}>
-                📐 נוסחאות
-              </button>
-            )}
           </div>
         )}
       </header>
@@ -1277,7 +1249,6 @@ export default function App() {
                 <button onClick={() => setActiveAdminSection(activeAdminSection === 'passcode' ? null : 'passcode')} style={{ backgroundColor: activeAdminSection === 'passcode' ? '#475569' : '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>🔑 קוד</button>
                 <button onClick={() => setActiveAdminSection(activeAdminSection === 'credentials' ? null : 'credentials')} style={{ backgroundColor: activeAdminSection === 'credentials' ? '#7c3aed' : '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>👤 כניסה</button>
                 <button onClick={() => setActiveAdminSection(activeAdminSection === 'business' ? null : 'business')} style={{ backgroundColor: activeAdminSection === 'business' ? '#d97706' : '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>🏢 עסק</button>
-                <button onClick={() => setActiveAdminSection(activeAdminSection === 'formulas' ? null : 'formulas')} style={{ backgroundColor: activeAdminSection === 'formulas' ? '#2563eb' : '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>📐 נוסחאות</button>
                 <button onClick={() => { setIsAdmin(false); sessionStorage.removeItem('sharara_isAdmin'); setActiveAdminSection(null); }} title="התנתק" style={{ backgroundColor: '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>🚪</button>
               </div>
 
@@ -1428,63 +1399,6 @@ export default function App() {
                         </div>
                       ))}
                     </div>
-                  </div>
-                </div>
-              )}
-
-              {/* ─── Formulas Table (טבלת נוסחאות) ─── */}
-              {activeAdminSection === 'formulas' && (
-                <div style={{ backgroundColor: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
-                  <div style={{ fontWeight: 'bold', color: '#1e40af', marginBottom: '8px', fontSize: '14px' }}>
-                    📐 טבלת נוסחאות — עריכת משוואות חישוב
-                  </div>
-                  <p style={{ fontSize: '11px', color: '#64748b', margin: '0 0 6px 0' }}>
-                    עריכת הנוסחאות המשמשות לחישוב שטח הפח עבור כל סוג חלק. ניתן להשתמש במשתנים: width1, height1, width2, height2, length, rBig, rSmall, rBig2, dofan, panels, PI.
-                  </p>
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '12px' }}>
-                      <thead>
-                        <tr style={{ backgroundColor: '#dbeafe', color: '#1e40af', fontWeight: 'bold', borderBottom: '2px solid #93c5fd' }}>
-                          <th style={{ padding: '8px 6px', textAlign: 'center', width: '40px' }}>#</th>
-                          <th style={{ padding: '8px 6px', textAlign: 'center', width: '120px' }}>סוג חלק</th>
-                          <th style={{ padding: '8px 6px' }}>נוסחאות חישוב</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {Object.entries(formulas).map(([type, formula], idx) => (
-                          <tr key={type} style={{ borderBottom: '1px solid #e0e7ff', backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
-                            <td style={{ padding: '8px 6px', textAlign: 'center', color: '#94a3b8', verticalAlign: 'top' }}>{idx + 1}</td>
-                            <td style={{ padding: '8px 6px', textAlign: 'center', fontWeight: 600, color: '#1e293b', verticalAlign: 'top' }}>{type}</td>
-                            <td style={{ padding: '8px 6px' }}>
-                              <div style={{ marginBottom: '6px' }}>
-                                <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#0369a1', marginBottom: '3px' }}>נוסחת מקור (Default):</div>
-                                <div style={{ fontFamily: 'monospace', direction: 'ltr', fontSize: '12px', color: '#0f172a', backgroundColor: '#e0f2fe', padding: '6px 10px', borderRadius: '4px', border: '1px solid #bae6fd', wordBreak: 'break-all' }}>
-                                  {DEFAULT_FORMULAS[type] || '—'}
-                                </div>
-                              </div>
-                              <div>
-                                <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#7c3aed', marginBottom: '3px' }}>נוסחה מותאמת (Your Custom):</div>
-                                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                  <input
-                                    type="text"
-                                    value={formulaDrafts[type]}
-                                    onChange={(e) => setFormulaDrafts({ ...formulaDrafts, [type]: e.target.value })}
-                                    style={{ flex: 1, fontFamily: 'monospace', direction: 'ltr', padding: '6px 10px', border: '1px solid #c4b5fd', borderRadius: '4px', fontSize: '12px', backgroundColor: '#ffffff', color: '#0f172a', boxSizing: 'border-box' }}
-                                  />
-                                  <button
-                                    onClick={() => saveFormula(type)}
-                                    style={{ padding: '6px 12px', backgroundColor: formula === formulaDrafts[type] ? '#e2e8f0' : '#8b5cf6', color: formula === formulaDrafts[type] ? '#94a3b8' : '#ffffff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '11px', whiteSpace: 'nowrap' }}
-                                    title="שמור נוסחה זו"
-                                  >
-                                    💾 שמור
-                                  </button>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
                   </div>
                 </div>
               )}
@@ -1958,7 +1872,6 @@ export default function App() {
           <main style={{ width: '100%', padding: '24px', boxSizing: 'border-box' }}>
             
             {/* טאב דפי מדידה */}
-            {/* טאב דפי מדידה */}
             {activeTab === 'measure' && (
               <MeasurementPage
                 sheets={sheets}
@@ -2065,7 +1978,6 @@ export default function App() {
                 pricesList={pricesList}
                 setPricesList={setPricesList}
                 handlePrint={handlePrint}
-                isAdmin={isAdmin}
               />
             )}
 

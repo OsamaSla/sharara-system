@@ -111,7 +111,7 @@ const sheet3Rows = [
 // ──────────────────────────────────────────────
 // Sample sheets
 // ──────────────────────────────────────────────
-export const SAMPLE_SHEETS = [
+const SAMPLE_SHEETS = [
   { id: 's1', name: 'קומה 4 — משרדים', rows: sheet1Rows },
   { id: 's2', name: 'מטבח + שירותים', rows: sheet2Rows },
   { id: 's3', name: 'קומת מגורים', rows: sheet3Rows },
@@ -120,7 +120,7 @@ export const SAMPLE_SHEETS = [
 // ──────────────────────────────────────────────
 // Sample clients
 // ──────────────────────────────────────────────
-export const SAMPLE_CLIENTS: Record<string, {
+const SAMPLE_CLIENTS: Record<string, {
   phone: string; email: string; contact: string; regDate: string; projects: string[];
 }> = {
   'אלקטרה מיזוג אוויר': {
@@ -137,7 +137,7 @@ export const SAMPLE_CLIENTS: Record<string, {
   },
 };
 
-export const SAMPLE_DOC_NUMBERS: Record<string, string> = {
+const SAMPLE_DOC_NUMBERS: Record<string, string> = {
   'אלקטרה מיזוג אוויר-מגדלי עזריאלי קומה 4': '1001',
   'אלקטרה מיזוג אוויר-בית חולים שיבא - מחלקה ד\'': '1002',
   'תדיראן פרויקטים-קניון עופר פתח תקווה': '2001',
@@ -145,7 +145,7 @@ export const SAMPLE_DOC_NUMBERS: Record<string, string> = {
   'משב הנדסה-מגדל פלטינום תל אביב': '3001',
 };
 
-export const SAMPLE_DOC_DATES: Record<string, string> = {
+const SAMPLE_DOC_DATES: Record<string, string> = {
   'אלקטרה מיזוג אוויר-מגדלי עזריאלי קומה 4': '2026-06-20',
   'אלקטרה מיזוג אוויר-בית חולים שיבא - מחלקה ד\'': '2026-06-18',
   'תדיראן פרויקטים-קניון עופר פתח תקווה': '2026-06-15',
