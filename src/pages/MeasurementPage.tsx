@@ -130,7 +130,7 @@ export default function MeasurementPage({
   return (
     <div className="print-document" style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #cbd5e1', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', width: '100%' }}>
 
-      <div style={{ backgroundColor: '#1e293b', color: '#ffffff', padding: '12px 16px', borderTopLeftRadius: '7px', borderTopRightRadius: '7px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'nowrap' }}>
+      <div className="measure-header" style={{ backgroundColor: '#1e293b', color: '#ffffff', padding: '12px 16px', borderTopLeftRadius: '7px', borderTopRightRadius: '7px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'nowrap' }}>
 
         {/* קבוצה שמאלית: ניהול דפים */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start', flexShrink: 0 }}>
@@ -204,7 +204,7 @@ export default function MeasurementPage({
         {/* קבוצה מרכזית: צורות החלקים */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center', flexGrow: 1 }}>
           <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#94a3b8' }}>הוסף חלק:</span>
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <div className="measure-part-buttons" style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, auto)', gap: '6px', border: '2px solid #3b82f6', borderRadius: '8px', padding: '6px' }}>
               <button onClick={() => openAddPartForm('קטע ישר')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff', fontSize: '12px', fontWeight: 'bold' }}>
                 <SketchThumb type="קטע ישר" />
@@ -284,7 +284,7 @@ export default function MeasurementPage({
         </div>
 
         {/* קבוצה ימנית: ביטול/שחזור + ייצוא */}
-        <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexShrink: 0 }}>
+        <div className="measure-actions" style={{ display: 'flex', gap: '4px', alignItems: 'center', flexShrink: 0 }}>
           <button onClick={handleUndo} disabled={undoStack.length === 0} title="בטל (Ctrl+Z)" style={{ backgroundColor: undoStack.length === 0 ? '#0f172a' : '#475569', color: undoStack.length === 0 ? '#64748b' : '#ffffff', border: 'none', padding: '5px 8px', borderRadius: '4px', cursor: undoStack.length === 0 ? 'not-allowed' : 'pointer', fontSize: '11px', fontWeight: 'bold' }}>↩</button>
           <button onClick={handleRedo} disabled={redoStack.length === 0} title="שחזור (Ctrl+Y)" style={{ backgroundColor: redoStack.length === 0 ? '#0f172a' : '#475569', color: redoStack.length === 0 ? '#64748b' : '#ffffff', border: 'none', padding: '5px 8px', borderRadius: '4px', cursor: redoStack.length === 0 ? 'not-allowed' : 'pointer', fontSize: '11px', fontWeight: 'bold' }}>↪</button>
           <button onClick={handlePrint} style={{ backgroundColor: '#2563eb', color: '#ffffff', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>הדפסה / PDF</button>
@@ -315,7 +315,7 @@ export default function MeasurementPage({
                 </h4>
               </div>
 
-              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: '15px' }}>
+              <div className="measure-form-fields" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: '15px' }}>
 
                 {/* מס' חלק - תמיד מופיע */}
                 <div style={{ width: '90px' }}>
@@ -604,7 +604,7 @@ export default function MeasurementPage({
           return (<>
             {/* ─── סרגל פעולות מרובות ─── */}
             {selectedRowIds.size > 0 && (
-              <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 16px', marginBottom: '16px', backgroundColor: '#eff6ff', border: '2px solid #93c5fd', borderRadius: '8px', fontSize: '13px' }}>
+              <div className="no-print bulk-actions-bar" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 16px', marginBottom: '16px', backgroundColor: '#eff6ff', border: '2px solid #93c5fd', borderRadius: '8px', fontSize: '13px' }}>
                 <span style={{ fontWeight: 'bold', color: '#1e40af' }}>{selectedRowIds.size} חלקים נבחרים</span>
                 <button onClick={bulkDelete} style={{ padding: '5px 12px', backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}>🗑 מחק נבחרים</button>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -620,83 +620,83 @@ export default function MeasurementPage({
 
             {/* ─── טבלה 1: חלקים רגילים ─── */}
             {regularRows.length > 0 && (
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '13px', minWidth: hasTransition || hasElbow ? '1700px' : '1200px', marginBottom: '24px' }}>
+              <table className="r-desktop-only" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '13px', marginBottom: '24px', tableLayout: 'fixed' }}>
                 <thead>
-                  <tr style={{ backgroundColor: '#f1f5f9', color: '#475569', fontWeight: 'bold', borderBottom: '2px solid #cbd5e1' }}>
-                    <th style={{ padding: '12px 8px', textAlign: 'center', width: '32px' }}><input type="checkbox" checked={regularRows.length > 0 && regularRows.every(r => selectedRowIds.has(r.id))} onChange={() => toggleSelectAll(regularRows)} style={{ cursor: 'pointer' }} /></th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center', width: '40px' }}>מס'</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center', width: '60px' }}>מס' חלק</th>
-                    <th style={{ padding: '12px 8px', width: '140px' }}>סוג חלק</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#f8fafc' }}>רוחב</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#f8fafc' }}>גובה</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: hasTransition ? '#e2f5ec' : 'transparent', width: hasTransition ? '65px' : undefined }}>{hasTransition ? 'רוחב 2' : ''}</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: hasTransition ? '#e2f5ec' : 'transparent', width: hasTransition ? '65px' : undefined }}>{hasTransition ? 'גובה 2' : ''}</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center' }}>אורך (מטר)</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: hasElbow ? '#fff7ed' : 'transparent', width: hasElbow ? '65px' : undefined }}>{hasElbow ? 'רדיוס גדול' : ''}</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: hasElbow ? '#fff7ed' : 'transparent', width: hasElbow ? '65px' : undefined }}>{hasElbow ? 'רדיוס קטן' : ''}</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: hasInsulation ? '#faf5ff' : 'transparent' }}>{hasInsulation ? 'אקוסטי' : ''}</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: hasInsulation ? '#faf5ff' : 'transparent' }}>{hasInsulation ? 'חיצוני' : ''}</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center' }}>עובי פח</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#fefce8', color: '#854d0e', fontWeight: 'bold' }}>דופן</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center', backgroundColor: '#fefce8', color: '#854d0e', fontWeight: 'bold' }}>מס' חלקים</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center', color: '#1d4ed8', fontWeight: 'bold' }}>שטח (מ"ר)</th>
-                    <th style={{ padding: '12px 8px', width: '160px' }}>הערות</th>
-                    <th style={{ padding: '12px 8px', width: '40px' }}></th>
+                  <tr style={{ backgroundColor: '#f1f5f9', color: '#475569', fontWeight: 'bold', borderBottom: '2px solid #cbd5e1', fontSize: '12px' }}>
+                    <th style={{ padding: '3px 2px', textAlign: 'center', width: '28px' }}><input type="checkbox" checked={regularRows.length > 0 && regularRows.every(r => selectedRowIds.has(r.id))} onChange={() => toggleSelectAll(regularRows)} style={{ cursor: 'pointer' }} /></th>
+                    <th style={{ padding: '3px 2px', textAlign: 'center', width: '28px' }}>מס'</th>
+                    <th style={{ padding: '3px 2px', textAlign: 'center', width: '55px' }}>מס' חלק</th>
+                    <th style={{ padding: '3px 2px', width: '110px' }}>סוג חלק</th>
+                    <th style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: '#f8fafc', width: '55px' }}>רוחב</th>
+                    <th style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: '#f8fafc', width: '55px' }}>גובה</th>
+                    <th style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: hasTransition ? '#e2f5ec' : 'transparent', width: hasTransition ? '55px' : '0' }}>{hasTransition ? 'רוחב 2' : ''}</th>
+                    <th style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: hasTransition ? '#e2f5ec' : 'transparent', width: hasTransition ? '55px' : '0' }}>{hasTransition ? 'גובה 2' : ''}</th>
+                    <th style={{ padding: '3px 2px', textAlign: 'center', width: '55px' }}>אורך</th>
+                    <th style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: hasElbow ? '#fff7ed' : 'transparent', width: hasElbow ? '55px' : '0' }}>{hasElbow ? 'רדיוס גד' : ''}</th>
+                    <th style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: hasElbow ? '#fff7ed' : 'transparent', width: hasElbow ? '55px' : '0' }}>{hasElbow ? 'רדיוס קט' : ''}</th>
+                    <th style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: hasInsulation ? '#faf5ff' : 'transparent', width: hasInsulation ? '30px' : '0' }}>{hasInsulation ? 'אקוס' : ''}</th>
+                    <th style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: hasInsulation ? '#faf5ff' : 'transparent', width: hasInsulation ? '30px' : '0' }}>{hasInsulation ? 'חיצ' : ''}</th>
+                    <th style={{ padding: '3px 2px', textAlign: 'center', width: '50px' }}>עובי</th>
+                    <th style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: '#fefce8', color: '#854d0e', fontWeight: 'bold', width: '35px' }}>דופן</th>
+                    <th style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: '#fefce8', color: '#854d0e', fontWeight: 'bold', width: '35px' }}>כמות</th>
+                    <th style={{ padding: '3px 2px', textAlign: 'center', color: '#1d4ed8', fontWeight: 'bold', width: '60px' }}>שטח</th>
+                    <th style={{ padding: '3px 2px', width: '90px' }}>הערות</th>
+                    <th style={{ padding: '3px 2px', width: '40px' }}></th>
                   </tr>
                 </thead>
                 <tbody>
                   {regularRows.map((row, idx) => (
-                    <tr key={row.id} onMouseEnter={() => setLastHoveredRowId(row.id)} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                      <td style={{ padding: '8px', textAlign: 'center' }}><input type="checkbox" checked={selectedRowIds.has(row.id)} onChange={() => toggleRowSelection(row.id)} style={{ cursor: 'pointer' }} /></td>
-                      <td style={{ padding: '8px', textAlign: 'center', color: '#94a3b8' }}>{idx + 1}</td>
-                      <td style={{ padding: '8px', textAlign: 'center' }}>
-                        <input type="text" value={row.partNumber} onChange={(e) => updateRow(row.id, 'partNumber', e.target.value)} style={{ width: '50px', padding: '4px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: 600, fontSize: '12px' }} />
+                    <tr key={row.id} onMouseEnter={() => setLastHoveredRowId(row.id)} style={{ borderBottom: '1px solid #e2e8f0', fontSize: '12px' }}>
+                      <td style={{ padding: '3px 2px', textAlign: 'center' }}><input type="checkbox" checked={selectedRowIds.has(row.id)} onChange={() => toggleRowSelection(row.id)} style={{ cursor: 'pointer' }} /></td>
+                      <td style={{ padding: '3px 2px', textAlign: 'center', color: '#94a3b8' }}>{idx + 1}</td>
+                      <td style={{ padding: '3px 2px', textAlign: 'center' }}>
+                        <input type="text" value={row.partNumber} onChange={(e) => updateRow(row.id, 'partNumber', e.target.value)} style={{ width: '45px', padding: '2px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '3px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: 600, fontSize: '11px', boxSizing: 'border-box' }} />
                       </td>
-                      <td style={{ padding: '8px', fontWeight: 500, color: '#0f172a' }}>
+                      <td style={{ padding: '3px 2px', fontWeight: 500, color: '#0f172a' }}>
                         {row.notes && ['לאמד S','צינור עגול','קופסת פיזור','מדף אש'].includes(row.notes) ? row.notes : row.type}
                       </td>
-                      <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#f8fafc' }}><input type="number" value={row.width1 || ''} onChange={(e) => updateRow(row.id, 'width1', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} /></td>
-                      <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#f8fafc' }}><input type="number" value={row.height1 || ''} onChange={(e) => updateRow(row.id, 'height1', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a' }} /></td>
-                      <td style={{ padding: '8px', textAlign: 'center', backgroundColor: hasTransition ? '#f4fbf7' : 'transparent' }}>
-                        {hasTransition && <input type="number" value={row.width2 || ''} disabled={row.type !== 'מעבר'} onChange={(e) => updateRow(row.id, 'width2', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.type !== 'מעבר' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} />}
+                      <td style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: '#f8fafc' }}><input type="number" value={row.width1 || ''} onChange={(e) => updateRow(row.id, 'width1', Number(e.target.value))} style={{ width: '50px', padding: '2px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '3px', backgroundColor: '#ffffff', color: '#0f172a', boxSizing: 'border-box' }} /></td>
+                      <td style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: '#f8fafc' }}><input type="number" value={row.height1 || ''} onChange={(e) => updateRow(row.id, 'height1', Number(e.target.value))} style={{ width: '50px', padding: '2px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '3px', backgroundColor: '#ffffff', color: '#0f172a', boxSizing: 'border-box' }} /></td>
+                      <td style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: hasTransition ? '#f4fbf7' : 'transparent' }}>
+                        {hasTransition && <input type="number" value={row.width2 || ''} disabled={row.type !== 'מעבר'} onChange={(e) => updateRow(row.id, 'width2', Number(e.target.value))} style={{ width: '50px', padding: '2px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '3px', backgroundColor: row.type !== 'מעבר' ? '#e2e8f0' : '#ffffff', color: '#0f172a', boxSizing: 'border-box' }} />}
                       </td>
-                      <td style={{ padding: '8px', textAlign: 'center', backgroundColor: hasTransition ? '#f4fbf7' : 'transparent' }}>
-                        {hasTransition && <input type="number" value={row.height2 || ''} disabled={row.type !== 'מעבר'} onChange={(e) => updateRow(row.id, 'height2', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.type !== 'מעבר' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} />}
+                      <td style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: hasTransition ? '#f4fbf7' : 'transparent' }}>
+                        {hasTransition && <input type="number" value={row.height2 || ''} disabled={row.type !== 'מעבר'} onChange={(e) => updateRow(row.id, 'height2', Number(e.target.value))} style={{ width: '50px', padding: '2px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '3px', backgroundColor: row.type !== 'מעבר' ? '#e2e8f0' : '#ffffff', color: '#0f172a', boxSizing: 'border-box' }} />}
                       </td>
-                      <td style={{ padding: '8px', textAlign: 'center' }}><input type="number" value={['קשת'].includes(row.type) ? '' : (row.length || '')} disabled={['קשת'].includes(row.type)} onChange={(e) => updateRow(row.id, 'length', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: ['קשת'].includes(row.type) ? '#e2e8f0' : '#ffffff', color: '#0f172a', cursor: ['קשת'].includes(row.type) ? 'not-allowed' : 'auto' }} /></td>
-                      <td style={{ padding: '8px', textAlign: 'center', backgroundColor: hasElbow ? '#fffaf3' : 'transparent' }}>
-                        {hasElbow && <input type="number" value={row.rBig || ''} disabled={row.type !== 'קשת'} onChange={(e) => updateRow(row.id, 'rBig', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.type !== 'קשת' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} />}
+                      <td style={{ padding: '3px 2px', textAlign: 'center' }}><input type="number" value={['קשת'].includes(row.type) ? '' : (row.length || '')} disabled={['קשת'].includes(row.type)} onChange={(e) => updateRow(row.id, 'length', Number(e.target.value))} style={{ width: '50px', padding: '2px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '3px', backgroundColor: ['קשת'].includes(row.type) ? '#e2e8f0' : '#ffffff', color: '#0f172a', cursor: ['קשת'].includes(row.type) ? 'not-allowed' : 'auto', boxSizing: 'border-box' }} /></td>
+                      <td style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: hasElbow ? '#fffaf3' : 'transparent' }}>
+                        {hasElbow && <input type="number" value={row.rBig || ''} disabled={row.type !== 'קשת'} onChange={(e) => updateRow(row.id, 'rBig', Number(e.target.value))} style={{ width: '50px', padding: '2px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '3px', backgroundColor: row.type !== 'קשת' ? '#e2e8f0' : '#ffffff', color: '#0f172a', boxSizing: 'border-box' }} />}
                       </td>
-                      <td style={{ padding: '8px', textAlign: 'center', backgroundColor: hasElbow ? '#fffaf3' : 'transparent' }}>
-                        {hasElbow && <input type="number" value={row.type === 'קשת' && row.rSmall ? row.rSmall : ''} disabled={row.type !== 'קשת'} onChange={(e) => updateRow(row.id, 'rSmall', Number(e.target.value))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.type !== 'קשת' ? '#e2e8f0' : '#ffffff', color: '#0f172a' }} />}
+                      <td style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: hasElbow ? '#fffaf3' : 'transparent' }}>
+                        {hasElbow && <input type="number" value={row.type === 'קשת' && row.rSmall ? row.rSmall : ''} disabled={row.type !== 'קשת'} onChange={(e) => updateRow(row.id, 'rSmall', Number(e.target.value))} style={{ width: '50px', padding: '2px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '3px', backgroundColor: row.type !== 'קשת' ? '#e2e8f0' : '#ffffff', color: '#0f172a', boxSizing: 'border-box' }} />}
                       </td>
-                      <td style={{ padding: '8px', textAlign: 'center', backgroundColor: hasInsulation ? '#faf5ff' : 'transparent' }}>
+                      <td style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: hasInsulation ? '#faf5ff' : 'transparent' }}>
                         {hasInsulation && <input type="checkbox" checked={row.acoustic} onChange={(e) => updateRow(row.id, 'acoustic', e.target.checked)} style={{ cursor: 'pointer' }} />}
                       </td>
-                      <td style={{ padding: '8px', textAlign: 'center', backgroundColor: hasInsulation ? '#faf5ff' : 'transparent' }}>
+                      <td style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: hasInsulation ? '#faf5ff' : 'transparent' }}>
                         {hasInsulation && <input type="checkbox" checked={row.external} onChange={(e) => updateRow(row.id, 'external', e.target.checked)} style={{ cursor: 'pointer' }} />}
                       </td>
-                      <td style={{ padding: '8px', textAlign: 'center' }}>
+                      <td style={{ padding: '3px 2px', textAlign: 'center' }}>
                         <input type="number" step="0.05" value={row.manualThickness > 0 ? row.manualThickness : calculateThickness(row.width1, row.height1, row.manualThickness)} onChange={(e) => updateRow(row.id, 'manualThickness', Number(e.target.value))}
-                          style={{ width: '55px', padding: '4px', textAlign: 'center', border: row.manualThickness > 0 ? '2px solid #d97706' : '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: row.manualThickness > 0 ? '#fffbeb' : '#ffffff', color: '#0f172a', fontWeight: row.manualThickness > 0 ? 700 : 500 }} />
+                          style={{ width: '45px', padding: '2px', textAlign: 'center', border: row.manualThickness > 0 ? '2px solid #d97706' : '1px solid #cbd5e1', borderRadius: '3px', backgroundColor: row.manualThickness > 0 ? '#fffbeb' : '#ffffff', color: '#0f172a', fontWeight: row.manualThickness > 0 ? 700 : 500, boxSizing: 'border-box' }} />
                       </td>
-                      <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#fefce8' }}>
+                      <td style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: '#fefce8' }}>
                         <input type="number" min="0" step="1" value={row.dofan || ''} onChange={(e) => updateRow(row.id, 'dofan', Math.max(0, Math.round(Number(e.target.value))))}
-                          style={{ width: '40px', padding: '4px', textAlign: 'center', border: '1px solid #facc15', borderRadius: '4px', backgroundColor: row.dofan > 0 ? '#fffbeb' : '#ffffff', color: '#854d0e', fontWeight: row.dofan > 0 ? 700 : 400 }} placeholder="0" />
+                          style={{ width: '35px', padding: '2px', textAlign: 'center', border: '1px solid #facc15', borderRadius: '3px', backgroundColor: row.dofan > 0 ? '#fffbeb' : '#ffffff', color: '#854d0e', fontWeight: row.dofan > 0 ? 700 : 400, boxSizing: 'border-box' }} placeholder="0" />
                       </td>
-                      <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#fefce8' }}>
-                        <input type="number" min="1" step="1" value={row.panels || 1} onChange={(e) => updateRow(row.id, 'panels', Math.max(1, Math.round(Number(e.target.value))))} style={{ width: '40px', padding: '4px', textAlign: 'center', border: '1px solid #facc15', borderRadius: '4px', backgroundColor: '#ffffff', color: '#854d0e', fontWeight: 700 }} placeholder="1" />
+                      <td style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: '#fefce8' }}>
+                        <input type="number" min="1" step="1" value={row.panels || 1} onChange={(e) => updateRow(row.id, 'panels', Math.max(1, Math.round(Number(e.target.value))))} style={{ width: '35px', padding: '2px', textAlign: 'center', border: '1px solid #facc15', borderRadius: '3px', backgroundColor: '#ffffff', color: '#854d0e', fontWeight: 700, boxSizing: 'border-box' }} placeholder="1" />
                       </td>
-                      <td style={{ padding: '8px', textAlign: 'center', fontWeight: 'bold', color: '#1d4ed8', backgroundColor: '#eff6ff' }}>{calculateArea(row).toFixed(3)}</td>
-                      <td style={{ padding: '8px' }}>
+                      <td style={{ padding: '3px 2px', textAlign: 'center', fontWeight: 'bold', color: '#1d4ed8', backgroundColor: '#eff6ff' }}>{calculateArea(row).toFixed(3)}</td>
+                      <td style={{ padding: '3px 2px' }}>
                         <input type="text" value={row.notes} onChange={(e) => updateRow(row.id, 'notes', e.target.value)}
-                          style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px', boxSizing: 'border-box', backgroundColor: '#ffffff', color: '#0f172a' }} />
+                          style={{ width: '85px', padding: '2px', border: '1px solid #cbd5e1', borderRadius: '3px', boxSizing: 'border-box', backgroundColor: '#ffffff', color: '#0f172a', fontSize: '11px' }} />
                       </td>
-                      <td style={{ padding: '8px', textAlign: 'center', display: 'flex', gap: '4px', justifyContent: 'center', flexDirection: 'column', alignItems: 'center' }}>
-                        {getRowWarnings(row).length > 0 && <span title={getRowWarnings(row).join('\n')} style={{ color: '#f59e0b', fontSize: '12px', cursor: 'help' }}>⚠️</span>}
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          <button onClick={() => duplicateRow(row.id)} title="שכפל חלק" style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-                          <button onClick={() => deleteRow(row.id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                      <td style={{ padding: '3px 2px', textAlign: 'center' }}>
+                        {getRowWarnings(row).length > 0 && <span title={getRowWarnings(row).join('\n')} style={{ color: '#f59e0b', fontSize: '11px', cursor: 'help' }}>⚠️</span>}
+                        <div style={{ display: 'flex', gap: '2px', justifyContent: 'center' }}>
+                          <button onClick={() => duplicateRow(row.id)} title="שכפל חלק" style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', padding: '1px' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                          <button onClick={() => deleteRow(row.id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: '1px' }}><Trash2 size={12} /></button>
                         </div>
                       </td>
                     </tr>
@@ -707,56 +707,56 @@ export default function MeasurementPage({
 
             {/* ─── טבלה 2: אביזרים ─── */}
             {accessoryRows.length > 0 && (
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '13px', minWidth: '900px', marginBottom: '24px' }}>
+              <table className="r-desktop-only" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '13px', marginBottom: '24px', tableLayout: 'fixed' }}>
                 <thead>
-                  <tr style={{ backgroundColor: '#f1f5f9', color: '#475569', fontWeight: 'bold', borderBottom: '2px solid #cbd5e1' }}>
-                    <th style={{ padding: '12px 8px', textAlign: 'center', width: '32px' }}><input type="checkbox" checked={accessoryRows.length > 0 && accessoryRows.every(r => selectedRowIds.has(r.id))} onChange={() => toggleSelectAll(accessoryRows)} style={{ cursor: 'pointer' }} /></th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center', width: '40px' }}>מס'</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center', width: '60px' }}>מס' חלק</th>
-                    <th style={{ padding: '12px 8px', width: '120px' }}>סוג אביזר</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center' }}>פירוט</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center' }}>אורך (מטר)</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center' }}>כמות</th>
-                    <th style={{ padding: '12px 8px', width: '160px' }}>הערות</th>
-                    <th style={{ padding: '12px 8px', width: '40px' }}></th>
+                  <tr style={{ backgroundColor: '#f1f5f9', color: '#475569', fontWeight: 'bold', borderBottom: '2px solid #cbd5e1', fontSize: '12px' }}>
+                    <th style={{ padding: '3px 2px', textAlign: 'center', width: '28px' }}><input type="checkbox" checked={accessoryRows.length > 0 && accessoryRows.every(r => selectedRowIds.has(r.id))} onChange={() => toggleSelectAll(accessoryRows)} style={{ cursor: 'pointer' }} /></th>
+                    <th style={{ padding: '3px 2px', textAlign: 'center', width: '28px' }}>מס'</th>
+                    <th style={{ padding: '3px 2px', textAlign: 'center', width: '55px' }}>מס' חלק</th>
+                    <th style={{ padding: '3px 2px', width: '100px' }}>סוג אביזר</th>
+                    <th style={{ padding: '3px 2px', textAlign: 'center' }}>פירוט</th>
+                    <th style={{ padding: '3px 2px', textAlign: 'center', width: '55px' }}>אורך</th>
+                    <th style={{ padding: '3px 2px', textAlign: 'center', width: '40px' }}>כמות</th>
+                    <th style={{ padding: '3px 2px', width: '120px' }}>הערות</th>
+                    <th style={{ padding: '3px 2px', width: '40px' }}></th>
                   </tr>
                 </thead>
                 <tbody>
                   {accessoryRows.map((row, idx) => (
-                    <tr key={row.id} onMouseEnter={() => setLastHoveredRowId(row.id)} style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#ffffff' }}>
-                      <td style={{ padding: '8px', textAlign: 'center' }}><input type="checkbox" checked={selectedRowIds.has(row.id)} onChange={() => toggleRowSelection(row.id)} style={{ cursor: 'pointer' }} /></td>
-                      <td style={{ padding: '8px', textAlign: 'center', color: '#94a3b8' }}>{idx + 1}</td>
-                      <td style={{ padding: '8px', textAlign: 'center' }}>
-                        <input type="text" value={row.partNumber} onChange={(e) => updateRow(row.id, 'partNumber', e.target.value)} style={{ width: '50px', padding: '4px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: 600, fontSize: '12px' }} />
+                    <tr key={row.id} onMouseEnter={() => setLastHoveredRowId(row.id)} style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#ffffff', fontSize: '12px' }}>
+                      <td style={{ padding: '3px 2px', textAlign: 'center' }}><input type="checkbox" checked={selectedRowIds.has(row.id)} onChange={() => toggleRowSelection(row.id)} style={{ cursor: 'pointer' }} /></td>
+                      <td style={{ padding: '3px 2px', textAlign: 'center', color: '#94a3b8' }}>{idx + 1}</td>
+                      <td style={{ padding: '3px 2px', textAlign: 'center' }}>
+                        <input type="text" value={row.partNumber} onChange={(e) => updateRow(row.id, 'partNumber', e.target.value)} style={{ width: '45px', padding: '2px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '3px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: 600, fontSize: '11px', boxSizing: 'border-box' }} />
                       </td>
-                      <td style={{ padding: '8px', fontWeight: 500, color: '#0f172a' }}>
+                      <td style={{ padding: '3px 2px', fontWeight: 500, color: '#0f172a' }}>
                         {row.type}
                       </td>
-                      <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#ffffff', fontWeight: 'bold', color: '#334155' }}>
+                      <td style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: '#ffffff', fontWeight: 'bold', color: '#334155' }}>
                         {row.type === 'שתוצר' && 'יחידות'}
                         {row.type === 'מתאם' && (row.adapterType || 'ללא')}
                         {row.type === 'שרשורי' && `קוטר ${row.sharshuriType}`}
                         {row.type === 'חיבור גמיש' && `${row.flexible || 0} יחידות`}
                       </td>
-                      <td style={{ padding: '8px', textAlign: 'center' }}>
+                      <td style={{ padding: '3px 2px', textAlign: 'center' }}>
                         {row.type === 'שרשורי' || row.type === 'חיבור גמיש' ? (
-                          <input type="number" min="0" step="1" value={row.length || ''} onChange={(e) => updateRow(row.id, 'length', Math.max(0, Math.round(Number(e.target.value))))} style={{ width: '65px', padding: '6px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontSize: '13px' }} />
+                          <input type="number" min="0" step="1" value={row.length || ''} onChange={(e) => updateRow(row.id, 'length', Math.max(0, Math.round(Number(e.target.value))))} style={{ width: '50px', padding: '2px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '3px', backgroundColor: '#ffffff', color: '#0f172a', boxSizing: 'border-box' }} />
                         ) : (
                           <span style={{ color: '#94a3b8' }}>—</span>
                         )}
                       </td>
-                      <td style={{ padding: '8px', textAlign: 'center', backgroundColor: '#ffffff', fontWeight: 'bold', color: '#334155' }}>
+                      <td style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: '#ffffff', fontWeight: 'bold', color: '#334155' }}>
                         {row.type === 'מתאם' ? (
-                          <input type="number" min="1" step="1" value={row.adapterQty || ''} onChange={(e) => updateRow(row.id, 'adapterQty', Math.max(1, Math.round(Number(e.target.value))))} style={{ width: '50px', padding: '4px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: 700 }} />
+                          <input type="number" min="1" step="1" value={row.adapterQty || ''} onChange={(e) => updateRow(row.id, 'adapterQty', Math.max(1, Math.round(Number(e.target.value))))} style={{ width: '40px', padding: '2px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '3px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: 700, boxSizing: 'border-box' }} />
                         ) : row.type === 'שתוצר' ? (
-                          <input type="number" min="1" step="1" value={row.panels || 1} onChange={(e) => updateRow(row.id, 'panels', Math.max(1, Math.round(Number(e.target.value))))} style={{ width: '50px', padding: '4px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: 700 }} placeholder="1" />
+                          <input type="number" min="1" step="1" value={row.panels || 1} onChange={(e) => updateRow(row.id, 'panels', Math.max(1, Math.round(Number(e.target.value))))} style={{ width: '40px', padding: '2px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '3px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: 700, boxSizing: 'border-box' }} placeholder="1" />
                         ) : row.type === 'חיבור גמיש' ? (
-                          <input type="number" min="1" step="1" value={row.flexible || ''} onChange={(e) => updateRow(row.id, 'flexible', Math.max(1, Math.round(Number(e.target.value))))} style={{ width: '50px', padding: '4px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: 700 }} />
+                          <input type="number" min="1" step="1" value={row.flexible || ''} onChange={(e) => updateRow(row.id, 'flexible', Math.max(1, Math.round(Number(e.target.value))))} style={{ width: '40px', padding: '2px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '3px', backgroundColor: '#ffffff', color: '#0f172a', fontWeight: 700, boxSizing: 'border-box' }} />
                         ) : (
                           <span style={{ color: '#94a3b8' }}>—</span>
                         )}
                       </td>
-                      <td style={{ padding: '8px' }}>
+                      <td style={{ padding: '3px 2px' }}>
                         <input type="text"
                           value={
                             row.type === 'שתוצר' ? 'שתוצר' :
@@ -767,22 +767,149 @@ export default function MeasurementPage({
                           }
                           onChange={(e) => updateRow(row.id, 'notes', e.target.value)}
                           readOnly
-                          style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px', boxSizing: 'border-box', backgroundColor: '#f8fafc', color: '#0f172a', cursor: 'not-allowed' }} />
+                          style={{ width: '115px', padding: '2px', border: '1px solid #cbd5e1', borderRadius: '3px', boxSizing: 'border-box', backgroundColor: '#f8fafc', color: '#0f172a', cursor: 'not-allowed', fontSize: '11px' }} />
                       </td>
-                      <td style={{ padding: '8px', textAlign: 'center', display: 'flex', gap: '4px', justifyContent: 'center' }}>
-                        <button onClick={() => duplicateRow(row.id)} title="שכפל חלק" style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-                        <button onClick={() => deleteRow(row.id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                      <td style={{ padding: '3px 2px', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', gap: '2px', justifyContent: 'center' }}>
+                          <button onClick={() => duplicateRow(row.id)} title="שכפל חלק" style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', padding: '1px' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                          <button onClick={() => deleteRow(row.id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: '1px' }}><Trash2 size={12} /></button>
+                        </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             )}
+
+            {/* ─── מובייל: כרטיסים ─── */}
+            <div className="r-mobile-only" style={{ display: 'none', flexDirection: 'column', padding: '8px 0' }}>
+              {regularRows.map((row, idx) => (
+                <div key={row.id} className="r-card">
+                  <div className="r-card-header">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input type="checkbox" checked={selectedRowIds.has(row.id)} onChange={() => toggleRowSelection(row.id)} style={{ cursor: 'pointer' }} />
+                      <span className="r-card-title">{row.notes && ['לאמד S','צינור עגול','קופסת פיזור','מדף אש'].includes(row.notes) ? row.notes : row.type}</span>
+                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>#{idx + 1}</span>
+                    </div>
+                    <span className="r-card-badge">{calculateArea(row).toFixed(3)} מ"ר</span>
+                  </div>
+                  <div className="r-card-grid">
+                    <div className="r-card-field">
+                      <label>מס' חלק</label>
+                      <input type="text" value={row.partNumber} onChange={(e) => updateRow(row.id, 'partNumber', e.target.value)} placeholder="P001" />
+                    </div>
+                    <div className="r-card-field">
+                      <label>רוחב</label>
+                      <input type="number" value={row.width1 || ''} onChange={(e) => updateRow(row.id, 'width1', Number(e.target.value))} />
+                    </div>
+                    <div className="r-card-field">
+                      <label>גובה</label>
+                      <input type="number" value={row.height1 || ''} onChange={(e) => updateRow(row.id, 'height1', Number(e.target.value))} />
+                    </div>
+                    <div className="r-card-field">
+                      <label>אורך (מטר)</label>
+                      <input type="number" value={['קשת'].includes(row.type) ? '' : (row.length || '')} disabled={['קשת'].includes(row.type)} onChange={(e) => updateRow(row.id, 'length', Number(e.target.value))} />
+                    </div>
+                    {row.type === 'מעבר' && (
+                      <>
+                        <div className="r-card-field">
+                          <label>רוחב 2</label>
+                          <input type="number" value={row.width2 || ''} onChange={(e) => updateRow(row.id, 'width2', Number(e.target.value))} />
+                        </div>
+                        <div className="r-card-field">
+                          <label>גובה 2</label>
+                          <input type="number" value={row.height2 || ''} onChange={(e) => updateRow(row.id, 'height2', Number(e.target.value))} />
+                        </div>
+                      </>
+                    )}
+                    {row.type === 'קשת' && (
+                      <>
+                        <div className="r-card-field">
+                          <label>R גדול</label>
+                          <input type="number" value={row.rBig || ''} onChange={(e) => updateRow(row.id, 'rBig', Number(e.target.value))} />
+                        </div>
+                        <div className="r-card-field">
+                          <label>R קטן</label>
+                          <input type="number" value={row.rSmall || ''} onChange={(e) => updateRow(row.id, 'rSmall', Number(e.target.value))} />
+                        </div>
+                      </>
+                    )}
+                    <div className="r-card-field">
+                      <label>עובי פח</label>
+                      <input type="number" step="0.05" value={row.manualThickness > 0 ? row.manualThickness : calculateThickness(row.width1, row.height1, row.manualThickness)} onChange={(e) => updateRow(row.id, 'manualThickness', Number(e.target.value))} />
+                    </div>
+                    <div className="r-card-field">
+                      <label>דופן</label>
+                      <input type="number" min="0" step="1" value={row.dofan || ''} onChange={(e) => updateRow(row.id, 'dofan', Math.max(0, Math.round(Number(e.target.value))))} placeholder="0" />
+                    </div>
+                    <div className="r-card-field">
+                      <label>מס' חלקים</label>
+                      <input type="number" min="1" step="1" value={row.panels || 1} onChange={(e) => updateRow(row.id, 'panels', Math.max(1, Math.round(Number(e.target.value))))} />
+                    </div>
+                    <div className="r-card-field" style={{ gridColumn: 'span 2' }}>
+                      <label>הערות</label>
+                      <input type="text" value={row.notes} onChange={(e) => updateRow(row.id, 'notes', e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="r-card-actions">
+                    {getRowWarnings(row).length > 0 && <span title={getRowWarnings(row).join('\n')} style={{ color: '#f59e0b', fontSize: '12px', cursor: 'help', marginRight: 'auto' }}>⚠️</span>}
+                    <button onClick={() => duplicateRow(row.id)} style={{ backgroundColor: '#eff6ff', color: '#2563eb' }}>📋 שכפל</button>
+                    <button onClick={() => deleteRow(row.id)} style={{ backgroundColor: '#fef2f2', color: '#ef4444' }}>🗑 מחק</button>
+                  </div>
+                </div>
+              ))}
+
+              {accessoryRows.map((row, idx) => (
+                <div key={row.id} className="r-card" style={{ borderColor: '#d1fae5' }}>
+                  <div className="r-card-header">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input type="checkbox" checked={selectedRowIds.has(row.id)} onChange={() => toggleRowSelection(row.id)} style={{ cursor: 'pointer' }} />
+                      <span className="r-card-title">{row.type}</span>
+                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>#{idx + 1}</span>
+                    </div>
+                  </div>
+                  <div className="r-card-grid">
+                    <div className="r-card-field">
+                      <label>מס' חלק</label>
+                      <input type="text" value={row.partNumber} onChange={(e) => updateRow(row.id, 'partNumber', e.target.value)} />
+                    </div>
+                    <div className="r-card-field">
+                      <label>פירוט</label>
+                      <input type="text" value={
+                        row.type === 'שתוצר' ? 'יחידות' :
+                        row.type === 'מתאם' ? (row.adapterType || 'ללא') :
+                        row.type === 'שרשורי' ? `קוטר ${row.sharshuriType}` :
+                        row.type === 'חיבור גמיש' ? `${row.flexible || 0} יחידות` : ''
+                      } readOnly style={{ backgroundColor: '#f8fafc', cursor: 'not-allowed' }} />
+                    </div>
+                    {(row.type === 'שרשורי' || row.type === 'חיבור גמיש') && (
+                      <div className="r-card-field">
+                        <label>אורך (מטר)</label>
+                        <input type="number" min="0" step="1" value={row.length || ''} onChange={(e) => updateRow(row.id, 'length', Math.max(0, Math.round(Number(e.target.value))))} />
+                      </div>
+                    )}
+                    <div className="r-card-field">
+                      <label>כמות</label>
+                      <input type="number" min="1" step="1" value={row.type === 'מתạm' ? (row.adapterQty || '') : row.type === 'שתוצר' ? (row.panels || 1) : row.type === 'חיבור גמיש' ? (row.flexible || '') : ''} onChange={(e) => {
+                        const v = Math.max(1, Math.round(Number(e.target.value)));
+                        if (row.type === 'מתאם') updateRow(row.id, 'adapterQty', v);
+                        else if (row.type === 'שתוצר') updateRow(row.id, 'panels', v);
+                        else if (row.type === 'חיבור גמיש') updateRow(row.id, 'flexible', v);
+                      }} />
+                    </div>
+                  </div>
+                  <div className="r-card-actions">
+                    <button onClick={() => duplicateRow(row.id)} style={{ backgroundColor: '#eff6ff', color: '#2563eb' }}>📋 שכפל</button>
+                    <button onClick={() => deleteRow(row.id)} style={{ backgroundColor: '#fef2f2', color: '#ef4444' }}>🗑 מחק</button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </>);
         })()}
       </div>
 
-      <div style={{ backgroundColor: '#0f172a', color: '#ffffff', padding: '14px 20px', display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 'bold', borderBottomLeftRadius: '7px', borderBottomRightRadius: '7px' }}>
+      <div className="totals-bar" style={{ backgroundColor: '#0f172a', color: '#ffffff', padding: '14px 20px', display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 'bold', borderBottomLeftRadius: '7px', borderBottomRightRadius: '7px' }}>
         <span>סך הכל: {activeSheet.rows.length} חלקים | שטח בדף הנוכחי:</span>
         <span style={{ color: '#3b82f6', fontSize: '16px' }}>{activeSheet.rows.reduce((s, r) => s + calculateArea(r), 0).toFixed(3)} מ"ר</span>
       </div>

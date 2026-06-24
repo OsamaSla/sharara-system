@@ -42,20 +42,33 @@ export default function ProductionWorksheet({
 
   return (
     <div className="production-print-page">
-      <CompanyLetterhead
-        details={companyDetails}
-        subtitleOverride="דף עבודה לייצור תעלות ואביזרים"
-        className="company-letterhead--production"
-      />
+      <div className="screen-hide-print-show">
+        <CompanyLetterhead
+          details={companyDetails}
+          subtitleOverride="דף עבודה לייצור תעלות ואביזרים"
+          className="company-letterhead--production"
+        />
+      </div>
 
-      <div className="production-meta">
-        <div>
-          <div><b>פרויקט:</b> {projectLabel}</div>
-          <div><b>דף עבודה:</b> {sheetName}</div>
-        </div>
-        <div className="production-meta-dates">
-          <div><b>תאריך:</b> {docDate}</div>
-          <div><b>מסמך סימוכין:</b> <span dir="ltr">#{docNumber}</span></div>
+      {/* Screen-only compact metadata */}
+      <div className="no-print" style={{ display: 'flex', gap: '16px', fontSize: '12px', color: '#475569', marginBottom: '10px', padding: '4px 8px', backgroundColor: '#f8fafc', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+        <span><b>פרויקט:</b> {projectLabel}</span>
+        <span><b>דף:</b> {sheetName}</span>
+        <span><b>תאריך:</b> {docDate}</span>
+        <span><b>מסמך:</b> <span dir="ltr">#{docNumber}</span></span>
+      </div>
+
+      {/* Print-only metadata */}
+      <div className="screen-hide-print-show">
+        <div className="production-meta">
+          <div>
+            <div><b>פרויקט:</b> {projectLabel}</div>
+            <div><b>דף עבודה:</b> {sheetName}</div>
+          </div>
+          <div className="production-meta-dates">
+            <div><b>תאריך:</b> {docDate}</div>
+            <div><b>מסמך סימוכין:</b> <span dir="ltr">#{docNumber}</span></div>
+          </div>
         </div>
       </div>
 
@@ -97,69 +110,67 @@ export default function ProductionWorksheet({
         const uniquePartRows = Object.values(aggregatedMap);
 
         return (
-          <div key={partName} className="production-group-section" style={{ marginBottom: '30px' }}>
+          <div key={partName} className="production-group-section" style={{ marginBottom: '30px', overflowX: 'auto' }}>
             <h3 className="production-group-title" style={{ borderBottom: '2px solid #111', paddingBottom: '4px', marginTop: '20px', color: '#111' }}>
               {partName} ({partRows.length} יח&apos; סה"כ)
             </h3>
             
-            <table className="production-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table className="production-table" style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '12px' }}>
               <thead>
-                <tr>
-                  <th style={{ textAlign: 'center', width: '4%' }}>#</th>
-                  <th style={{ textAlign: 'center', width: '12%' }}>מס&apos; חלק</th>
-                  <th style={{ textAlign: 'center', width: '10%', backgroundColor: '#f9f9f9' }}>יח&apos; לייצור</th>
-                  <th style={{ textAlign: 'center', width: '22%' }}>סקיצה</th>
+                <tr style={{ fontSize: '11px' }}>
+                  <th style={{ textAlign: 'center', width: '4%', padding: '3px 2px' }}>#</th>
+                  <th style={{ textAlign: 'center', width: '12%', padding: '3px 2px' }}>מס&apos; חלק</th>
+                  <th style={{ textAlign: 'center', width: '10%', backgroundColor: '#f9f9f9', padding: '3px 2px' }}>יח&apos; לייצור</th>
+                  <th style={{ textAlign: 'center', width: '22%', padding: '3px 2px' }}>סקיצה</th>
                   
-                  {/* עמודות המידות הדינמיות */}
                   {isRound && (
                     <>
-                      <th style={{ textAlign: 'center' }}>קוטר (מ"מ)</th>
-                      <th style={{ textAlign: 'center' }}>אורך (מ"מ)</th>
+                      <th style={{ textAlign: 'center', padding: '3px 2px' }}>קוטר</th>
+                      <th style={{ textAlign: 'center', padding: '3px 2px' }}>אורך</th>
                     </>
                   )}
                   {isLamedS && (
                     <>
-                      <th style={{ textAlign: 'center' }}>רוחב (מ"מ)</th>
-                      <th style={{ textAlign: 'center' }}>גובה (מ"מ)</th>
-                      <th style={{ textAlign: 'center' }}>סטייה (מ"מ)</th>
+                      <th style={{ textAlign: 'center', padding: '3px 2px' }}>רוחב</th>
+                      <th style={{ textAlign: 'center', padding: '3px 2px' }}>גובה</th>
+                      <th style={{ textAlign: 'center', padding: '3px 2px' }}>סטייה</th>
                     </>
                   )}
                   {isElbow && (
                     <>
-                      <th style={{ textAlign: 'center' }}>רוחב (מ"מ)</th>
-                      <th style={{ textAlign: 'center' }}>גובה (מ"מ)</th>
-                      <th style={{ textAlign: 'center' }}>R גדול (מ"מ)</th>
-                      <th style={{ textAlign: 'center' }}>R קטן (מ"מ)</th>
+                      <th style={{ textAlign: 'center', padding: '3px 2px' }}>רוחב</th>
+                      <th style={{ textAlign: 'center', padding: '3px 2px' }}>גובה</th>
+                      <th style={{ textAlign: 'center', padding: '3px 2px' }}>R גדול</th>
+                      <th style={{ textAlign: 'center', padding: '3px 2px' }}>R קטן</th>
                     </>
                   )}
                   {isTransition && (
                     <>
-                      <th style={{ textAlign: 'center' }}>רוחב 1 (מ"מ)</th>
-                      <th style={{ textAlign: 'center' }}>גובה 1 (מ"מ)</th>
-                      <th style={{ textAlign: 'center' }}>רוחב 2 (מ"מ)</th>
-                      <th style={{ textAlign: 'center' }}>גובה 2 (מ"מ)</th>
-                      <th style={{ textAlign: 'center' }}>אורך (מ"מ)</th>
+                      <th style={{ textAlign: 'center', padding: '3px 2px' }}>רוחב 1</th>
+                      <th style={{ textAlign: 'center', padding: '3px 2px' }}>גובה 1</th>
+                      <th style={{ textAlign: 'center', padding: '3px 2px' }}>רוחב 2</th>
+                      <th style={{ textAlign: 'center', padding: '3px 2px' }}>גובה 2</th>
+                      <th style={{ textAlign: 'center', padding: '3px 2px' }}>אורך</th>
                     </>
                   )}
                   {isPlenum && (
                     <>
-                      <th style={{ textAlign: 'center' }}>רוחב (מ"מ)</th>
-                      <th style={{ textAlign: 'center' }}>גובה (מ"מ)</th>
-                      <th style={{ textAlign: 'center' }}>עומק (מ"מ)</th>
+                      <th style={{ textAlign: 'center', padding: '3px 2px' }}>רוחב</th>
+                      <th style={{ textAlign: 'center', padding: '3px 2px' }}>גובה</th>
+                      <th style={{ textAlign: 'center', padding: '3px 2px' }}>עומק</th>
                     </>
                   )}
                   {isStraight && (
                     <>
-                      <th style={{ textAlign: 'center' }}>רוחב (מ"מ)</th>
-                      <th style={{ textAlign: 'center' }}>גובה (מ"מ)</th>
-                      <th style={{ textAlign: 'center' }}>אורך (מ"מ)</th>
+                      <th style={{ textAlign: 'center', padding: '3px 2px' }}>רוחב</th>
+                      <th style={{ textAlign: 'center', padding: '3px 2px' }}>גובה</th>
+                      <th style={{ textAlign: 'center', padding: '3px 2px' }}>אורך</th>
                     </>
                   )}
                   
-                  {/* הוספת עמודה למספר חלקים עבור כל הסוגים */}
-                  <th style={{ textAlign: 'center' }}>מס' חלקים</th>
-                  <th style={{ textAlign: 'center', width: '10%' }}>עובי פח</th>
-                  {isStraight && <th style={{ textAlign: 'center', width: '8%' }}>דופן</th>}
+                  <th style={{ textAlign: 'center', padding: '3px 2px' }}>מס' חלקים</th>
+                  <th style={{ textAlign: 'center', width: '10%', padding: '3px 2px' }}>עובי פח</th>
+                  {isStraight && <th style={{ textAlign: 'center', width: '8%', padding: '3px 2px' }}>דופן</th>}
                 </tr>
               </thead>
               <tbody>
@@ -173,20 +184,21 @@ export default function ProductionWorksheet({
                   // סטייל אחיד ומודגש לכל תאי הנתונים בשורה לדרישת אחידות הגודל
                   const cellDataStyle: React.CSSProperties = {
                     textAlign: 'center',
-                    fontSize: '14px',
+                    padding: '3px 2px',
+                    fontSize: '12px',
                     fontWeight: 'bold'
                   };
 
                   return (
                     <tr key={row.id} className="production-table-row">
-                      <td style={{ textAlign: 'center', fontSize: '13px' }}>{currentIdx}</td>
-                      <td style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '14px' }} dir="ltr">
+                      <td style={{ textAlign: 'center', padding: '3px 2px', fontSize: '12px' }}>{currentIdx}</td>
+                      <td style={{ textAlign: 'center', padding: '3px 2px', fontWeight: 'bold', fontSize: '12px' }} dir="ltr">
                         {generatedPartNumber}
                       </td>
-                      <td style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '14px', backgroundColor: '#f9f9f9', color: '#000' }}>
+                      <td style={{ textAlign: 'center', padding: '3px 2px', fontWeight: 'bold', fontSize: '12px', backgroundColor: '#f9f9f9', color: '#000' }}>
                         {quantity}
                       </td>
-                      <td style={{ padding: '4px', textAlign: 'center', printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' as any }}>
+                      <td style={{ padding: '2px', textAlign: 'center', printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' as any }}>
                         <div style={{
                           display: 'flex',
                           flexDirection: 'row',
@@ -279,7 +291,7 @@ export default function ProductionWorksheet({
         );
       })}
 
-      <div className="production-page-footer" style={{ marginTop: '40px' }}>
+      <div className="production-page-footer screen-hide-print-show" style={{ marginTop: '40px' }}>
         <div>
           <div><b>דואר למשלוח:</b> {companyDetails.pobox}</div>
           <div>

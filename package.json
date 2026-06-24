@@ -5,7 +5,7 @@
   "type": "module",
   "homepage": "https://OsamaSla.github.io/sharara-system/",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "build": "vite build",

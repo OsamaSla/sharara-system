@@ -1145,90 +1145,52 @@ export default function App() {
     <div className={`active-tab-${activeTab}`} style={{ direction: 'rtl', backgroundColor: '#f8fafc', minHeight: '100vh', fontFamily: 'Assistant, Rubik, sans-serif', color: '#1e293b', width: '100%', letterSpacing: '0.2px' }}>
       <div className="app-content-wrapper" style={{ width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       
-      {/* כותרת עליונה קבועה */}
-      <header style={{ backgroundColor: '#0f172a', borderBottom: '4px solid #475569', padding: '30px 24px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '20px', position: 'relative' }}>
+      {/* כותרת עליונה קומפקטית */}
+      <header style={{ backgroundColor: '#0f172a', borderBottom: '2px solid #334155', padding: '6px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', position: 'relative' }}>
         
-        {/* כפתור התנתקות מוסתר בהדפסה */}
-        <button 
-          onClick={handleLogout} 
-          className="no-print"
-          style={{ 
-            position: 'absolute', 
-            top: '20px', 
-            left: '20px', 
-            backgroundColor: 'transparent', 
-            color: '#ef4444', 
-            border: '1px solid #ef4444', 
-            borderRadius: '4px', 
-            padding: '6px 12px', 
-            cursor: 'pointer', 
-            fontSize: '11px', 
-            fontWeight: 'bold',
-            transition: 'all 0.2s'
-          }}
-          title="יציאה מהמערכת (נעילת גישה)"
-        >
-          🔑 התנתק
-        </button>
-
-        {/* אינדיקטור שמירה */}
-        {lastSaved && (
-          <div style={{ position: 'absolute', top: '20px', right: '20px', fontSize: '10px', color: '#4ade80', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#4ade80', display: 'inline-block' }}></span>
-            נשמר {lastSaved.toLocaleTimeString('he-IL')}
-          </div>
-        )}
-
-        {/* לוגו באמצע הדף - מוגדל בצורה משמעותית */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
-            <div style={{ position: 'relative' }}>
-              <img 
-                src={logoSrc} 
-                alt="לוגו החברה" 
-                style={{ 
-                  maxHeight: '160px', 
-                  maxWidth: '100%', 
-                  objectFit: 'contain', 
-                  borderRadius: '8px', 
-                  backgroundColor: '#ffffff', 
-                  padding: '8px',
-                  boxShadow: '0 10px 15px -3px rgba(0,0,0,0.3)',
-                  border: '1px solid #334155'
-                }} 
-              />
-            </div>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-            <h1 style={{ fontSize: '32px', fontWeight: '900', color: '#ffffff', margin: 0, letterSpacing: '1px', fontFamily: 'Rubik, Assistant, sans-serif' }}>
-              {myCompanyDetails.name}
-            </h1>
-            <p style={{ fontSize: '16px', color: '#94a3b8', margin: 0, fontWeight: '500', fontFamily: 'Assistant, sans-serif', letterSpacing: '0.5px' }}>
-              מערכת ייצור וחישוב כמויות תעלות פח
-            </p>
+        {/* ימין: לוגו + שם חברה */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          <img src={logoSrc} alt="לוגו" style={{ height: '32px', width: '32px', objectFit: 'contain', borderRadius: '4px', backgroundColor: '#ffffff', padding: '2px' }} />
+          <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+            <span style={{ fontSize: '13px', fontWeight: '800', color: '#ffffff', fontFamily: 'Rubik, Assistant, sans-serif' }}>{myCompanyDetails.name}</span>
+            <span style={{ fontSize: '9px', color: '#94a3b8' }}>מערכת ייצור וחישוב כמויות</span>
           </div>
         </div>
-        
-        {/* טאבים ממוקמים באמצע */}
-        {isSessionInitialized && (
-          <div style={{ display: 'flex', gap: '8px', backgroundColor: '#1e293b', padding: '6px', borderRadius: '10px', marginTop: '10px', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.2)' }}>
-            <button onClick={() => setActiveTab('measure')} style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', backgroundColor: activeTab === 'measure' ? '#3b82f6' : 'transparent', color: activeTab === 'measure' ? '#ffffff' : '#94a3b8' }}>
-              <FileSpreadsheet size={16} /> דפי מדידה
-            </button>
-            <button onClick={() => setActiveTab('summary')} style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', backgroundColor: activeTab === 'summary' ? '#3b82f6' : 'transparent', color: activeTab === 'summary' ? '#ffffff' : '#94a3b8' }}>
-              <Layers size={16} /> ריכוז כמויות
-            </button>
-            <button onClick={() => setActiveTab('invoice')} style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', backgroundColor: activeTab === 'invoice' ? '#3b82f6' : 'transparent', color: activeTab === 'invoice' ? '#ffffff' : '#94a3b8' }}>
-              <CreditCard size={16} /> חשבון פרופורמה
-            </button>
-            <button onClick={() => setActiveTab('pricelist')} style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', backgroundColor: activeTab === 'pricelist' ? '#3b82f6' : 'transparent', color: activeTab === 'pricelist' ? '#ffffff' : '#94a3b8' }}>
-              <CreditCard size={16} /> מחירון העסק
-            </button>
-            <button onClick={() => setActiveTab('production')} style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', backgroundColor: activeTab === 'production' ? '#3b82f6' : 'transparent', color: activeTab === 'production' ? '#ffffff' : '#94a3b8' }}>
-              <FileSpreadsheet size={16} /> דפי ייצור
-            </button>
-          </div>
-        )}
+
+        {/* שמאל: שמירה + התנתק */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          {lastSaved && (
+            <div className="no-print" style={{ fontSize: '9px', color: '#4ade80', display: 'flex', alignItems: 'center', gap: '3px' }}>
+              <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#4ade80' }}></span>
+              {lastSaved.toLocaleTimeString('he-IL')}
+            </div>
+          )}
+          <button onClick={handleLogout} className="no-print" style={{ backgroundColor: 'transparent', color: '#ef4444', border: '1px solid #7f1d1d', borderRadius: '3px', padding: '3px 8px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }} title="יציאה">
+            🔑 יציאה
+          </button>
+        </div>
       </header>
+
+      {/* טאבים */}
+      {isSessionInitialized && (
+        <div className="nav-tabs-bar" style={{ display: 'flex', gap: '4px', backgroundColor: '#1e293b', padding: '4px 8px', flexWrap: 'wrap', justifyContent: 'center', borderBottom: '1px solid #334155' }}>
+          <button onClick={() => setActiveTab('measure')} style={{ padding: '6px 14px', borderRadius: '4px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px', transition: 'all 0.2s', backgroundColor: activeTab === 'measure' ? '#3b82f6' : 'transparent', color: activeTab === 'measure' ? '#ffffff' : '#94a3b8' }}>
+            <FileSpreadsheet size={14} /> דפי מדידה
+          </button>
+          <button onClick={() => setActiveTab('summary')} style={{ padding: '6px 14px', borderRadius: '4px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px', transition: 'all 0.2s', backgroundColor: activeTab === 'summary' ? '#3b82f6' : 'transparent', color: activeTab === 'summary' ? '#ffffff' : '#94a3b8' }}>
+            <Layers size={14} /> ריכוז כמויות
+          </button>
+          <button onClick={() => setActiveTab('invoice')} style={{ padding: '6px 14px', borderRadius: '4px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px', transition: 'all 0.2s', backgroundColor: activeTab === 'invoice' ? '#3b82f6' : 'transparent', color: activeTab === 'invoice' ? '#ffffff' : '#94a3b8' }}>
+            <CreditCard size={14} /> חשבון פרופורמה
+          </button>
+          <button onClick={() => setActiveTab('pricelist')} style={{ padding: '6px 14px', borderRadius: '4px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px', transition: 'all 0.2s', backgroundColor: activeTab === 'pricelist' ? '#3b82f6' : 'transparent', color: activeTab === 'pricelist' ? '#ffffff' : '#94a3b8' }}>
+            <CreditCard size={14} /> מחירון
+          </button>
+          <button onClick={() => setActiveTab('production')} style={{ padding: '6px 14px', borderRadius: '4px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px', transition: 'all 0.2s', backgroundColor: activeTab === 'production' ? '#3b82f6' : 'transparent', color: activeTab === 'production' ? '#ffffff' : '#94a3b8' }}>
+            <FileSpreadsheet size={14} /> דפי ייצור
+          </button>
+        </div>
+      )}
 
       {/* שלב 1: מסך הגדרת לקוח ופרויקט (חוסם את הטבלה עד למילוי) */}
       {!isSessionInitialized ? (
@@ -1419,7 +1381,7 @@ export default function App() {
 
               {/* ─── Formulas Table (טבלת נוסחאות) ─── */}
               {activeAdminSection === 'formulas' && (
-                <div style={{ backgroundColor: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                <div className="formulas-admin-wrapper" style={{ backgroundColor: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
                   <div style={{ fontWeight: 'bold', color: '#1e40af', marginBottom: '8px', fontSize: '14px' }}>
                     📐 טבלת נוסחאות — עריכת משוואות חישוב
                   </div>
@@ -1911,7 +1873,7 @@ export default function App() {
         /* שלב 2: תצוגת המערכת והטבלאות לאחר נעילת הישות הפיננסית */
         <div>
           {/* סרגל עליון אינפורמטיבי שמציג על מה עובדים כרגע ומאפשר החלפה/נעילה מחדש */}
-          <section style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+          <section className="info-bar-section" style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
             <div style={{ display: 'flex', gap: '32px', alignItems: 'center', fontSize: '13px' }}>
               <div>
                 <span style={{ color: '#64748b', marginLeft: '4px' }}>חברה/לקוח:</span>
@@ -1940,7 +1902,7 @@ export default function App() {
           </section>
 
           {/* אזור תוכן מרכזי - טבלאות וחישובים */}
-          <main style={{ width: '100%', padding: '24px', boxSizing: 'border-box' }}>
+          <main className="main-content-area" style={{ width: '100%', padding: '24px', boxSizing: 'border-box', overflowX: 'auto' }}>
             
             {/* טאב דפי מדידה */}
             {activeTab === 'measure' && (

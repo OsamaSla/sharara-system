@@ -63,10 +63,16 @@ export const calculateArea = (row: RowData): number => {
   return (baseArea + dofanArea) * panels;
 };
 
+const normalizeForMatch = (s: string) => s.replace(/["''""\s]/g, '').toLowerCase();
+
 export const getPrice = (name: string, pricesList: PriceItem[]): number => {
-  const exact = pricesList.find(p => p.detail === name);
+  const norm = normalizeForMatch(name);
+  const exact = pricesList.find(p => normalizeForMatch(p.detail) === norm);
   if (exact) return exact.price;
-  const partial = pricesList.find(p => p.detail.includes(name) || name.includes(p.detail));
+  const partial = pricesList.find(p => {
+    const pNorm = normalizeForMatch(p.detail);
+    return pNorm.includes(norm) || norm.includes(pNorm);
+  });
   return partial ? partial.price : 0;
 };
 

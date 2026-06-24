@@ -54,11 +54,17 @@ export default function InvoicePage({
 }: InvoicePageProps) {
   const totals = getProjectTotals(sheets, pricesList);
 
+  const normalizeForMatch = (s: string) => s.replace(/["''""\s]/g, '').toLowerCase();
+
   const getInvoicePrice = (key: string) => {
     if (invoicePriceOverrides[key] !== undefined) return invoicePriceOverrides[key];
-    const exact = pricesList.find(p => p.detail === key);
+    const norm = normalizeForMatch(key);
+    const exact = pricesList.find(p => normalizeForMatch(p.detail) === norm);
     if (exact) return exact.price;
-    const partial = pricesList.find(p => p.detail.includes(key) || key.includes(p.detail));
+    const partial = pricesList.find(p => {
+      const pNorm = normalizeForMatch(p.detail);
+      return pNorm.includes(norm) || norm.includes(pNorm);
+    });
     return partial?.price ?? 0;
   };
 
@@ -80,52 +86,51 @@ export default function InvoicePage({
       <div className="print-orientation-spacer portrait-print" aria-hidden="true" />
 
       {/* סרגל כפתורי ניהול נייר המכתבים - מוסתר בהדפסה */}
-      <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px', borderBottom: '1px solid #cbd5e1', paddingBottom: '10px', gap: '8px' }}>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          {/* כפתור הפקה ונעילת שינויים */}
-          <button
-            onClick={() => {
-              const currentClient = isNewClient ? clientDetails.name : selectedClientKey;
-              const currentProject = isNewProject ? newProjectName : selectedProject;
-              const key = `${currentClient}-${currentProject}`;
+      <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px', gap: '6px' }}>
+        <button
+          onClick={() => {
+            const currentClient = isNewClient ? clientDetails.name : selectedClientKey;
+            const currentProject = isNewProject ? newProjectName : selectedProject;
+            const key = `${currentClient}-${currentProject}`;
 
-              setProducedProjects(prev => ({ ...prev, [key]: true }));
-              setProducedSnapshots(prev => ({ ...prev, [key]: JSON.parse(JSON.stringify(sheets)) }));
-              alert("החשבון והמדידות לפרויקט זה הופקו וננעלו בהצלחה!\nמעתה, כל ניסיון לשנות או למחוק שורות שהופקו יציג התראה.");
-            }}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: producedProjects[`${isNewClient ? clientDetails.name : selectedClientKey}-${isNewProject ? newProjectName : selectedProject}`] ? '#10b981' : '#1e3a8a',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              fontSize: '13px'
-            }}
-          >
-            {producedProjects[`${isNewClient ? clientDetails.name : selectedClientKey}-${isNewProject ? newProjectName : selectedProject}`] ? "✅ הופק וננעל" : "⚡ הפק מסמך ונעל"}
-          </button>
+            setProducedProjects(prev => ({ ...prev, [key]: true }));
+            setProducedSnapshots(prev => ({ ...prev, [key]: JSON.parse(JSON.stringify(sheets)) }));
+            alert("החשבון והמדידות לפרויקט זה הופקו וננעלו בהצלחה!\nמעתה, כל ניסיון לשנות או למחוק שורות שהופצו יציג התראה.");
+          }}
+          style={{
+            padding: '5px 10px',
+            backgroundColor: producedProjects[`${isNewClient ? clientDetails.name : selectedClientKey}-${isNewProject ? newProjectName : selectedProject}`] ? '#10b981' : '#1e3a8a',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            fontSize: '11px'
+          }}
+        >
+          {producedProjects[`${isNewClient ? clientDetails.name : selectedClientKey}-${isNewProject ? newProjectName : selectedProject}`] ? "✓ הופק וננעל" : "⚡ הפק ונעל"}
+        </button>
 
-          <button
-            onClick={handlePrint}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#2563eb',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              fontSize: '13px'
-            }}
-          >
-            הדפס חשבון / שמור כ-PDF
-          </button>
-        </div>
+        <button
+          onClick={handlePrint}
+          style={{
+            padding: '5px 10px',
+            backgroundColor: '#2563eb',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            fontSize: '11px'
+          }}
+        >
+          הדפס חשבון / שמור PDF
+        </button>
       </div>
 
-      <CompanyLetterhead details={myCompanyDetails} />
+      <div className="screen-hide-print-show">
+        <CompanyLetterhead details={myCompanyDetails} />
+      </div>
 
       {/* פרטי המסמך עצמו - קטן ומכובד למטה */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', fontSize: '14px', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px' }}>
