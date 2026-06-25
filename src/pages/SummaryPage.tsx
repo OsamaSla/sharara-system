@@ -166,9 +166,7 @@ export default function SummaryPage({
             <td style={{ padding: '2px 2px', color: '#64748b', fontSize: '10px' }}>{renderCellData(p.notes)}</td>
           </tr>
         ))}
-      </tbody>
-      {showGrandTotal && (
-        <tfoot>
+        {showGrandTotal && (
           <tr style={{ backgroundColor: '#dbeafe', fontWeight: 'bold', borderTop: '2px solid #475569', fontSize: '10px' }}>
             <td style={{ padding: '3px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }} colSpan={3}>סה"כ כללי ({grandTotals.qty} חלקים):</td>
             <td style={{ padding: '3px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', color: '#1e40af' }}>{grandTotals.pah > 0 ? grandTotals.pah.toFixed(2) : '\u00A0'}</td>
@@ -181,8 +179,8 @@ export default function SummaryPage({
             <td style={{ padding: '3px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', color: '#1e40af' }}>{grandTotals.pah125 > 0 ? grandTotals.pah125.toFixed(2) : '\u00A0'}</td>
             <td style={{ padding: '3px 2px' }}>{'\u00A0'}</td>
           </tr>
-        </tfoot>
-      )}
+        )}
+      </tbody>
     </table>
   );
 
