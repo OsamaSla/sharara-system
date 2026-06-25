@@ -177,7 +177,7 @@ export const getSheetTotals = (sheet: Sheet) => {
   let t08 = 0; let t10 = 0; let t125 = 0;
   let flexible = 0; let acoustic = 0; let external = 0;
   let sharshuri4 = 0; let sharshuri6 = 0; let sharshuri8 = 0; let sharshuri10 = 0; let sharshuri12 = 0; let sharshuri14 = 0;
-  let adapterQty = 0; let shatuzar = 0;
+  let adapterQty = 0; let shatuzar = 0; let volume = 0;
 
   sheet.rows.forEach(row => {
     const thick = calculateThickness(row.width1, row.height1, row.manualThickness);
@@ -197,7 +197,9 @@ export const getSheetTotals = (sheet: Sheet) => {
     if (row.adapterType !== 'ללא') adapterQty += row.adapterQty;
     if (row.type === 'שתוצר') shatuzar += (row.panels || 1);
     else if (row.shatuzar) shatuzar += 1;
+    const vol = (row.width1 || 0) * (row.height1 || 0) * (row.length || 0) / 1000000;
+    if (vol > 0) volume += vol;
   });
 
-  return { t08, t10, t125, flexible, acoustic, external, sharshuri4, sharshuri6, sharshuri8, sharshuri10, sharshuri12, sharshuri14, adapterQty, shatuzar };
+  return { t08, t10, t125, flexible, acoustic, external, sharshuri4, sharshuri6, sharshuri8, sharshuri10, sharshuri12, sharshuri14, adapterQty, shatuzar, volume };
 };

@@ -39,6 +39,7 @@ interface AggregatedPart {
   totalFlexible: number;
   totalSharshuri: number;
   totalPah125: number;
+  totalVolume: number;
   notes: string;
 }
 
@@ -96,6 +97,7 @@ export default function SummaryPage({
           totalFlexible: 0,
           totalSharshuri: 0,
           totalPah125: 0,
+          totalVolume: 0,
           notes: row.notes || '',
         };
       }
@@ -110,6 +112,8 @@ export default function SummaryPage({
       if (row.shatuzar) agg.totalShatuzar += 1;
       if (row.flexible > 0 && row.length > 0) agg.totalFlexible += row.flexible * row.length;
       if (row.sharshuriType !== 'ללא' && row.length > 0) agg.totalSharshuri += row.length;
+      const vol = (row.width1 || 0) * (row.height1 || 0) * (row.length || 0) / 1000000;
+      if (vol > 0) agg.totalVolume += vol;
     });
   });
 
@@ -126,10 +130,11 @@ export default function SummaryPage({
     acc.flexible += p.totalFlexible;
     acc.sharshuri += p.totalSharshuri;
     acc.qty += p.totalQty;
+    acc.volume += p.totalVolume;
     return acc;
-  }, { pah: 0, pah125: 0, bidud: 0, adapter: 0, dofan: 0, shatuzar: 0, flexible: 0, sharshuri: 0, qty: 0 });
+  }, { pah: 0, pah125: 0, bidud: 0, adapter: 0, dofan: 0, shatuzar: 0, flexible: 0, sharshuri: 0, qty: 0, volume: 0 });
 
-  const colWidths = { num: '3%', pn: '4.5%', detail: '20%', pah: '5%', bidud: '5%', adapter: '4%', dofan: '3.5%', shatuzar: '4%', flexible: '5%', sharshuri: '5%', pah125: '5%', notes: '36%' };
+  const colWidths = { num: '3%', pn: '4.5%', detail: '18%', pah: '5%', bidud: '5%', adapter: '3.5%', dofan: '3.5%', shatuzar: '3.5%', flexible: '5%', sharshuri: '5%', pah125: '5%', volume: '5.5%', notes: '28%' };
 
   const renderGlobalTable = (parts: AggregatedPart[], showGrandTotal: boolean) => (
     <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', textAlign: 'right', fontSize: '11px', border: '1.5px solid #cbd5e1' }}>
@@ -146,6 +151,7 @@ export default function SummaryPage({
           <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: colWidths.flexible }}>גמיש</th>
           <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: colWidths.sharshuri }}>שרשורי</th>
           <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: colWidths.pah125 }}>פח 1.25</th>
+          <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: colWidths.volume }}>נפח (קוב)</th>
           <th style={{ padding: '3px 2px', textAlign: 'right', width: colWidths.notes }}>הערות</th>
         </tr>
       </thead>
@@ -163,6 +169,7 @@ export default function SummaryPage({
             <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{renderCellData(p.totalFlexible > 0 ? p.totalFlexible.toFixed(2) : '')}</td>
             <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{renderCellData(p.totalSharshuri > 0 ? p.totalSharshuri.toFixed(2) : '')}</td>
             <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{renderCellData(p.totalPah125 > 0 ? p.totalPah125.toFixed(2) : '')}</td>
+            <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', fontWeight: 600 }}>{renderCellData(p.totalVolume > 0 ? p.totalVolume.toFixed(3) : '')}</td>
             <td style={{ padding: '2px 2px', color: '#64748b', fontSize: '10px' }}>{renderCellData(p.notes)}</td>
           </tr>
         ))}
@@ -177,6 +184,7 @@ export default function SummaryPage({
             <td style={{ padding: '3px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', color: '#1e40af' }}>{grandTotals.flexible > 0 ? grandTotals.flexible.toFixed(2) : '\u00A0'}</td>
             <td style={{ padding: '3px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', color: '#1e40af' }}>{grandTotals.sharshuri > 0 ? grandTotals.sharshuri.toFixed(2) : '\u00A0'}</td>
             <td style={{ padding: '3px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', color: '#1e40af' }}>{grandTotals.pah125 > 0 ? grandTotals.pah125.toFixed(2) : '\u00A0'}</td>
+            <td style={{ padding: '3px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', color: '#1e40af', fontWeight: 700 }}>{grandTotals.volume > 0 ? grandTotals.volume.toFixed(3) : '\u00A0'}</td>
             <td style={{ padding: '3px 2px' }}>{'\u00A0'}</td>
           </tr>
         )}
@@ -245,13 +253,14 @@ export default function SummaryPage({
                     <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'right', width: '20%' }}>פירוט</th>
                     <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '5%' }}>פח (מ"ר)</th>
                     <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '5%' }}>בידוד (מ"ר)</th>
-                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '4%' }}>מתאם</th>
+                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '3.5%' }}>מתאם</th>
                     <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '3.5%', backgroundColor: '#fefce8', color: '#854d0e' }}>דופן</th>
-                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '4%' }}>שתוצר</th>
+                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '3.5%' }}>שתוצר</th>
                     <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '5%' }}>גמיש</th>
                     <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '5%' }}>שרשורי</th>
                     <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '5%' }}>פח 1.25</th>
-                    <th style={{ padding: '3px 2px', textAlign: 'right', width: '36%' }}>הערות</th>
+                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '5.5%' }}>נפח (קוב)</th>
+                    <th style={{ padding: '3px 2px', textAlign: 'right', width: '28%' }}>הערות</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -294,6 +303,9 @@ export default function SummaryPage({
                         <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>
                           {renderCellData(thick === 1.25 && area > 0 ? area.toFixed(2) : '')}
                         </td>
+                        <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', fontWeight: 600 }}>
+                          {renderCellData(((row.width1 || 0) * (row.height1 || 0) * (row.length || 0) / 1000000) > 0 ? ((row.width1 || 0) * (row.height1 || 0) * (row.length || 0) / 1000000).toFixed(3) : '')}
+                        </td>
                         <td style={{ padding: '2px 2px', color: '#64748b', fontSize: '10px' }}>{renderCellData(row.notes)}</td>
                       </tr>
                     );
@@ -301,7 +313,7 @@ export default function SummaryPage({
                 </tbody>
 
                 <tfoot>
-                  <tr style={{ backgroundColor: '#f1f5f9', fontWeight: 'bold', borderTop: '2px solid #cbd5e1', fontSize: '10px' }}>
+                  <tr style={{ fontWeight: 'bold', borderTop: '2px solid #cbd5e1', fontSize: '10px' }}>
                     <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }} colSpan={3}>סה"כ:</td>
                     <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{renderCellData((shTotals.t08 + shTotals.t10) > 0 ? (shTotals.t08 + shTotals.t10).toFixed(2) : '')}</td>
                     <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{renderCellData((shTotals.acoustic + shTotals.external) > 0 ? (shTotals.acoustic + shTotals.external).toFixed(2) : '')}</td>
@@ -311,6 +323,7 @@ export default function SummaryPage({
                     <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{renderCellData(shTotals.flexible > 0 ? shTotals.flexible.toFixed(2) : '')}</td>
                     <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{renderCellData((shTotals.sharshuri4 + shTotals.sharshuri6 + shTotals.sharshuri8 + shTotals.sharshuri10 + shTotals.sharshuri12 + shTotals.sharshuri14) > 0 ? (shTotals.sharshuri4 + shTotals.sharshuri6 + shTotals.sharshuri8 + shTotals.sharshuri10 + shTotals.sharshuri12 + shTotals.sharshuri14).toFixed(2) : '')}</td>
                     <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{renderCellData(shTotals.t125 > 0 ? shTotals.t125.toFixed(2) : '')}</td>
+                    <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{renderCellData(shTotals.volume > 0 ? shTotals.volume.toFixed(3) : '')}</td>
                     <td style={{ padding: '2px 2px' }}>{'\u00A0'}</td>
                   </tr>
                 </tfoot>
