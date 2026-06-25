@@ -129,7 +129,7 @@ export default function SummaryPage({
     return acc;
   }, { pah: 0, pah125: 0, bidud: 0, adapter: 0, dofan: 0, shatuzar: 0, flexible: 0, sharshuri: 0, qty: 0 });
 
-  const colWidths = { num: '3.5%', pn: '5%', detail: '22%', pah: '6.5%', bidud: '6.5%', adapter: '5.5%', dofan: '4.5%', shatuzar: '5%', flexible: '6.5%', sharshuri: '6.5%', pah125: '6%', notes: '12.5%' };
+  const colWidths = { num: '3%', pn: '4.5%', detail: '20%', pah: '5%', bidud: '5%', adapter: '4%', dofan: '3.5%', shatuzar: '4%', flexible: '5%', sharshuri: '5%', pah125: '5%', notes: '36%' };
 
   const renderGlobalTable = (parts: AggregatedPart[], showGrandTotal: boolean) => (
     <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', textAlign: 'right', fontSize: '11px', border: '1.5px solid #cbd5e1' }}>
@@ -240,18 +240,18 @@ export default function SummaryPage({
               <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', textAlign: 'right', fontSize: '11px', border: '1.5px solid #cbd5e1' }}>
                 <thead style={{ backgroundColor: '#f1f5f9', borderBottom: '2px solid #475569' }}>
                   <tr style={{ color: '#0f172a', fontWeight: 'bold', fontSize: '10px' }}>
-                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '3.5%' }}>מס'</th>
-                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '5%', fontWeight: 'bold' }}>מס' חלק</th>
-                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'right', width: '23%' }}>פירוט</th>
-                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '6.5%' }}>פח (מ"ר)</th>
-                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '6.5%' }}>בידוד (מ"ר)</th>
-                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '6%' }}>מתאם</th>
-                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '4.5%', backgroundColor: '#fefce8', color: '#854d0e' }}>דופן</th>
-                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '5.5%' }}>שתוצר</th>
-                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '6.5%' }}>גמיש</th>
-                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '6.5%' }}>שרשורי</th>
-                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '6%' }}>פח 1.25</th>
-                    <th style={{ padding: '3px 2px', textAlign: 'right', width: '16%' }}>הערות</th>
+                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '3%' }}>מס'</th>
+                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '4.5%', fontWeight: 'bold' }}>מס' חלק</th>
+                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'right', width: '20%' }}>פירוט</th>
+                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '5%' }}>פח (מ"ר)</th>
+                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '5%' }}>בידוד (מ"ר)</th>
+                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '4%' }}>מתאם</th>
+                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '3.5%', backgroundColor: '#fefce8', color: '#854d0e' }}>דופן</th>
+                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '4%' }}>שתוצר</th>
+                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '5%' }}>גמיש</th>
+                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '5%' }}>שרשורי</th>
+                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '5%' }}>פח 1.25</th>
+                    <th style={{ padding: '3px 2px', textAlign: 'right', width: '36%' }}>הערות</th>
                   </tr>
                 </thead>
                 <tbody>

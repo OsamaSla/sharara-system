@@ -329,6 +329,23 @@
     color-adjust: exact !important;
   }
 
+  /* Grand totals row: ensure background prints */
+  tr:last-child td {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Prevent summary sheet title from orphaning across pages */
+  .summary-sheet-block {
+    page-break-inside: avoid;
+  }
+
+  /* Prevent accessories table title from orphaning */
+  .accessories-group-section {
+    page-break-inside: avoid;
+  }
+
 }
 
 /* ── PrintableReport ── */

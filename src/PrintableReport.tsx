@@ -45,11 +45,13 @@ export default function PrintableReport({
   ];
 
   const accessoryHeaders = [
-    { label: '#', w: '5%' },
-    { label: "מס' חלק", w: '10%' },
-    { label: 'סוג אביזר', w: '15%' },
-    { label: 'פירוט', w: '20%' },
-    { label: 'הערות', w: '50%' },
+    { label: '#', w: '4%' },
+    { label: "מס' חלק", w: '8%' },
+    { label: 'סוג אביזר', w: '12%' },
+    { label: 'פירוט', w: '16%' },
+    { label: 'אורך', w: '8%' },
+    { label: 'כמות', w: '8%' },
+    { label: 'הערות', w: '44%' },
   ];
 
   return (
@@ -142,7 +144,7 @@ export default function PrintableReport({
 
             {/* ─── טבלת אביזרים ─── */}
             {accessoryRows.length > 0 && (
-              <div className="pt-accessory-section">
+              <div className="pt-accessory-section accessories-group-section">
                 <div className="pt-accessory-subtitle">אביזרים</div>
                 <table className="print-table pt-table-accessory">
                   <thead>
@@ -166,9 +168,13 @@ export default function PrintableReport({
                         detail = `${row.flexible || 0} יחידות`;
                       }
 
-                      const qty = row.type === 'מתạm' ? row.adapterQty
-                        : row.type === 'שתוצר' ? row.panels
+                      const qty = row.type === 'מתאם' ? row.adapterQty
+                        : row.type === 'שתוצר' ? (row.panels || 1)
                         : row.type === 'חיבור גמיש' ? row.flexible
+                        : '–';
+
+                      const lengthVal = (row.type === 'שרשורי' || row.type === 'חיבור גמיש') && row.length > 0
+                        ? row.length
                         : '–';
 
                       const autoNotes = row.type === 'שתוצר' ? 'שתוצר'
@@ -183,6 +189,8 @@ export default function PrintableReport({
                           <td><span dir="ltr">{row.partNumber}</span></td>
                           <td>{displayType}</td>
                           <td className="pt-detail"><bdi>{detail}</bdi></td>
+                          <td style={{ textAlign: 'center' }}>{lengthVal}</td>
+                          <td style={{ textAlign: 'center', fontWeight: 'bold' }}>{qty}</td>
                           <td className="pt-detail"><bdi>{autoNotes}</bdi></td>
                         </tr>
                       );
