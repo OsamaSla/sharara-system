@@ -13,6 +13,7 @@ export interface CompanyDetails {
   pobox: string;
   services: string[];
   serviceLines?: string[];
+  signatureImage?: string;
 }
 
 function renderServiceLine(line: string) {
@@ -94,5 +95,17 @@ export default function CompanyLetterhead({
         </div>
       </div>
     </div>
+  );
+}
+
+export function SignatureImage({ src, className }: { src?: string; className?: string }) {
+  if (!src) return null;
+  return (
+    <img
+      src={src}
+      alt="חתימה"
+      className={className}
+      style={{ maxHeight: '60px', maxWidth: '200px', objectFit: 'contain', display: 'block' }}
+    />
   );
 }

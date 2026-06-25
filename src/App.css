@@ -57,6 +57,33 @@
     display: none !important;
   }
 
+  /* Summary editable inputs: show value as plain text in print */
+  .summary-edit-input {
+    display: block !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: textfield !important;
+    appearance: none !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    font: inherit !important;
+    color: #000000 !important;
+    text-align: center !important;
+    width: 100% !important;
+  }
+  .summary-edit-input::-webkit-inner-spin-button,
+  .summary-edit-input::-webkit-outer-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+  }
+  .summary-edit-input:focus {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
   .screen-hide-print-show {
     display: block !important;
   }
@@ -154,6 +181,9 @@
     min-width: 100% !important;
     width: 100% !important;
   }
+  .print-table-wrapper tfoot {
+    display: table-row-group !important;
+  }
 
   .app-content-wrapper {
     min-height: auto !important;
@@ -212,7 +242,7 @@
     min-width: 0 !important;
     width: 100% !important;
     font-size: 8px !important;
-    table-layout: auto !important;
+    table-layout: fixed !important;
   }
   .active-tab-summary .print-table-wrapper th,
   .active-tab-summary .print-table-wrapper td {
@@ -285,7 +315,7 @@
      12. BLANK PAGE PREVENTION — kill empty layout containers
          NEVER kill table cells, rows, images, or SVGs
      ══════════════════════════════════════════ */
-  :not(td):not(th):not(tr):not(img):not(svg):not(path):not(rect):not(.pt-logo):not(.cl-logo-img):empty {
+  :not(td):not(th):not(tr):not(tfoot):not(thead):not(img):not(svg):not(path):not(rect):not(.pt-logo):not(.cl-logo-img):empty {
     display: none !important;
   }
 
@@ -303,14 +333,25 @@
   .pt-sheet-section {
     page-break-inside: avoid;
     break-inside: avoid;
-  }
-  .pt-sheet-section:not(:last-child) {
-    page-break-after: always;
-    break-after: always;
-  }
-  .pt-sheet-section:last-child {
     page-break-after: auto;
     break-after: auto;
+  }
+
+  .pt-header-block {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  .pt-sheet-title {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  .pt-footer-block {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    page-break-after: avoid;
+    break-after: avoid;
   }
 
   /* ══════════════════════════════════════════
@@ -329,11 +370,18 @@
     color-adjust: exact !important;
   }
 
-  /* Grand totals row: ensure background prints */
-  tr:last-child td {
+  /* Grand totals row: ensure blue background prints */
+  .grand-total-row td {
     print-color-adjust: exact !important;
     -webkit-print-color-adjust: exact !important;
     color-adjust: exact !important;
+  }
+
+  /* Per-sheet tfoot: force white background, never tinted */
+  tfoot tr {
+    background-color: #ffffff !important;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
   }
 
   /* Prevent summary sheet title from orphaning across pages */
@@ -341,9 +389,14 @@
     page-break-inside: avoid;
   }
 
-  /* Prevent accessories table title from orphaning */
+  /* Prevent accessories section from orphaning across pages */
   .accessories-group-section {
     page-break-inside: avoid;
+  }
+
+  /* Keep accessories title attached to its table */
+  .accessories-title {
+    page-break-after: avoid;
   }
 
 }
@@ -358,6 +411,8 @@
 
 .pt-header-block {
   margin-bottom: 3mm;
+  page-break-after: avoid;
+  break-after: avoid;
 }
 
 .pt-header {
@@ -402,6 +457,8 @@
   padding: 2mm 0 1mm;
   text-align: start;
   color: #1f4e79;
+  page-break-after: avoid;
+  break-after: avoid;
 }
 
 /* ── Print Tables ── */
@@ -511,7 +568,7 @@
 }
 
 .pt-page-break-spacer {
-  height: 10mm;
+  display: none;
 }
 
 /* ── Company Letterhead (Picture1 style) ── */

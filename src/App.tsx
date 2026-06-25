@@ -12,6 +12,7 @@ import { EXISTING_DATA, DEFAULT_FORMULAS } from './constants';
 import { calculateThickness, calculateArea, getPrice as getPriceFromCalc, getRowWarnings, getDetailedSheetCosts as getDetailedSheetCostsFromCalc, getProjectTotals as getProjectTotalsFromCalc, getSubtotal as getSubtotalFromCalc, getSheetTotals, setFormulas as setFormulasCalc } from './calculations';
 
 import type { RowData, Sheet, PriceItem, FormulaConfig } from './types';
+import { formatDateTime } from './utils';
 import MeasurementPage from './pages/MeasurementPage';
 import SummaryPage from './pages/SummaryPage';
 import InvoicePage from './pages/InvoicePage';
@@ -174,6 +175,12 @@ export default function App() {
   // לוגו החברה הדינמי (base64) עם שמירה ב-localStorage
   const [companyLogo, setCompanyLogo] = useState<string>(() => {
     const saved = localStorage.getItem('sharara_companyLogo');
+    return saved || '';
+  });
+
+  // חתימת העסק הדינמית (base64) עם שמירה ב-localStorage
+  const [companySignature, setCompanySignature] = useState<string>(() => {
+    const saved = localStorage.getItem('sharara_companySignature');
     return saved || '';
   });
 
@@ -351,7 +358,6 @@ export default function App() {
     setRedoStack([]);
     setSelectedRowIds(new Set());
     setLastHoveredRowId(null);
-    setLastSaved(new Date());
     setLoadedClientProject({ client: snap.selectedClient, project: snap.selectedProject });
     setIsSessionInitialized(true);
     setIsAddingPart(false);
@@ -1243,7 +1249,7 @@ export default function App() {
                           <span style={{ fontSize: '10px', color: '#0f172a' }}>
                             <strong>{backup.name}</strong>
                             <span style={{ color: '#64748b', marginInline: '4px' }}>{backup.client} — {backup.project}</span>
-                            <span style={{ color: '#9ca3af' }}>{backup.savedAt ? new Date(backup.savedAt).toLocaleString('he-IL') : ''}</span>
+                            <span style={{ color: '#9ca3af' }}>{backup.savedAt ? formatDateTime(backup.savedAt) : ''}</span>
                           </span>
                           <div style={{ display: 'flex', gap: '3px' }}>
                             <button onClick={() => restoreFromFirebaseBackup(backup.id)} style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '2px 6px', borderRadius: '3px', cursor: 'pointer', fontSize: '9px', fontWeight: 'bold' }}>שחזר</button>
@@ -1374,6 +1380,59 @@ export default function App() {
                           <input type="text" value={line} onChange={(e) => { const next = [...(myCompanyDetails.serviceLines ?? ['', '', ''])]; next[index] = e.target.value; setMyCompanyDetails({ ...myCompanyDetails, serviceLines: next }); }} style={{ width: '100%', padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box', backgroundColor: '#ffffff', color: '#0f172a' }} />
                         </div>
                       ))}
+                    </div>
+                  </div>
+
+                  {/* חתימת העסק */}
+                  <div style={{ marginTop: '16px', borderTop: '1px solid #e5e7eb', paddingTop: '12px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#92400e', marginBottom: '8px' }}>חתימת העסק ומבצע הריכוז</div>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                      <div style={{ padding: '8px', backgroundColor: '#fff', borderRadius: '6px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          id="signatureUpload"
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = (ev) => {
+                              const base64 = ev.target?.result as string;
+                              setCompanySignature(base64);
+                              localStorage.setItem('sharara_companySignature', base64);
+                            };
+                            reader.readAsDataURL(file);
+                          }}
+                        />
+                        {companySignature ? (
+                          <img
+                            src={companySignature}
+                            alt="חתימה נוכחית"
+                            style={{ maxHeight: '80px', maxWidth: '200px', objectFit: 'contain', borderRadius: '4px' }}
+                          />
+                        ) : (
+                          <div style={{ width: '200px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '12px', border: '2px dashed #cbd5e1', borderRadius: '4px' }}>
+                            אין חתימה
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+                        <button
+                          onClick={() => document.getElementById('signatureUpload')?.click()}
+                          style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}
+                        >
+                          {companySignature ? 'שנה חתימה' : 'העלה חתימה'}
+                        </button>
+                        {companySignature && (
+                          <button
+                            onClick={() => { setCompanySignature(''); localStorage.removeItem('sharara_companySignature'); }}
+                            style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}
+                          >
+                            מחק
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1974,6 +2033,7 @@ export default function App() {
                 handlePrint={handlePrint}
                 calculateThickness={calculateThickness}
                 calculateArea={calculateArea}
+                companySignature={companySignature}
               />
             )}
 
@@ -2068,6 +2128,7 @@ export default function App() {
           docNumber={docNumber}
           calculateArea={calculateArea}
           calculateThickness={calculateThickness}
+          companySignature={companySignature}
         />
       )}
     </div>

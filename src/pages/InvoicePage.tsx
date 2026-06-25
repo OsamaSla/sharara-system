@@ -3,6 +3,7 @@ import CompanyLetterhead from '../CompanyLetterhead';
 import type { CompanyDetails } from '../CompanyLetterhead';
 import { getProjectTotals } from '../calculations';
 import type { Sheet, RowData, PriceItem } from '../types';
+import { formatDate } from '../utils';
 
 export interface InvoicePageProps {
   sheets: Sheet[];
@@ -139,7 +140,7 @@ export default function InvoicePage({
           <span style={{ fontSize: '12px', color: '#64748b' }}>מספר מסמך: <b>#{docNumber}</b></span>
         </div>
         <div style={{ textAlign: 'left', fontSize: '12px', color: '#64748b' }}>
-          תאריך: <b>{docDate}</b>
+          תאריך: <b>{formatDate(docDate)}</b>
         </div>
       </div>
 

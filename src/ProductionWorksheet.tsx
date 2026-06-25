@@ -2,6 +2,7 @@ import type { RowData } from './types';
 import type { CompanyDetails } from './CompanyLetterhead';
 import CompanyLetterhead from './CompanyLetterhead';
 import ProductionPartSketch, { getPartDisplayName } from './ProductionPartSketch';
+import { formatDate } from './utils';
 
 interface ProductionWorksheetProps {
   rows: RowData[];
@@ -54,7 +55,7 @@ export default function ProductionWorksheet({
       <div className="no-print" style={{ display: 'flex', gap: '16px', fontSize: '12px', color: '#475569', marginBottom: '10px', padding: '4px 8px', backgroundColor: '#f8fafc', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
         <span><b>פרויקט:</b> {projectLabel}</span>
         <span><b>דף:</b> {sheetName}</span>
-        <span><b>תאריך:</b> {docDate}</span>
+        <span><b>תאריך:</b> {formatDate(docDate)}</span>
         <span><b>מסמך:</b> <span dir="ltr">#{docNumber}</span></span>
       </div>
 
@@ -66,7 +67,7 @@ export default function ProductionWorksheet({
             <div><b>דף עבודה:</b> {sheetName}</div>
           </div>
           <div className="production-meta-dates">
-            <div><b>תאריך:</b> {docDate}</div>
+            <div><b>תאריך:</b> {formatDate(docDate)}</div>
             <div><b>מסמך סימוכין:</b> <span dir="ltr">#{docNumber}</span></div>
           </div>
         </div>

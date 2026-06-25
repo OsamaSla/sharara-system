@@ -197,7 +197,7 @@ export const getSheetTotals = (sheet: Sheet) => {
     if (row.adapterType !== 'ללא') adapterQty += row.adapterQty;
     if (row.type === 'שתוצר') shatuzar += (row.panels || 1);
     else if (row.shatuzar) shatuzar += 1;
-    const vol = (row.width1 || 0) * (row.height1 || 0) * (row.length || 0) / 1000000;
+    const vol = (Number(row.width1) || 0) * (Number(row.height1) || 0) * (Number(row.length) || 0);
     if (vol > 0) volume += vol;
   });
 

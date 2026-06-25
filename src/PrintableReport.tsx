@@ -1,5 +1,6 @@
 import type { RowData, Sheet } from './types';
 import logoSrc from './assets/logo.png';
+import { formatDate, todayFormatted } from './utils';
 
 const ACCESSORY_TYPES = ['שתוצר','מתאם','שרשורי','חיבור גמיש'];
 
@@ -11,6 +12,7 @@ interface PrintableReportProps {
   docNumber: string;
   calculateArea: (row: RowData) => number;
   calculateThickness: (w: number, h: number, manual?: number) => number;
+  companySignature?: string;
 }
 
 export default function PrintableReport({
@@ -21,8 +23,9 @@ export default function PrintableReport({
   docNumber,
   calculateArea,
   calculateThickness,
+  companySignature,
 }: PrintableReportProps) {
-  const today = new Date().toLocaleDateString('he-IL');
+  const today = todayFormatted();
 
   const regularHeaders = [
     { label: '#', w: '3%' },
@@ -46,12 +49,12 @@ export default function PrintableReport({
 
   const accessoryHeaders = [
     { label: '#', w: '4%' },
-    { label: "מס' חלק", w: '8%' },
-    { label: 'סוג אביזר', w: '12%' },
-    { label: 'פירוט', w: '16%' },
-    { label: 'אורך', w: '8%' },
-    { label: 'כמות', w: '8%' },
-    { label: 'הערות', w: '44%' },
+    { label: "מס' חלק", w: '10%' },
+    { label: 'סוג אביזר', w: '14%' },
+    { label: 'פירוט', w: '18%' },
+    { label: 'אורך', w: '10%' },
+    { label: 'כמות', w: '10%' },
+    { label: 'הערות', w: '34%' },
   ];
 
   return (
@@ -70,12 +73,8 @@ export default function PrintableReport({
           return true;
         });
 
-        const regColCount = activeRegularHeaders.length;
-        const accColCount = accessoryHeaders.length;
-
         return (
           <div key={sheet.id} className="pt-sheet-section">
-            {/* Header block (logo + info) */}
             <div className="pt-header-block">
               <div className="pt-header">
                 <img src={logoSrc} alt="לוגו" className="pt-logo" style={{ printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' }} />
@@ -86,13 +85,12 @@ export default function PrintableReport({
                 <span>טל: <span dir="ltr">{clientDetails.phone}</span></span>
                 <span>איש קשר: {clientDetails.contact}</span>
                 <span>פרויקט: {selectedProject}</span>
-                <span>תאריך: {docDate}</span>
+                <span>תאריך: {formatDate(docDate)}</span>
                 <span>מס': <span dir="ltr">{docNumber}</span></span>
               </div>
               <div className="pt-sheet-title">גיליון: {sheet.name}</div>
             </div>
 
-            {/* ─── טבלת חלקים רגילים ─── */}
             {regularRows.length > 0 && (
               <table className="print-table pt-table-regular">
                 <thead>
@@ -139,13 +137,23 @@ export default function PrintableReport({
                     );
                   })}
                 </tbody>
+                <tfoot>
+                  <tr style={{ fontWeight: 'bold', backgroundColor: '#dbeafe', borderTop: '2px solid #3b82f6', fontSize: '11px' }}>
+                    <td colSpan={15} style={{ textAlign: 'left', padding: '4px 6px' }}>
+                      סה"כ: {regularRows.length} חלקים
+                    </td>
+                    <td style={{ textAlign: 'center', padding: '4px 6px' }}>
+                      {regularRows.reduce((sum, row) => sum + calculateArea(row), 0).toFixed(2)} מ"ר
+                    </td>
+                    <td></td>
+                  </tr>
+                </tfoot>
               </table>
             )}
 
-            {/* ─── טבלת אביזרים ─── */}
             {accessoryRows.length > 0 && (
               <div className="pt-accessory-section accessories-group-section">
-                <div className="pt-accessory-subtitle">אביזרים</div>
+                <div className="pt-accessory-subtitle accessories-title">אביזרים</div>
                 <table className="print-table pt-table-accessory">
                   <thead>
                     <tr className="pt-col-headers pt-accessory-header">
@@ -156,7 +164,6 @@ export default function PrintableReport({
                   </thead>
                   <tbody>
                     {accessoryRows.map((row, idx) => {
-                      const displayType = row.type;
                       let detail = '';
                       if (row.type === 'שתוצר') {
                         detail = 'יחידות';
@@ -171,7 +178,7 @@ export default function PrintableReport({
                       const qty = row.type === 'מתאם' ? row.adapterQty
                         : row.type === 'שתוצר' ? (row.panels || 1)
                         : row.type === 'חיבור גמיש' ? row.flexible
-                        : '–';
+                        : 1;
 
                       const lengthVal = (row.type === 'שרשורי' || row.type === 'חיבור גמיש') && row.length > 0
                         ? row.length
@@ -187,7 +194,7 @@ export default function PrintableReport({
                         <tr key={row.id} className={idx % 2 === 0 ? 'pt-even' : 'pt-odd'}>
                           <td>{idx + 1}</td>
                           <td><span dir="ltr">{row.partNumber}</span></td>
-                          <td>{displayType}</td>
+                          <td>{row.type}</td>
                           <td className="pt-detail"><bdi>{detail}</bdi></td>
                           <td style={{ textAlign: 'center' }}>{lengthVal}</td>
                           <td style={{ textAlign: 'center', fontWeight: 'bold' }}>{qty}</td>
@@ -196,24 +203,43 @@ export default function PrintableReport({
                       );
                     })}
                   </tbody>
+                  <tfoot>
+                    <tr style={{ fontWeight: 'bold', backgroundColor: '#dbeafe', borderTop: '2px solid #3b82f6', fontSize: '11px' }}>
+                      <td colSpan={5} style={{ textAlign: 'left', padding: '4px 6px' }}>
+                        סה"כ: {accessoryRows.length} אביזרים
+                      </td>
+                      <td style={{ textAlign: 'center', padding: '4px 6px' }}>
+                        {accessoryRows.reduce((sum, row) => {
+                          const q = row.type === 'מתאם' ? row.adapterQty
+                            : row.type === 'שתוצר' ? (row.panels || 1)
+                            : row.type === 'חיבור גמיש' ? row.flexible
+                            : 1;
+                          return sum + (q || 0);
+                        }, 0)}
+                      </td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
             )}
 
-            {/* Empty sheet */}
             {regularRows.length === 0 && accessoryRows.length === 0 && (
               <div className="pt-empty-sheet">גיליון ריק — אין חלקים</div>
             )}
 
-            {/* Footer */}
             <div className="pt-footer-block">
               <div className="pt-footer">
-                <span className="pt-footer-sign">חתימת מנהל עבודה: _________________________</span>
+                <span className="pt-footer-sign">
+                  {companySignature ? (
+                    <img src={companySignature} alt="חתימה" style={{ maxHeight: '40px', maxWidth: '150px', objectFit: 'contain', verticalAlign: 'middle' }} />
+                  ) : (
+                    <>חתימת מנהל עבודה: _________________________</>
+                  )}
+                </span>
                 <span className="pt-footer-date">תאריך הפקה: {today}</span>
               </div>
             </div>
-
-            {si < sheets.length - 1 && <div className="pt-page-break-spacer" />}
           </div>
         );
       })}

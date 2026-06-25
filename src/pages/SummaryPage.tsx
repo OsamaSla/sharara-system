@@ -3,6 +3,7 @@ import CompanyLetterhead from '../CompanyLetterhead';
 import type { CompanyDetails } from '../CompanyLetterhead';
 import { getSheetTotals } from '../calculations';
 import type { Sheet, RowData } from '../types';
+import { formatDate } from '../utils';
 
 export interface SummaryPageProps {
   sheets: Sheet[];
@@ -23,6 +24,7 @@ export interface SummaryPageProps {
   handlePrint: () => void;
   calculateThickness: (w1: number, h1: number, manual?: number) => number;
   calculateArea: (row: RowData) => number;
+  companySignature?: string;
 }
 
 interface AggregatedPart {
@@ -39,9 +41,20 @@ interface AggregatedPart {
   totalFlexible: number;
   totalSharshuri: number;
   totalPah125: number;
-  totalVolume: number;
   notes: string;
 }
+
+const W = { num: '30px', pn: '46px', pah: '52px', bidud: '52px', adapter: '42px', dofan: '42px', shatuzar: '42px', flexible: '52px', sharshuri: '52px', pah125: '52px' };
+
+const TH: React.CSSProperties = { padding: '4px 3px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', fontSize: '11px', fontWeight: 700 };
+const TD: React.CSSProperties = { padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', fontSize: '11px' };
+const TDR: React.CSSProperties = { padding: '2px 2px', textAlign: 'right', borderLeft: '1px solid #cbd5e1', fontSize: '11px' };
+const TDE: React.CSSProperties = { padding: '2px 2px', textAlign: 'right', fontSize: '11px' };
+
+const fmt = (v: string | number | undefined | null) => {
+  if (v === undefined || v === null || v === '') return '\u00A0';
+  return v;
+};
 
 export default function SummaryPage({
   sheets,
@@ -57,16 +70,32 @@ export default function SummaryPage({
   handlePrint,
   calculateThickness,
   calculateArea,
+  companySignature,
 }: SummaryPageProps) {
 
-  const renderCellData = (value: string | number | undefined | null) => {
-    if (value === undefined || value === null || value === '') {
-      return '\u00A0';
-    }
-    return value;
+  const [overrides, setOverrides] = React.useState<Record<string, number>>({});
+
+  const handleOverride = (key: string, field: string, rawValue: string) => {
+    const num = rawValue === '' ? undefined : Number(rawValue);
+    setOverrides(prev => {
+      const next = { ...prev };
+      if (num === undefined || isNaN(num)) {
+        delete next[key];
+      } else {
+        const row = next[key] !== undefined ? { ...(next[key] as any) } : {};
+        row[field] = num;
+        next[key] = row;
+      }
+      return next;
+    });
   };
 
-  // איחוד חלקים ייחודיים מכל דפי המדידה
+  const getOverrideVal = (key: string, field: string, fallback: number): number => {
+    const entry = overrides[key] as any;
+    if (entry && entry[field] !== undefined) return entry[field];
+    return fallback;
+  };
+
   const aggregatedMap: Record<string, AggregatedPart> = {};
 
   sheets.forEach(sheet => {
@@ -74,7 +103,7 @@ export default function SummaryPage({
       const thick = calculateThickness(row.width1, row.height1, row.manualThickness);
       const area = calculateArea(row);
 
-      let displayType = row.notes && ['לאמד S','צינור עגול','קופסת פיזור','מדף אש'].includes(row.notes) ? row.notes : row.type;
+      let displayType = row.notes && ['לאמד S', 'צינור עגול', 'קופסת פיזור', 'מדף אש'].includes(row.notes) ? row.notes : row.type;
       let formatDetail = `${displayType} ${row.notes === 'צינור עגול' ? `קוטר ${row.width1}` : `${row.width1}x${row.height1}`}`;
       if (row.type === 'מעבר') formatDetail += ` / ${row.width2}x${row.height2}`;
       if (row.length > 0) formatDetail += ` L=${row.length}`;
@@ -84,20 +113,9 @@ export default function SummaryPage({
 
       if (!aggregatedMap[key]) {
         aggregatedMap[key] = {
-          partNumber: row.partNumber || '',
-          displayType,
-          formatDetail,
-          thick,
-          totalQty: 0,
-          totalPah: 0,
-          totalBidud: 0,
-          totalAdapter: 0,
-          totalDofan: 0,
-          totalShatuzar: 0,
-          totalFlexible: 0,
-          totalSharshuri: 0,
-          totalPah125: 0,
-          totalVolume: 0,
+          partNumber: row.partNumber || '', displayType, formatDetail, thick,
+          totalQty: 0, totalPah: 0, totalBidud: 0, totalAdapter: 0, totalDofan: 0,
+          totalShatuzar: 0, totalFlexible: 0, totalSharshuri: 0, totalPah125: 0,
           notes: row.notes || '',
         };
       }
@@ -112,80 +130,184 @@ export default function SummaryPage({
       if (row.shatuzar) agg.totalShatuzar += 1;
       if (row.flexible > 0 && row.length > 0) agg.totalFlexible += row.flexible * row.length;
       if (row.sharshuriType !== 'ללא' && row.length > 0) agg.totalSharshuri += row.length;
-      const vol = (row.width1 || 0) * (row.height1 || 0) * (row.length || 0) / 1000000;
-      if (vol > 0) agg.totalVolume += vol;
     });
   });
 
   const aggregatedParts = Object.values(aggregatedMap);
 
-  // חישוב סה"כ גורלי
-  const grandTotals = aggregatedParts.reduce((acc, p) => {
-    acc.pah += p.totalPah;
-    acc.pah125 += p.totalPah125;
-    acc.bidud += p.totalBidud;
-    acc.adapter += p.totalAdapter;
-    acc.dofan += p.totalDofan;
-    acc.shatuzar += p.totalShatuzar;
-    acc.flexible += p.totalFlexible;
-    acc.sharshuri += p.totalSharshuri;
-    acc.qty += p.totalQty;
-    acc.volume += p.totalVolume;
-    return acc;
-  }, { pah: 0, pah125: 0, bidud: 0, adapter: 0, dofan: 0, shatuzar: 0, flexible: 0, sharshuri: 0, qty: 0, volume: 0 });
+  const computedGrand = aggregatedParts.reduce(
+    (acc, p) => {
+      acc.pah += p.totalPah; acc.pah125 += p.totalPah125; acc.bidud += p.totalBidud;
+      acc.adapter += p.totalAdapter; acc.dofan += p.totalDofan; acc.shatuzar += p.totalShatuzar;
+      acc.flexible += p.totalFlexible; acc.sharshuri += p.totalSharshuri;
+      acc.qty += p.totalQty; return acc;
+    },
+    { pah: 0, pah125: 0, bidud: 0, adapter: 0, dofan: 0, shatuzar: 0, flexible: 0, sharshuri: 0, qty: 0 }
+  );
 
-  const colWidths = { num: '3%', pn: '4.5%', detail: '18%', pah: '5%', bidud: '5%', adapter: '3.5%', dofan: '3.5%', shatuzar: '3.5%', flexible: '5%', sharshuri: '5%', pah125: '5%', volume: '5.5%', notes: '28%' };
+  const gPah = aggregatedParts.reduce((s, p) => s + getOverrideVal(`${p.partNumber}_${p.formatDetail}_${p.thick}`, 'pah', p.totalPah), 0);
+  const gPah125 = aggregatedParts.reduce((s, p) => s + getOverrideVal(`${p.partNumber}_${p.formatDetail}_${p.thick}`, 'pah125', p.totalPah125), 0);
+  const gBidud = aggregatedParts.reduce((s, p) => s + getOverrideVal(`${p.partNumber}_${p.formatDetail}_${p.thick}`, 'bidud', p.totalBidud), 0);
+  const gAdapter = aggregatedParts.reduce((s, p) => s + getOverrideVal(`${p.partNumber}_${p.formatDetail}_${p.thick}`, 'adapter', p.totalAdapter), 0);
+  const gDofan = aggregatedParts.reduce((s, p) => s + getOverrideVal(`${p.partNumber}_${p.formatDetail}_${p.thick}`, 'dofan', p.totalDofan), 0);
+  const gShatuzar = aggregatedParts.reduce((s, p) => s + getOverrideVal(`${p.partNumber}_${p.formatDetail}_${p.thick}`, 'shatuzar', p.totalShatuzar), 0);
+  const gFlexible = aggregatedParts.reduce((s, p) => s + getOverrideVal(`${p.partNumber}_${p.formatDetail}_${p.thick}`, 'flexible', p.totalFlexible), 0);
+  const gSharshuri = aggregatedParts.reduce((s, p) => s + getOverrideVal(`${p.partNumber}_${p.formatDetail}_${p.thick}`, 'sharshuri', p.totalSharshuri), 0);
 
-  const renderGlobalTable = (parts: AggregatedPart[], showGrandTotal: boolean) => (
+  const EditCell = ({ aggKey, field, computed }: { aggKey: string; field: string; computed: number }) => {
+    const entry = overrides[aggKey] as any;
+    const overridden = entry && entry[field] !== undefined;
+    const displayVal = overridden ? entry[field] : (computed > 0 ? Number(computed.toFixed(2)) : '');
+    const bgColor = overridden ? '#fef08a' : 'transparent';
+    return (
+      <td style={TD}>
+        <input
+          type="number"
+          step="any"
+          value={displayVal}
+          onChange={(e) => handleOverride(aggKey, field, e.target.value)}
+          className="summary-edit-input"
+          style={{
+            width: '100%',
+            boxSizing: 'border-box',
+            border: 'none',
+            borderBottom: overridden ? '1px solid #ca8a04' : 'none',
+            borderRadius: '2px',
+            textAlign: 'center',
+            fontSize: '11px',
+            fontWeight: 600,
+            padding: '2px 1px',
+            backgroundColor: bgColor,
+            color: overridden ? '#854d0e' : '#1e293b',
+            outline: 'none',
+            font: 'inherit',
+          }}
+        />
+      </td>
+    );
+  };
+
+  const renderSheetTable = (sheet: Sheet) => {
+    const s = getSheetTotals(sheet);
+    const sharshuriTotal = s.sharshuri4 + s.sharshuri6 + s.sharshuri8 + s.sharshuri10 + s.sharshuri12 + s.sharshuri14;
+    const pahTotal = s.t08 + s.t10;
+    const bidudTotal = s.acoustic + s.external;
+
+    return (
+      <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', textAlign: 'right', fontSize: '11px', border: '1.5px solid #cbd5e1' }}>
+        <thead style={{ backgroundColor: '#f1f5f9', borderBottom: '2px solid #475569' }}>
+          <tr style={{ color: '#0f172a', fontWeight: 'bold', fontSize: '10px' }}>
+            <th style={{ ...TH, width: W.num }}>#</th>
+            <th style={{ ...TH, width: W.pn }}>מס' חלק</th>
+            <th style={{ ...TH, textAlign: 'right' }}>פירוט</th>
+            <th style={{ ...TH, width: W.pah }}>פח מ"ר</th>
+            <th style={{ ...TH, width: W.bidud }}>בידוד</th>
+            <th style={{ ...TH, width: W.adapter }}>מתאם</th>
+            <th style={{ ...TH, width: W.dofan }}>דופן</th>
+            <th style={{ ...TH, width: W.shatuzar }}>שתוצר</th>
+            <th style={{ ...TH, width: W.flexible }}>גמיש</th>
+            <th style={{ ...TH, width: W.sharshuri }}>שרשורי</th>
+            <th style={{ ...TH, width: W.pah125 }}>פח 1.25</th>
+            <th style={{ ...TDE, fontWeight: 'bold' }}>הערות</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sheet.rows.map((row, rIdx) => {
+            const thick = calculateThickness(row.width1, row.height1, row.manualThickness);
+            const area = calculateArea(row);
+
+            let displayType = row.notes && ['לאמד S', 'צינור עגול', 'קופסת פיזור', 'מדף אש'].includes(row.notes) ? row.notes : row.type;
+            let fd = `${displayType} ${row.notes === 'צינור עגול' ? `קוטר ${row.width1}` : `${row.width1}x${row.height1}`}`;
+            if (row.type === 'מעבר') fd += ` / ${row.width2}x${row.height2}`;
+            if (row.length > 0) fd += ` L=${row.length}`;
+            if (row.panels > 0) fd += ` [דופן×${row.panels}]`;
+
+            return (
+              <tr key={row.id} style={{ borderBottom: '1px solid #cbd5e1', backgroundColor: rIdx % 2 === 0 ? '#ffffff' : '#f8fafc', fontSize: '10px' }}>
+                <td style={{ ...TD, fontWeight: 'bold', color: '#64748b' }}>{rIdx + 1}</td>
+                <td style={{ ...TD, fontWeight: 600, color: '#1e293b' }}>{fmt(row.partNumber)}</td>
+                <td style={{ ...TDR, fontWeight: 600, color: '#1e293b' }}>{fmt(fd)}</td>
+                <td style={TD}>{fmt(thick !== 1.25 && area > 0 ? area.toFixed(2) : '')}</td>
+                <td style={TD}>{fmt((row.acoustic || row.external) && area > 0 ? area.toFixed(2) : '')}</td>
+                <td style={TD}>{fmt(row.adapterType !== 'ללא' && row.adapterQty > 0 ? row.adapterQty : '')}</td>
+                <td style={{ ...TD, fontWeight: 600 }}>{fmt(row.panels > 0 ? row.panels : '')}</td>
+                <td style={TD}>{fmt(row.shatuzar ? '1' : '')}</td>
+                <td style={TD}>{fmt(row.flexible > 0 && row.length > 0 ? (row.flexible * row.length).toFixed(2) : '')}</td>
+                <td style={TD}>{fmt(row.sharshuriType !== 'ללא' && row.length > 0 ? row.length.toFixed(2) : '')}</td>
+                <td style={TD}>{fmt(thick === 1.25 && area > 0 ? area.toFixed(2) : '')}</td>
+                <td style={{ ...TDE, color: '#64748b', fontSize: '10px' }}>{fmt(row.notes)}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+        <tfoot>
+          <tr style={{ fontWeight: 'bold', borderTop: '2px solid #475569', fontSize: '10px', backgroundColor: '#ffffff', color: '#000000', printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' as any }}>
+            <td style={{ ...TD, backgroundColor: '#ffffff' }} colSpan={3}>סה"כ דף:</td>
+            <td style={{ ...TD, backgroundColor: '#ffffff' }}>{fmt(pahTotal > 0 ? pahTotal.toFixed(2) : '')}</td>
+            <td style={{ ...TD, backgroundColor: '#ffffff' }}>{fmt(bidudTotal > 0 ? bidudTotal.toFixed(2) : '')}</td>
+            <td style={{ ...TD, backgroundColor: '#ffffff' }}>{fmt(s.adapterQty > 0 ? s.adapterQty : '')}</td>
+            <td style={{ ...TD, backgroundColor: '#ffffff' }}>{'\u00A0'}</td>
+            <td style={{ ...TD, backgroundColor: '#ffffff' }}>{fmt(s.shatuzar > 0 ? s.shatuzar : '')}</td>
+            <td style={{ ...TD, backgroundColor: '#ffffff' }}>{fmt(s.flexible > 0 ? s.flexible.toFixed(2) : '')}</td>
+            <td style={{ ...TD, backgroundColor: '#ffffff' }}>{fmt(sharshuriTotal > 0 ? sharshuriTotal.toFixed(2) : '')}</td>
+            <td style={{ ...TD, backgroundColor: '#ffffff' }}>{fmt(s.t125 > 0 ? s.t125.toFixed(2) : '')}</td>
+            <td style={{ ...TDE, backgroundColor: '#ffffff' }}>{'\u00A0'}</td>
+          </tr>
+        </tfoot>
+      </table>
+    );
+  };
+
+  const renderGlobalTable = (parts: AggregatedPart[], showGrand: boolean) => (
     <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', textAlign: 'right', fontSize: '11px', border: '1.5px solid #cbd5e1' }}>
       <thead style={{ backgroundColor: '#e0e7ff', borderBottom: '2px solid #475569' }}>
         <tr style={{ color: '#0f172a', fontWeight: 'bold', fontSize: '10px' }}>
-          <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: colWidths.num }}>מס'</th>
-          <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: colWidths.pn, fontWeight: 'bold' }}>מס' חלק</th>
-          <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'right', width: colWidths.detail }}>פירוט</th>
-          <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: colWidths.pah }}>פח (מ"ר)</th>
-          <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: colWidths.bidud }}>בידוד (מ"ר)</th>
-          <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: colWidths.adapter }}>מתאם</th>
-          <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: colWidths.dofan, backgroundColor: '#fefce8', color: '#854d0e' }}>דופן</th>
-          <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: colWidths.shatuzar }}>שתוצר</th>
-          <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: colWidths.flexible }}>גמיש</th>
-          <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: colWidths.sharshuri }}>שרשורי</th>
-          <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: colWidths.pah125 }}>פח 1.25</th>
-          <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: colWidths.volume }}>נפח (קוב)</th>
-          <th style={{ padding: '3px 2px', textAlign: 'right', width: colWidths.notes }}>הערות</th>
+          <th style={{ ...TH, width: W.num }}>#</th>
+          <th style={{ ...TH, width: W.pn }}>מס' חלק</th>
+          <th style={{ ...TH, textAlign: 'right' }}>פירוט</th>
+          <th style={{ ...TH, width: W.pah }}>פח מ"ר</th>
+          <th style={{ ...TH, width: W.bidud }}>בידוד</th>
+          <th style={{ ...TH, width: W.adapter }}>מתאם</th>
+          <th style={{ ...TH, width: W.dofan }}>דופן</th>
+          <th style={{ ...TH, width: W.shatuzar }}>שתוצר</th>
+          <th style={{ ...TH, width: W.flexible }}>גמיש</th>
+          <th style={{ ...TH, width: W.sharshuri }}>שרשורי</th>
+          <th style={{ ...TH, width: W.pah125 }}>פח 1.25</th>
+          <th style={TDE}>הערות</th>
         </tr>
       </thead>
       <tbody>
-        {parts.map((p, idx) => (
-          <tr key={idx} style={{ borderBottom: '1px solid #cbd5e1', backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc', fontSize: '10px' }}>
-            <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', fontWeight: 'bold', color: '#64748b' }}>{idx + 1}</td>
-            <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', fontWeight: 600, color: '#1e293b', fontSize: '10px' }}>{renderCellData(p.partNumber)}</td>
-            <td style={{ padding: '2px 2px', borderLeft: '1px solid #cbd5e1', fontWeight: 600, color: '#1e293b' }}>{renderCellData(p.formatDetail)}</td>
-            <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{renderCellData(p.totalPah > 0 ? p.totalPah.toFixed(2) : '')}</td>
-            <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{renderCellData(p.totalBidud > 0 ? p.totalBidud.toFixed(2) : '')}</td>
-            <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{renderCellData(p.totalAdapter > 0 ? p.totalAdapter : '')}</td>
-            <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', backgroundColor: '#fefce8', color: '#854d0e', fontWeight: 600 }}>{renderCellData(p.totalDofan > 0 ? p.totalDofan : '')}</td>
-            <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{renderCellData(p.totalShatuzar > 0 ? p.totalShatuzar : '')}</td>
-            <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{renderCellData(p.totalFlexible > 0 ? p.totalFlexible.toFixed(2) : '')}</td>
-            <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{renderCellData(p.totalSharshuri > 0 ? p.totalSharshuri.toFixed(2) : '')}</td>
-            <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{renderCellData(p.totalPah125 > 0 ? p.totalPah125.toFixed(2) : '')}</td>
-            <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', fontWeight: 600 }}>{renderCellData(p.totalVolume > 0 ? p.totalVolume.toFixed(3) : '')}</td>
-            <td style={{ padding: '2px 2px', color: '#64748b', fontSize: '10px' }}>{renderCellData(p.notes)}</td>
-          </tr>
-        ))}
-        {showGrandTotal && (
-          <tr style={{ backgroundColor: '#dbeafe', fontWeight: 'bold', borderTop: '2px solid #475569', fontSize: '10px' }}>
-            <td style={{ padding: '3px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }} colSpan={3}>סה"כ כללי ({grandTotals.qty} חלקים):</td>
-            <td style={{ padding: '3px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', color: '#1e40af' }}>{grandTotals.pah > 0 ? grandTotals.pah.toFixed(2) : '\u00A0'}</td>
-            <td style={{ padding: '3px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', color: '#1e40af' }}>{grandTotals.bidud > 0 ? grandTotals.bidud.toFixed(2) : '\u00A0'}</td>
-            <td style={{ padding: '3px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', color: '#1e40af' }}>{grandTotals.adapter > 0 ? grandTotals.adapter : '\u00A0'}</td>
-            <td style={{ padding: '3px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', backgroundColor: '#fefce8', color: '#854d0e' }}>{grandTotals.dofan > 0 ? grandTotals.dofan : '\u00A0'}</td>
-            <td style={{ padding: '3px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', color: '#1e40af' }}>{grandTotals.shatuzar > 0 ? grandTotals.shatuzar : '\u00A0'}</td>
-            <td style={{ padding: '3px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', color: '#1e40af' }}>{grandTotals.flexible > 0 ? grandTotals.flexible.toFixed(2) : '\u00A0'}</td>
-            <td style={{ padding: '3px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', color: '#1e40af' }}>{grandTotals.sharshuri > 0 ? grandTotals.sharshuri.toFixed(2) : '\u00A0'}</td>
-            <td style={{ padding: '3px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', color: '#1e40af' }}>{grandTotals.pah125 > 0 ? grandTotals.pah125.toFixed(2) : '\u00A0'}</td>
-            <td style={{ padding: '3px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', color: '#1e40af', fontWeight: 700 }}>{grandTotals.volume > 0 ? grandTotals.volume.toFixed(3) : '\u00A0'}</td>
-            <td style={{ padding: '3px 2px' }}>{'\u00A0'}</td>
+        {parts.map((p, i) => {
+          const aggKey = `${p.partNumber}_${p.formatDetail}_${p.thick}`;
+          return (
+            <tr key={i} style={{ borderBottom: '1px solid #cbd5e1', backgroundColor: i % 2 === 0 ? '#ffffff' : '#f8fafc', fontSize: '10px' }}>
+              <td style={{ ...TD, fontWeight: 'bold', color: '#64748b' }}>{i + 1}</td>
+              <td style={{ ...TD, fontWeight: 600, color: '#1e293b' }}>{fmt(p.partNumber)}</td>
+              <td style={{ ...TDR, fontWeight: 600, color: '#1e293b' }}>{fmt(p.formatDetail)}</td>
+              <EditCell aggKey={aggKey} field="pah" computed={p.totalPah} />
+              <EditCell aggKey={aggKey} field="bidud" computed={p.totalBidud} />
+              <EditCell aggKey={aggKey} field="adapter" computed={p.totalAdapter} />
+              <EditCell aggKey={aggKey} field="dofan" computed={p.totalDofan} />
+              <EditCell aggKey={aggKey} field="shatuzar" computed={p.totalShatuzar} />
+              <EditCell aggKey={aggKey} field="flexible" computed={p.totalFlexible} />
+              <EditCell aggKey={aggKey} field="sharshuri" computed={p.totalSharshuri} />
+              <EditCell aggKey={aggKey} field="pah125" computed={p.totalPah125} />
+              <td style={{ ...TDE, color: '#64748b', fontSize: '10px' }}>{fmt(p.notes)}</td>
+            </tr>
+          );
+        })}
+        {showGrand && (
+          <tr className="grand-total-row" style={{ backgroundColor: '#dbeafe', fontWeight: 'bold', borderTop: '2px solid #475569', fontSize: '10px', printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' as any }}>
+            <td style={{ ...TD, backgroundColor: '#dbeafe', color: '#1e40af' }} colSpan={3}>סה"כ כללי ({computedGrand.qty} חלקים):</td>
+            <td style={{ ...TD, backgroundColor: '#dbeafe', color: '#1e40af' }}>{gPah > 0 ? gPah.toFixed(2) : '\u00A0'}</td>
+            <td style={{ ...TD, backgroundColor: '#dbeafe', color: '#1e40af' }}>{gBidud > 0 ? gBidud.toFixed(2) : '\u00A0'}</td>
+            <td style={{ ...TD, backgroundColor: '#dbeafe', color: '#1e40af' }}>{gAdapter > 0 ? gAdapter : '\u00A0'}</td>
+            <td style={{ ...TD, backgroundColor: '#dbeafe', color: '#1e40af' }}>{gDofan > 0 ? gDofan : '\u00A0'}</td>
+            <td style={{ ...TD, backgroundColor: '#dbeafe', color: '#1e40af' }}>{gShatuzar > 0 ? gShatuzar : '\u00A0'}</td>
+            <td style={{ ...TD, backgroundColor: '#dbeafe', color: '#1e40af' }}>{gFlexible > 0 ? gFlexible.toFixed(2) : '\u00A0'}</td>
+            <td style={{ ...TD, backgroundColor: '#dbeafe', color: '#1e40af' }}>{gSharshuri > 0 ? gSharshuri.toFixed(2) : '\u00A0'}</td>
+            <td style={{ ...TD, backgroundColor: '#dbeafe', color: '#1e40af' }}>{gPah125 > 0 ? gPah125.toFixed(2) : '\u00A0'}</td>
+            <td style={{ ...TDE, backgroundColor: '#dbeafe' }}>{'\u00A0'}</td>
           </tr>
         )}
       </tbody>
@@ -197,19 +319,7 @@ export default function SummaryPage({
       <div className="print-orientation-spacer landscape-print" aria-hidden="true" />
 
       <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '8px', gap: '6px' }}>
-        <button
-          onClick={handlePrint}
-          style={{
-            padding: '5px 12px',
-            backgroundColor: '#2563eb',
-            color: '#ffffff',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-            fontSize: '11px'
-          }}
-        >
+        <button onClick={handlePrint} style={{ padding: '5px 12px', backgroundColor: '#2563eb', color: '#ffffff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '11px' }}>
           הדפס ריכוז / שמור PDF
         </button>
       </div>
@@ -224,117 +334,26 @@ export default function SummaryPage({
           <div><b>ריכוז:</b> ריכוז מס' - {docNumber}</div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
-          <div><b>תאריך:</b> {docDate}</div>
+          <div><b>תאריך:</b> {formatDate(docDate)}</div>
         </div>
       </div>
 
-      {/* טבלאות ריכוז פרטניות לכל דף מדידה */}
-      {sheets.map((sheet, sIdx) => {
-        const shTotals = getSheetTotals(sheet);
-
-        return (
-          <div key={sheet.id} className="summary-sheet-block" style={{ marginBottom: '50px', paddingBottom: '30px', borderBottom: sIdx < sheets.length - 1 ? '2px dashed #cbd5e1' : 'none', pageBreakAfter: sIdx < sheets.length - 1 ? 'always' : 'auto' }}>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1e3a8a', margin: 0, fontFamily: 'Rubik, sans-serif' }}>
-                דף ריכוז - {sheet.name}
-              </h2>
-              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 'bold' }}>
-                טבלה {sIdx + 1} מתוך {sheets.length}
-              </span>
-            </div>
-
-            <div className="print-table-wrapper" style={{ width: '100%', backgroundColor: '#ffffff', marginBottom: '15px' }}>
-              <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', textAlign: 'right', fontSize: '11px', border: '1.5px solid #cbd5e1' }}>
-                <thead style={{ backgroundColor: '#f1f5f9', borderBottom: '2px solid #475569' }}>
-                  <tr style={{ color: '#0f172a', fontWeight: 'bold', fontSize: '10px' }}>
-                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '3%' }}>מס'</th>
-                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '4.5%', fontWeight: 'bold' }}>מס' חלק</th>
-                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'right', width: '20%' }}>פירוט</th>
-                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '5%' }}>פח (מ"ר)</th>
-                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '5%' }}>בידוד (מ"ר)</th>
-                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '3.5%' }}>מתאם</th>
-                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '3.5%', backgroundColor: '#fefce8', color: '#854d0e' }}>דופן</th>
-                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '3.5%' }}>שתוצר</th>
-                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '5%' }}>גמיש</th>
-                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '5%' }}>שרשורי</th>
-                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '5%' }}>פח 1.25</th>
-                    <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '5.5%' }}>נפח (קוב)</th>
-                    <th style={{ padding: '3px 2px', textAlign: 'right', width: '28%' }}>הערות</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sheet.rows.map((row, rIdx) => {
-                    const thick = calculateThickness(row.width1, row.height1, row.manualThickness);
-                    const area = calculateArea(row);
-
-                    let displayType = row.notes && ['לאמד S','צינור עגול','קופסת פיזור','מדף אש'].includes(row.notes) ? row.notes : row.type;
-                    let formatDetail = `${displayType} ${row.notes === 'צינור עגול' ? `קוטר ${row.width1}` : `${row.width1}x${row.height1}`}`;
-                    if (row.type === 'מעבר') formatDetail += ` / ${row.width2}x${row.height2}`;
-                    if (row.length > 0) formatDetail += ` L=${row.length}`;
-                    if (row.panels > 0) formatDetail += ` [דופן×${row.panels}]`;
-
-                    return (
-                      <tr key={row.id} style={{ borderBottom: '1px solid #cbd5e1', backgroundColor: rIdx % 2 === 0 ? '#ffffff' : '#f8fafc', fontSize: '10px' }}>
-                        <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', fontWeight: 'bold', color: '#64748b' }}>{rIdx + 1}</td>
-                        <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', fontWeight: 600, color: '#1e293b', fontSize: '10px' }}>{renderCellData(row.partNumber)}</td>
-                        <td style={{ padding: '2px 2px', borderLeft: '1px solid #cbd5e1', fontWeight: 600, color: '#1e293b' }}>{renderCellData(formatDetail)}</td>
-                        <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>
-                          {renderCellData(thick !== 1.25 && area > 0 ? area.toFixed(2) : '')}
-                        </td>
-                        <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>
-                          {renderCellData((row.acoustic || row.external) && area > 0 ? area.toFixed(2) : '')}
-                        </td>
-                        <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>
-                          {renderCellData(row.adapterType !== 'ללא' && row.adapterQty > 0 ? row.adapterQty : '')}
-                        </td>
-                        <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', backgroundColor: '#fefce8', color: '#854d0e', fontWeight: 600 }}>
-                          {renderCellData(row.panels > 0 ? row.panels : '')}
-                        </td>
-                        <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>
-                          {renderCellData(row.shatuzar ? '1' : '')}
-                        </td>
-                        <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>
-                          {renderCellData(row.flexible > 0 && row.length > 0 ? (row.flexible * row.length).toFixed(2) : '')}
-                        </td>
-                        <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>
-                          {renderCellData(row.sharshuriType !== 'ללא' && row.length > 0 ? row.length.toFixed(2) : '')}
-                        </td>
-                        <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>
-                          {renderCellData(thick === 1.25 && area > 0 ? area.toFixed(2) : '')}
-                        </td>
-                        <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', fontWeight: 600 }}>
-                          {renderCellData(((row.width1 || 0) * (row.height1 || 0) * (row.length || 0) / 1000000) > 0 ? ((row.width1 || 0) * (row.height1 || 0) * (row.length || 0) / 1000000).toFixed(3) : '')}
-                        </td>
-                        <td style={{ padding: '2px 2px', color: '#64748b', fontSize: '10px' }}>{renderCellData(row.notes)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-
-                <tfoot>
-                  <tr style={{ fontWeight: 'bold', borderTop: '2px solid #cbd5e1', fontSize: '10px' }}>
-                    <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }} colSpan={3}>סה"כ:</td>
-                    <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{renderCellData((shTotals.t08 + shTotals.t10) > 0 ? (shTotals.t08 + shTotals.t10).toFixed(2) : '')}</td>
-                    <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{renderCellData((shTotals.acoustic + shTotals.external) > 0 ? (shTotals.acoustic + shTotals.external).toFixed(2) : '')}</td>
-                    <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{renderCellData(shTotals.adapterQty > 0 ? shTotals.adapterQty : '')}</td>
-                    <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{'\u00A0'}</td>
-                    <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{renderCellData(shTotals.shatuzar > 0 ? shTotals.shatuzar : '')}</td>
-                    <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{renderCellData(shTotals.flexible > 0 ? shTotals.flexible.toFixed(2) : '')}</td>
-                    <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{renderCellData((shTotals.sharshuri4 + shTotals.sharshuri6 + shTotals.sharshuri8 + shTotals.sharshuri10 + shTotals.sharshuri12 + shTotals.sharshuri14) > 0 ? (shTotals.sharshuri4 + shTotals.sharshuri6 + shTotals.sharshuri8 + shTotals.sharshuri10 + shTotals.sharshuri12 + shTotals.sharshuri14).toFixed(2) : '')}</td>
-                    <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{renderCellData(shTotals.t125 > 0 ? shTotals.t125.toFixed(2) : '')}</td>
-                    <td style={{ padding: '2px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1' }}>{renderCellData(shTotals.volume > 0 ? shTotals.volume.toFixed(3) : '')}</td>
-                    <td style={{ padding: '2px 2px' }}>{'\u00A0'}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-
+      {sheets.map((sheet, sIdx) => (
+        <div key={sheet.id} className="summary-sheet-block" style={{ marginBottom: '50px', paddingBottom: '30px', borderBottom: sIdx < sheets.length - 1 ? '2px dashed #cbd5e1' : 'none', pageBreakAfter: sIdx < sheets.length - 1 ? 'always' : 'auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1e3a8a', margin: 0, fontFamily: 'Rubik, sans-serif' }}>
+              דף ריכוז - {sheet.name}
+            </h2>
+            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 'bold' }}>
+              טבלה {sIdx + 1} מתוך {sheets.length}
+            </span>
           </div>
-        );
-      })}
+          <div className="print-table-wrapper" style={{ width: '100%', backgroundColor: '#ffffff', marginBottom: '15px' }}>
+            {renderSheetTable(sheet)}
+          </div>
+        </div>
+      ))}
 
-      {/* ═══ ריכוז כללי — כל החלקים הייחודיים מכל דפי המדידה ═══ */}
       <div style={{ marginTop: '30px', paddingTop: '20px', borderTop: '3px double #1e3a8a', pageBreakBefore: 'always' }}>
         <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#1e3a8a', margin: '0 0 10px 0', fontFamily: 'Rubik, sans-serif' }}>
           ריכוז כללי — כל הפרויקט ({sheets.length} דפי מדידה, {aggregatedParts.length} סוגי חלקים ייחודיים)
@@ -346,9 +365,14 @@ export default function SummaryPage({
 
       <div className="summary-footer" style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10px', color: '#64748b', paddingTop: '10px', borderTop: '1px solid #cbd5e1' }}>
         <span>הופק באמצעות מערכת עלי שרארה בע"מ - ממוחשב</span>
-        <span>חתימת העסק ומבצע הריכוז</span>
+        <span>
+          {companySignature ? (
+            <img src={companySignature} alt="חתימה" style={{ maxHeight: '50px', maxWidth: '180px', objectFit: 'contain' }} />
+          ) : (
+            'חתימת העסק ומבצע הריכוז'
+          )}
+        </span>
       </div>
-
     </div>
   );
 }
