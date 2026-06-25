@@ -49,11 +49,30 @@ export default function SummaryPage({
     return value;
   };
 
+  // חישוב ריכוז כללי לכל הפרויקט
+  const globalTotals = sheets.reduce((acc, sheet) => {
+    sheet.rows.forEach(row => {
+      const thick = calculateThickness(row.width1, row.height1, row.manualThickness);
+      const area = calculateArea(row);
+      if (thick === 0.8) acc.t08 += area;
+      else if (thick === 1.0) acc.t10 += area;
+      else if (thick === 1.25) acc.t125 += area;
+      if (row.acoustic) acc.acoustic += area;
+      if (row.external) acc.external += area;
+      if (row.adapterType !== 'ללא' && row.adapterQty > 0) acc.adapter += row.adapterQty;
+      if (row.panels > 0) acc.dofan += row.panels;
+      if (row.shatuzar) acc.shatuzar += 1;
+      if (row.flexible > 0 && row.length > 0) acc.flexible += row.flexible * row.length;
+      if (row.sharshuriType !== 'ללא' && row.length > 0) acc.sharshuri += row.length;
+      acc.totalRows += 1;
+    });
+    return acc;
+  }, { t08: 0, t10: 0, t125: 0, acoustic: 0, external: 0, adapter: 0, dofan: 0, shatuzar: 0, flexible: 0, sharshuri: 0, totalRows: 0 });
+
   return (
     <div className="landscape-print summary-print-page print-document" style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #cbd5e1', padding: '32px', width: '100%', maxWidth: '100%', margin: '0 auto', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' }}>
       <div className="print-orientation-spacer landscape-print" aria-hidden="true" />
 
-      {/* סרגל כפתורי ניהול נייר המכתבים - מוסתר בהדפסה */}
       <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '8px', gap: '6px' }}>
         <button
           onClick={handlePrint}
@@ -76,7 +95,6 @@ export default function SummaryPage({
         <CompanyLetterhead details={myCompanyDetails} />
       </div>
 
-      {/* פרטי הפרויקט והריכוז */}
       <div className="summary-project-info" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', marginBottom: '25px', paddingBottom: '10px', borderBottom: '1px solid #cbd5e1', fontSize: '14px', textAlign: 'right' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <div><b>פרויקט:</b> {isNewProject ? newProjectName : selectedProject} - {isNewClient ? clientDetails.name : selectedClientKey}</div>
@@ -84,6 +102,43 @@ export default function SummaryPage({
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
           <div><b>תאריך:</b> {docDate}</div>
+        </div>
+      </div>
+
+      {/* ═══ ריכוז כללי — סה"כ כל דפי המדידה ═══ */}
+      <div style={{ marginBottom: '30px', paddingBottom: '20px', borderBottom: '2px solid #1e3a8a' }}>
+        <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#1e3a8a', margin: '0 0 10px 0', fontFamily: 'Rubik, sans-serif' }}>
+          ריכוז כללי — כל הפרויקט ({sheets.length} דפי מדידה, {globalTotals.totalRows} חלקים)
+        </h2>
+        <div style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', textAlign: 'right', fontSize: '11px', border: '1.5px solid #cbd5e1' }}>
+          <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', textAlign: 'right', fontSize: '11px', border: '1.5px solid #cbd5e1' }}>
+            <thead>
+              <tr style={{ backgroundColor: '#e0e7ff', fontWeight: 'bold', borderBottom: '2px solid #475569', fontSize: '10px' }}>
+                <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '12.5%' }}>פח 0.8 (מ"ר)</th>
+                <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '12.5%' }}>פח 1.0 (מ"ר)</th>
+                <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '12.5%' }}>פח 1.25 (מ"ר)</th>
+                <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '12.5%' }}>בידוד (מ"ר)</th>
+                <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '9%' }}>מתאם</th>
+                <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '9%', backgroundColor: '#fefce8', color: '#854d0e' }}>דופן</th>
+                <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '9%' }}>שתוצר</th>
+                <th style={{ padding: '3px 2px', borderLeft: '1px solid #cbd5e1', textAlign: 'center', width: '11%' }}>גמיש (מ"א)</th>
+                <th style={{ padding: '3px 2px', textAlign: 'center', width: '12.5%' }}>שרשורי (מ"א)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style={{ backgroundColor: '#f8fafc', fontWeight: 'bold', fontSize: '12px' }}>
+                <td style={{ padding: '4px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', color: '#1e40af' }}>{globalTotals.t08 > 0 ? globalTotals.t08.toFixed(2) : '\u00A0'}</td>
+                <td style={{ padding: '4px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', color: '#1e40af' }}>{globalTotals.t10 > 0 ? globalTotals.t10.toFixed(2) : '\u00A0'}</td>
+                <td style={{ padding: '4px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', color: '#1e40af' }}>{globalTotals.t125 > 0 ? globalTotals.t125.toFixed(2) : '\u00A0'}</td>
+                <td style={{ padding: '4px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', color: '#1e40af' }}>{(globalTotals.acoustic + globalTotals.external) > 0 ? (globalTotals.acoustic + globalTotals.external).toFixed(2) : '\u00A0'}</td>
+                <td style={{ padding: '4px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', color: '#1e40af' }}>{globalTotals.adapter > 0 ? globalTotals.adapter : '\u00A0'}</td>
+                <td style={{ padding: '4px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', backgroundColor: '#fefce8', color: '#854d0e' }}>{globalTotals.dofan > 0 ? globalTotals.dofan : '\u00A0'}</td>
+                <td style={{ padding: '4px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', color: '#1e40af' }}>{globalTotals.shatuzar > 0 ? globalTotals.shatuzar : '\u00A0'}</td>
+                <td style={{ padding: '4px 2px', textAlign: 'center', borderLeft: '1px solid #cbd5e1', color: '#1e40af' }}>{globalTotals.flexible > 0 ? globalTotals.flexible.toFixed(2) : '\u00A0'}</td>
+                <td style={{ padding: '4px 2px', textAlign: 'center', color: '#1e40af' }}>{globalTotals.sharshuri > 0 ? globalTotals.sharshuri.toFixed(2) : '\u00A0'}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
