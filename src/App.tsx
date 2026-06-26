@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import { FileSpreadsheet, Layers, CreditCard, Building2, Briefcase, User, Phone, Mail, CheckCircle2 } from 'lucide-react';
 import PrintableReport from './PrintableReport';
@@ -210,6 +210,9 @@ export default function App() {
     return saved ? JSON.parse(saved) : {};
   });
 
+  // גיליונות ממוינים לפי פרויקט: { "client|||project": Sheet[] }
+  const [sheetsByProject, setSheetsByProject] = useState<Record<string, Sheet[]>>({});
+
   // מחסניות לטובת ביצוע UNDO ו-REDO
   const [undoStack, setUndoStack] = useState<Sheet[][]>([]);
   const [redoStack, setRedoStack] = useState<Sheet[][]>([]);
@@ -229,6 +232,9 @@ export default function App() {
     client: "אלקטרה מיזוג אוויר",
     project: "מגדלי עזריאלי קומה 4"
   });
+  // Ref always holds the current project key for Firestore writes.
+  // Prevents the save effect from firing when only the dropdown changes.
+  const projectKeyRef = useRef('');
 
   // סטייטים לעריכת לקוחות ופרויקטים
   const [isEditingClient, setIsEditingClient] = useState<boolean>(false);
@@ -269,6 +275,7 @@ export default function App() {
   const [backups, setBackups] = useState<{ id: string; name: string; savedAt: string; client: string; project: string; sheetCount: number }[]>([]);
   const [loadingBackups, setLoadingBackups] = useState(false);
   const [showBackupsList, setShowBackupsList] = useState(false);
+  const [overwriteWarning, setOverwriteWarning] = useState<{ show: boolean; backupName: string; snapshot: any; resolve: (yes: boolean) => void }>({ show: false, backupName: '', snapshot: null, resolve: () => {} });
   const [isAdmin, setIsAdmin] = useState(() => sessionStorage.getItem('sharara_isAdmin') === 'true');
   const [adminPasscode, setAdminPasscode] = useState(() => localStorage.getItem('sharara_adminPasscode') || '1029');
   const [showAdminLogin, setShowAdminLogin] = useState(false);
@@ -309,11 +316,18 @@ export default function App() {
   };
 
   // אפקטים לשמירה אוטומטית בענן (Firestore)
+  // Sheets are stored per-project under sheetsByProject: { "client|||project": Sheet[] }
+  // projectKeyRef tracks the current project WITHOUT being a dependency —
+  // this prevents the save effect from firing when only the dropdown changes
+  // (which would write old project sheets under the wrong project key).
   useEffect(() => {
     if (isLoading) return;
     const saveData = async () => {
       try {
+        const projectKey = projectKeyRef.current;
+        if (!projectKey || projectKey === '|||') return;
         await setDoc(doc(db, 'appData', 'mainData'), {
+          sheetsByProject: { ...sheetsByProject, [projectKey]: sheets },
           clientsData,
           pricesList,
           myCompanyDetails,
@@ -321,7 +335,7 @@ export default function App() {
           projectDocDates,
           producedProjects,
           producedSnapshots
-        });
+        }, { merge: true });
         setLastSaved(new Date());
       } catch (error) {
         console.error("Error saving to Firestore: ", error);
@@ -329,7 +343,15 @@ export default function App() {
     };
     const timer = setTimeout(saveData, 1500);
     return () => clearTimeout(timer);
-  }, [clientsData, pricesList, myCompanyDetails, projectDocNumbers, projectDocDates, producedProjects, producedSnapshots, isLoading]);
+  }, [sheets, sheetsByProject, clientsData, pricesList, myCompanyDetails, projectDocNumbers, projectDocDates, producedProjects, producedSnapshots, isLoading]);
+
+  // Keep projectKeyRef in sync with the active client/project selection.
+  // The save effect reads from this ref so it never fires on dropdown change.
+  useEffect(() => {
+    const client = selectedClientKey || clientDetails.name || '';
+    const project = selectedProject || newProjectName || '';
+    projectKeyRef.current = `${client}|||${project}`;
+  }, [selectedClientKey, selectedProject, newProjectName, clientDetails.name]);
 
   useEffect(() => {
     const clearPrintTab = () => document.documentElement.removeAttribute('data-print-tab');
@@ -401,6 +423,23 @@ export default function App() {
     setShowExportDialog(false);
   };
 
+  // ─── ייצוא JSON אוטומטי (ללא דיאלוג) ───
+  const exportProjectToJSON = (label: string, data: any) => {
+    try {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${label}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('JSON export failed:', err);
+    }
+  };
+
   // ─── ייבוא JSON ───
   const importFromJSON = () => {
     const input = document.createElement('input');
@@ -459,7 +498,7 @@ export default function App() {
   };
 
   // ─── Firebase Backups ───
-  const saveToFirebaseBackup = async (backupName?: string) => {
+  const saveToFirebaseBackup = async (backupName?: string, skipOverwriteCheck?: boolean) => {
     const name = backupName || `backup-${new Date().toISOString().slice(0, 16).replace('T', '_').replace(/:/g, '-')}`;
     const snapshot = {
       name,
@@ -474,7 +513,21 @@ export default function App() {
       projectDocDates,
     };
     try {
+      // Check for existing backup with same name
+      if (!skipOverwriteCheck) {
+        const existingDoc = await getDoc(doc(db, 'appBackups', name));
+        if (existingDoc.exists()) {
+          // Show overwrite warning and wait for user decision
+          const userConfirmed = await new Promise<boolean>((resolve) => {
+            setOverwriteWarning({ show: true, backupName: name, snapshot, resolve });
+          });
+          setOverwriteWarning({ show: false, backupName: '', snapshot: null, resolve: () => {} });
+          if (!userConfirmed) return false;
+        }
+      }
       await setDoc(doc(db, 'appBackups', name), snapshot);
+      // Auto-export JSON to local downloads — use the SAME name as the Firebase entry
+      exportProjectToJSON(name, snapshot);
       return true;
     } catch (error) {
       console.error('Error saving backup:', error);
@@ -512,20 +565,35 @@ export default function App() {
       const docSnap = await getDoc(doc(db, 'appBackups', backupId));
       if (docSnap.exists()) {
         const data = docSnap.data();
+        const restoredClient = data.client || selectedClientKey;
+        const restoredProject = data.project || selectedProject;
+        const projectKey = `${restoredClient}|||${restoredProject}`;
+
+        // Update sheetsByProject with restored data under the correct key
+        setSheetsByProject((prev) => ({ ...prev, [projectKey]: data.sheets || [] }));
+
         if (data.sheets) setSheets(data.sheets);
         if (data.clientsData) setClientsData(data.clientsData);
         if (data.pricesList) setPricesList(data.pricesList);
         if (data.myCompanyDetails) setMyCompanyDetails(data.myCompanyDetails);
         if (data.projectDocNumbers) setProjectDocNumbers(data.projectDocNumbers);
         if (data.projectDocDates) setProjectDocDates(data.projectDocDates);
-        if (data.client) setSelectedClientKey(data.client);
-        if (data.project) setSelectedProject(data.project);
+
+        // Switch active view to restored project
+        setSelectedClientKey(restoredClient);
+        setSelectedProject(restoredProject);
+        projectKeyRef.current = projectKey;
+        setLoadedClientProject({ client: restoredClient, project: restoredProject });
+
         setUndoStack([]);
         setRedoStack([]);
         setLastSaved(new Date());
         setShowBackupsList(false);
         setIsSessionInitialized(true);
         setActiveTab('measure');
+
+        // Auto-export JSON to local downloads — use the backup ID as filename
+        exportProjectToJSON(`sharara-restore-${backupId}`, data);
       }
     } catch (error) {
       console.error('Error restoring backup:', error);
@@ -554,6 +622,65 @@ export default function App() {
           if (data.clientsData) setClientsData(data.clientsData);
           if (data.pricesList) setPricesList(data.pricesList);
           if (data.myCompanyDetails) setMyCompanyDetails(data.myCompanyDetails);
+          if (data.projectDocNumbers) setProjectDocNumbers(data.projectDocNumbers);
+          if (data.projectDocDates) setProjectDocDates(data.projectDocDates);
+          if (data.producedProjects) setProducedProjects(data.producedProjects);
+          if (data.producedSnapshots) setProducedSnapshots(data.producedSnapshots);
+          if (data.sheetsByProject) setSheetsByProject(data.sheetsByProject);
+
+          // Load sheets per-project: search ALL keys in sheetsByProject map
+          const clients = data.clientsData || {};
+          const sheetsByProject = data.sheetsByProject || {};
+          let loadedSheets: Sheet[] | null = null;
+          let foundClient = '';
+          let foundProject = '';
+
+          // Search through every client → project combination for sheets
+          for (const [clientName, clientObj] of Object.entries(clients)) {
+            const projects = (clientObj as any)?.projects || [];
+            for (const proj of projects) {
+              const key = `${clientName}|||${proj}`;
+              if (sheetsByProject[key] && sheetsByProject[key].length > 0) {
+                loadedSheets = sheetsByProject[key];
+                foundClient = clientName;
+                foundProject = proj;
+                break;
+              }
+            }
+            if (loadedSheets) break;
+          }
+
+          // Legacy fallback: check flat sheets field (from pre-migration data)
+          if (!loadedSheets && data.sheets && data.sheets.length > 0) {
+            loadedSheets = data.sheets;
+            // Try to find the matching client/project for legacy data
+            if (!foundClient) {
+              const firstClient = Object.keys(clients)[0];
+              if (firstClient) {
+                foundClient = firstClient;
+                foundProject = clients[firstClient]?.projects?.[0] || '';
+              }
+            }
+          }
+
+          if (loadedSheets) {
+            setSheets(loadedSheets);
+            setActiveSheetId(loadedSheets[0].id);
+
+            if (foundClient) {
+              setSelectedClientKey(foundClient);
+              setSelectedProject(foundProject);
+              setLoadedClientProject({ client: foundClient, project: foundProject });
+              setClientDetails({
+                name: foundClient,
+                phone: clients[foundClient]?.phone || '',
+                email: clients[foundClient]?.email || '',
+                contact: clients[foundClient]?.contact || '',
+                regDate: clients[foundClient]?.regDate || '',
+              });
+            }
+            setIsSessionInitialized(true);
+          }
         }
       } catch (error) {
         console.error("Error loading from Firestore: ", error);
@@ -1205,7 +1332,7 @@ export default function App() {
           {!isAdmin ? (
             <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               {!showAdminLogin ? (
-                <button onClick={() => setShowAdminLogin(true)} style={{ backgroundColor: '#475569', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '5px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>🔒 מנהל</button>
+                <button onClick={() => setShowAdminLogin(true)} style={{ backgroundColor: '#475569', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: '5px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>🔒 מנהל</button>
               ) : (
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center', backgroundColor: '#f1f5f9', padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
                   <span style={{ fontSize: '11px', color: '#475569', fontWeight: 'bold' }}>קוד:</span>
@@ -1218,20 +1345,20 @@ export default function App() {
           ) : (
             <>
               {/* ─── שורת מנהל compact ─── */}
-              <div style={{ display: 'flex', gap: '4px', marginBottom: '8px', alignItems: 'center', flexWrap: 'wrap', backgroundColor: '#ecfdf5', padding: '5px 8px', borderRadius: '6px', border: '1px solid #d1fae5' }}>
-                <span style={{ fontSize: '10px', color: '#059669', fontWeight: 'bold' }}>✓ מנהל</span>
-                <div style={{ width: '1px', height: '14px', backgroundColor: '#a7f3d0', margin: '0 2px' }} />
-                <button onClick={loadSampleData} title="טען נתוני דוגמה" style={{ backgroundColor: '#7c3aed', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>📋 דוגמה</button>
-                <button onClick={importFromJSON} title="ייבוא מקובץ" style={{ backgroundColor: '#0284c7', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>📂 ייבוא</button>
-                <button onClick={handleExportJSON} title="ייצוא לקובץ + ענן" style={{ backgroundColor: '#0891b2', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>💾 ייצוא</button>
-                <button onClick={async () => { await loadFirebaseBackups(); setActiveAdminSection(activeAdminSection === 'backups' ? null : 'backups'); }} title="גיבויים בענן" style={{ backgroundColor: activeAdminSection === 'backups' ? '#059669' : '#059669', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold', outline: activeAdminSection === 'backups' ? '2px solid #166534' : 'none', outlineOffset: '1px' }}>☁️ גיבויים</button>
-                <button onClick={resetProject} title="איפוס" style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>🗑️ איפוס</button>
-                <div style={{ width: '1px', height: '14px', backgroundColor: '#a7f3d0', margin: '0 2px' }} />
-                <button onClick={() => setActiveAdminSection(activeAdminSection === 'passcode' ? null : 'passcode')} style={{ backgroundColor: activeAdminSection === 'passcode' ? '#475569' : '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>🔑 קוד</button>
-                <button onClick={() => setActiveAdminSection(activeAdminSection === 'credentials' ? null : 'credentials')} style={{ backgroundColor: activeAdminSection === 'credentials' ? '#7c3aed' : '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>👤 כניסה</button>
-                <button onClick={() => setActiveAdminSection(activeAdminSection === 'business' ? null : 'business')} style={{ backgroundColor: activeAdminSection === 'business' ? '#d97706' : '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>🏢 עסק</button>
-                <button onClick={() => setActiveAdminSection(activeAdminSection === 'formulas' ? null : 'formulas')} style={{ backgroundColor: activeAdminSection === 'formulas' ? '#2563eb' : '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>📐 נוסחאות</button>
-                <button onClick={() => { setIsAdmin(false); sessionStorage.removeItem('sharara_isAdmin'); setActiveAdminSection(null); }} title="התנתק" style={{ backgroundColor: '#94a3b8', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>🚪</button>
+              <div style={{ display: 'flex', gap: '5px', marginBottom: '8px', alignItems: 'center', flexWrap: 'wrap', backgroundColor: '#ecfdf5', padding: '6px 10px', borderRadius: '6px', border: '1px solid #d1fae5' }}>
+                <span style={{ fontSize: '12px', color: '#059669', fontWeight: 'bold' }}>✓ מנהל</span>
+                <div style={{ width: '1px', height: '16px', backgroundColor: '#a7f3d0', margin: '0 3px' }} />
+                <button onClick={loadSampleData} title="טען נתוני דוגמה" style={{ backgroundColor: '#7c3aed', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>📋 דוגמה</button>
+                <button onClick={importFromJSON} title="ייבוא מקובץ" style={{ backgroundColor: '#0284c7', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>📂 ייבוא</button>
+                <button onClick={handleExportJSON} title="ייצוא לקובץ + ענן" style={{ backgroundColor: '#0891b2', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>💾 ייצוא</button>
+                <button onClick={async () => { await loadFirebaseBackups(); setActiveAdminSection(activeAdminSection === 'backups' ? null : 'backups'); }} title="גיבויים בענן" style={{ backgroundColor: activeAdminSection === 'backups' ? '#059669' : '#059669', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', outline: activeAdminSection === 'backups' ? '2px solid #166534' : 'none', outlineOffset: '1px' }}>☁️ גיבויים</button>
+                <button onClick={resetProject} title="איפוס" style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>🗑️ איפוס</button>
+                <div style={{ width: '1px', height: '16px', backgroundColor: '#a7f3d0', margin: '0 3px' }} />
+                <button onClick={() => setActiveAdminSection(activeAdminSection === 'passcode' ? null : 'passcode')} style={{ backgroundColor: activeAdminSection === 'passcode' ? '#475569' : '#94a3b8', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>🔑 קוד</button>
+                <button onClick={() => setActiveAdminSection(activeAdminSection === 'credentials' ? null : 'credentials')} style={{ backgroundColor: activeAdminSection === 'credentials' ? '#7c3aed' : '#94a3b8', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>👤 כניסה</button>
+                <button onClick={() => setActiveAdminSection(activeAdminSection === 'business' ? null : 'business')} style={{ backgroundColor: activeAdminSection === 'business' ? '#d97706' : '#94a3b8', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>🏢 עסק</button>
+                <button onClick={() => setActiveAdminSection(activeAdminSection === 'formulas' ? null : 'formulas')} style={{ backgroundColor: activeAdminSection === 'formulas' ? '#2563eb' : '#94a3b8', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>📐 נוסחאות</button>
+                <button onClick={() => { setIsAdmin(false); sessionStorage.removeItem('sharara_isAdmin'); setActiveAdminSection(null); }} title="התנתק" style={{ backgroundColor: '#94a3b8', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>🚪</button>
               </div>
 
               {/* ─── גיבויים בענן ─── */}
@@ -1252,8 +1379,8 @@ export default function App() {
                             <span style={{ color: '#9ca3af' }}>{backup.savedAt ? formatDateTime(backup.savedAt) : ''}</span>
                           </span>
                           <div style={{ display: 'flex', gap: '3px' }}>
-                            <button onClick={() => restoreFromFirebaseBackup(backup.id)} style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '2px 6px', borderRadius: '3px', cursor: 'pointer', fontSize: '9px', fontWeight: 'bold' }}>שחזר</button>
-                            <button onClick={() => deleteFirebaseBackup(backup.id)} style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', padding: '2px 6px', borderRadius: '3px', cursor: 'pointer', fontSize: '9px' }}>✕</button>
+                            <button onClick={() => restoreFromFirebaseBackup(backup.id)} style={{ backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '3px 10px', borderRadius: '3px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>שחזר</button>
+                            <button onClick={() => deleteFirebaseBackup(backup.id)} style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', padding: '3px 10px', borderRadius: '3px', cursor: 'pointer', fontSize: '11px' }}>✕</button>
                           </div>
                         </div>
                       ))}
@@ -1812,7 +1939,7 @@ export default function App() {
           </div>
 
           <button 
-            onClick={() => {
+            onClick={async () => {
               if (isNewClient && !clientDetails.name.trim()) {
                 alert("אנא הזן שם לקוח חדש");
                 return;
@@ -1843,7 +1970,7 @@ export default function App() {
                       regDate: clientData.regDate
                     });
                   } else {
-                    return; // ביטול ומניעת כניסה לשורות
+                    return;
                   }
                 }
               }
@@ -1854,7 +1981,6 @@ export default function App() {
                 if (clientObj) {
                   const existingProjMatch = clientObj.projects.find(p => p.toLowerCase() === currentProject.toLowerCase());
                   if (existingProjMatch) {
-                    // פרויקט כבר קיים - הצעת שם סדרתי אוטומטי
                     let seqName = currentProject;
                     let counter = 2;
                     while (clientObj.projects.includes(seqName)) {
@@ -1870,10 +1996,9 @@ export default function App() {
                       setIsNewProject(false);
                       setSelectedProject(seqName);
                     } else {
-                      return; // ביטול ומניעת כניסה לשורות
+                      return;
                     }
                   } else {
-                    // הוספת פרויקט חדש לחברה קיימת
                     const updated = { ...clientsData };
                     updated[currentClient].projects.push(currentProject);
                     setClientsData(updated);
@@ -1881,7 +2006,6 @@ export default function App() {
                     setSelectedProject(currentProject);
                   }
                 } else {
-                  // החברה וגם הפרויקט חדשים לגמרי - שמירה בבסיס הנתונים
                   const updated = { ...clientsData };
                   updated[currentClient] = {
                     phone: clientDetails.phone,
@@ -1899,22 +2023,48 @@ export default function App() {
               }
               
               if (loadedClientProject.client !== currentClient || loadedClientProject.project !== currentProject) {
-                setSheets([
-                  {
-                    id: '1',
-                    name: 'דף מדידה #1',
-                    rows: [{ 
-                      id: '1', partNumber: 'P001', type: 'קטע ישר', width1: 0.5, height1: 0.4, width2: 0, height2: 0, length: 1.0, rBig: 0, rSmall: 0,
-                      shatuzar: false, flexible: 0, acoustic: true, external: false, 
-                      sharshuriType: 'ללא', sharshuriLen: 0, adapterType: 'ללא', adapterQty: 0, notes: '', manualThickness: 0, rBig2: 0, panels: 0
-                    }]
-                  }
-                ]);
-                setActiveSheetId('1');
+                // Strictly clear previous project's state first
+                setSheets([]);
+                setActiveSheetId('');
                 setActiveTab('measure');
+
+                // Fetch the NEW project's sheets from Firestore (per-project isolation)
+                const newProjectKey = `${currentClient}|||${currentProject}`;
+                let foundProjectSheets = false;
+                try {
+                  const freshDoc = await getDoc(doc(db, 'appData', 'mainData'));
+                  if (freshDoc.exists()) {
+                    const freshData = freshDoc.data();
+                    const sheetsByProject = freshData.sheetsByProject || {};
+                    const projectSheets = sheetsByProject[newProjectKey];
+                    if (projectSheets && Array.isArray(projectSheets) && projectSheets.length > 0) {
+                      setSheets(projectSheets);
+                      setActiveSheetId(projectSheets[0].id);
+                      foundProjectSheets = true;
+                    }
+                  }
+                } catch (err) {
+                  console.warn("Failed to fetch project sheets from Firestore:", err);
+                }
+
+                if (!foundProjectSheets) {
+                  // No data for this project — start with a clean default sheet
+                  setSheets([
+                    {
+                      id: '1',
+                      name: 'דף מדידה #1',
+                      rows: [{ 
+                        id: '1', partNumber: 'P001', type: 'קטע ישר', width1: 0.5, height1: 0.4, width2: 0, height2: 0, length: 1.0, rBig: 0, rSmall: 0,
+                        shatuzar: false, flexible: 0, acoustic: true, external: false, 
+                        sharshuriType: 'ללא', sharshuriLen: 0, adapterType: 'ללא', adapterQty: 0, notes: '', manualThickness: 0, rBig2: 0, panels: 0
+                      }]
+                    }
+                  ]);
+                  setActiveSheetId('1');
+                }
+                
                 setLoadedClientProject({ client: currentClient, project: currentProject });
                 
-                // יצירת מספר סימוכין אקראי וייחודי חדש בעת מעבר ללקוח או פרויקט אחר
                 const newRandomDocNum = Math.floor(1000 + Math.random() * 9000).toString();
                 setDocNumber(newRandomDocNum);
               }
@@ -1934,12 +2084,12 @@ export default function App() {
           {/* סרגל עליון אינפורמטיבי שמציג על מה עובדים כרגע ומאפשר החלפה/נעילה מחדש */}
           <section className="info-bar-section" style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
             <div style={{ display: 'flex', gap: '32px', alignItems: 'center', fontSize: '13px' }}>
-              <div>
+              <div style={{ border: (!(selectedClientKey || (isNewClient && clientDetails.name.trim())) || !(selectedProject || (isNewProject && newProjectName.trim()))) ? '2px solid #ef4444' : 'none', borderRadius: '6px', padding: '4px 8px' }}>
                 <span style={{ color: '#64748b', marginLeft: '4px' }}>חברה/לקוח:</span>
                 <strong style={{ color: '#0f172a', fontSize: '14px' }}>{isNewClient ? clientDetails.name : selectedClientKey}</strong>
                 <span style={{ fontSize: '11px', color: '#2563eb', marginRight: '6px', backgroundColor: '#eff6ff', padding: '2px 6px', borderRadius: '4px' }}>{isNewClient ? 'חדש' : 'רשום'}</span>
               </div>
-              <div style={{ borderRight: '1px solid #e2e8f0', paddingRight: '24px' }}>
+              <div style={{ borderRight: '1px solid #e2e8f0', paddingRight: '24px', border: !(selectedProject || (isNewProject && newProjectName.trim())) ? '2px solid #ef4444' : 'none', borderRadius: '6px', padding: '4px 8px' }}>
                 <span style={{ color: '#64748b', marginLeft: '4px' }}>פרויקט פעיל:</span>
                 <strong style={{ color: '#0f172a', fontSize: '14px' }}>{isNewProject ? newProjectName : selectedProject}</strong>
               </div>
@@ -1962,6 +2112,22 @@ export default function App() {
 
           {/* אזור תוכן מרכזי - טבלאות וחישובים */}
           <main className="main-content-area" style={{ width: '100%', padding: '24px', boxSizing: 'border-box', overflowX: 'auto' }}>
+            
+            {/* בדיקת תקינות: חברה ופרויקט חייבים להיות מסומנים */}
+            {!(selectedClientKey || (isNewClient && clientDetails.name.trim())) || !(selectedProject || (isNewProject && newProjectName.trim())) ? (
+              <div style={{ maxWidth: '600px', margin: '40px auto', padding: '32px', backgroundColor: '#fef2f2', borderRadius: '12px', border: '2px solid #ef4444', textAlign: 'center' }}>
+                <div style={{ fontSize: '48px', marginBottom: '12px' }}>⚠️</div>
+                <h2 style={{ fontSize: '18px', color: '#991b1b', margin: '0 0 8px 0', fontWeight: 'bold' }}>יש לבחור חברה ופרויקט לפני תחילת העבודה</h2>
+                <p style={{ fontSize: '13px', color: '#b91c1c', margin: '0 0 20px 0' }}>לא ניתן להזין מדידות או לצפות בטבלה ללא הגדרת ישות פיננסית פעילה.</p>
+                <button
+                  onClick={() => setIsSessionInitialized(false)}
+                  style={{ padding: '10px 24px', backgroundColor: '#dc2626', color: '#ffffff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' }}
+                >
+                  חזור להגדרת לקוח ופרויקט
+                </button>
+              </div>
+            ) : (
+            <>
             
             {/* טאב דפי מדידה */}
             {activeTab === 'measure' && (
@@ -2091,6 +2257,8 @@ export default function App() {
                 handlePrint={handlePrint}
               />
             )}
+            </>
+            )}
           </main>
 
 
@@ -2115,6 +2283,23 @@ export default function App() {
             <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'flex-start' }}>
               <button onClick={() => doExportJSON()} style={{ backgroundColor: '#10b981', color: '#ffffff', border: 'none', padding: '8px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>💾 שמור קובץ + ענן</button>
               <button onClick={() => setShowExportDialog(false)} style={{ backgroundColor: '#64748b', color: '#ffffff', border: 'none', padding: '8px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>ביטול</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {overwriteWarning.show && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }} onClick={() => overwriteWarning.resolve(false)}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '24px', minWidth: '400px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', border: '2px solid #f59e0b' }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', color: '#92400e' }}>⚠️ אזהרה: כפילות בשם</h3>
+            <p style={{ fontSize: '14px', color: '#334155', margin: '0 0 8px 0' }}>
+              גיבוי בשם <strong>"{overwriteWarning.backupName}"</strong> כבר קיים בענן.
+            </p>
+            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px 0' }}>
+              האם לדרוס את הגיבוי הקיים? או לבטל ולשנות את השם.
+            </p>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-start' }}>
+              <button onClick={() => overwriteWarning.resolve(true)} style={{ backgroundColor: '#f59e0b', color: '#ffffff', border: 'none', padding: '8px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>⚠️ דרוס</button>
+              <button onClick={() => overwriteWarning.resolve(false)} style={{ backgroundColor: '#64748b', color: '#ffffff', border: 'none', padding: '8px 20px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>ביטול</button>
             </div>
           </div>
         </div>

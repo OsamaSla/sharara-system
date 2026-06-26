@@ -5,3 +5,15 @@ dist/
 *.cjs
 public/logo_hex.txt
 CLAUDE.md
+
+# Environment
+.env
+.env.local
+
+# PDF processor
+pdf_processor/__pycache__/
+pdf_processor/laser_dxf_outputs/
+pdf_processor/poppler-*/
+pdf_processor/serviceAccountKey.json
+pdf_processor/*.pdf
+pdf_processor/temp_page_*.png
