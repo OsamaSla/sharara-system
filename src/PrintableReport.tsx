@@ -232,7 +232,7 @@ export default function PrintableReport({
               <div className="pt-footer">
                 <span className="pt-footer-sign">
                   {companySignature ? (
-                    <img src={companySignature} alt="חתימה" style={{ maxHeight: '40px', maxWidth: '150px', objectFit: 'contain', verticalAlign: 'middle' }} />
+                    <img src={companySignature} alt="חתימה" style={{ maxHeight: '80px', maxWidth: '300px', objectFit: 'contain', verticalAlign: 'middle' }} />
                   ) : (
                     <>חתימת מנהל עבודה: _________________________</>
                   )}

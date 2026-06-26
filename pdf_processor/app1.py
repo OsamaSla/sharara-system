@@ -13,6 +13,13 @@ from openai import OpenAI
 import ezdxf
 from firebase_sync import sync_pages_to_firebase
 
+try:
+    from flask import Flask, request, jsonify
+    from flask_cors import CORS
+    FLASK_AVAILABLE = True
+except ImportError:
+    FLASK_AVAILABLE = False
+
 # =====================================================================
 # 1. הגדרת נתיבים וקבצים
 # =====================================================================
@@ -27,12 +34,18 @@ def sanitize_folder_name(name):
     """Replace spaces and special characters with underscores for safe folder names."""
     return re.sub(r'[<>:"/\\|?*\s]+', '_', name).strip('_')
 
-# אתחול Gemini API - מפתחות מ environment variables
+# אתחול Gemini API - מפתחות מ environment variables (deferred until needed)
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-if not GEMINI_API_KEY:
-    print("⚠️  GEMINI_API_KEY not set. Export it before running: export GEMINI_API_KEY=your_key")
-    exit(1)
-client = genai.Client(api_key=GEMINI_API_KEY)
+client = None  # initialized lazily when needed
+
+def get_gemini_client():
+    global client
+    if client is None:
+        if not GEMINI_API_KEY:
+            print("⚠️  GEMINI_API_KEY not set. Export it before running: export GEMINI_API_KEY=your_key")
+            exit(1)
+        client = genai.Client(api_key=GEMINI_API_KEY)
+    return client
 
 # OpenAI - גיבוי סופי עם GPT-4o mini
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
@@ -115,7 +128,7 @@ def analyze_with_gpt(image_path, page_num):
 # 3. פונקציית עזר לפענוח דף בודד בעזרת Gemini + GPT גיבוי
 # =====================================================================
 def analyze_duct_sheet(image_path, page_num):
-    global client, current_key_index
+    global client
     print(f"\nמנתח את דף מדידות {page_num} בעזרת Gemini AI...")
     
     prompt_instruction = """
@@ -149,7 +162,7 @@ def analyze_duct_sheet(image_path, page_num):
                 mime_type="image/png"
             )
             
-            response = client.models.generate_content(
+            response = get_gemini_client().models.generate_content(
                 model='gemini-2.5-flash',
                 contents=[image_part, prompt_instruction]
             )
@@ -181,11 +194,6 @@ def analyze_duct_sheet(image_path, page_num):
             return result_text
             
         except (exceptions.ResourceExhausted, exceptions.ServiceUnavailable) as e:
-            if isinstance(e, exceptions.ResourceExhausted) and current_key_index < len(API_KEYS) - 1:
-                print(f"המפתח הנוכחי הגיע למגבלה. עובר למפתח הגיבוי...")
-                current_key_index += 1
-                client = genai.Client(api_key=API_KEYS[current_key_index])
-                continue
             if attempt < max_retries - 1:
                 wait_times = [60, 90]
                 wait_time = wait_times[attempt]
@@ -197,11 +205,6 @@ def analyze_duct_sheet(image_path, page_num):
         except Exception as e:
             error_str = str(e)
             if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
-                if current_key_index < len(API_KEYS) - 1:
-                    print(f"המפתח הנוכחי הגיע למגבלה. עובר למפתח הגיבוי...")
-                    current_key_index += 1
-                    client = genai.Client(api_key=API_KEYS[current_key_index])
-                    continue
                 if attempt < max_retries - 1:
                     wait_times = [60, 90]
                     wait_time = wait_times[attempt]
@@ -227,10 +230,14 @@ def analyze_duct_sheet(image_path, page_num):
 # 3. פונקציית עזר לייצור ה-DXF והניתוב
 # =====================================================================
 def add_marking_text(doc_obj, msp_obj, x, y, text_content):
+    """Add ASCII-only marking text to the DXF for CypCut compatibility."""
     layer_name = "5"
     if layer_name not in doc_obj.layers:
         doc_obj.layers.new(name=layer_name, dxfattribs={"color": 7})
-    txt = msp_obj.add_text(text_content, dxfattribs={"layer": layer_name, "height": 40.0})
+    safe_text = re.sub(r'[^\x20-\x7E]', '', str(text_content)).strip()
+    if not safe_text:
+        safe_text = "PART"
+    txt = msp_obj.add_text(safe_text, dxfattribs={"layer": layer_name, "height": 40.0})
     txt.set_placement((x, y), align=ezdxf.enums.TextEntityAlignment.CENTER)
 
 def process_production_and_dxf(json_data, page_num, dxf_output_folder):
@@ -353,14 +360,306 @@ def process_production_and_dxf(json_data, page_num, dxf_output_folder):
             print(f"[אחר / לא לייזר] חלק {part_id}: סוג תוכנן כ-'{part_type}' - נשלח להרכבה/ייצור ידני.")
 
 # =====================================================================
-# 4. התוכנית הראשית - ממשק בחירת עמודים אינטראקטיבי
+# 5. Final DXF generation with connection-type allowances + V-Notches
+# =====================================================================
+
+SHEET_MAX_WIDTH = 1250
+SHEET_MAX_HEIGHT = 2500
+SEAM_ALLOWANCE_MM = 12
+
+CONNECTION_TYPE_MM = {
+    "ללא": 0,
+    "פלאנץ' 20": 20,
+    "פלאנץ' 30": 30,
+    "שיכטה": 12,
+    "פיטסבורג": 12,
+}
+
+
+def draw_corner_notches(msp, x0, y0, x1, y1, conn_type, allowance):
+    """Draw rectangular corner cutouts based on connection type for fold seams."""
+    if conn_type == "ללא" or allowance <= 0:
+        return
+    depth = allowance
+    corners = [
+        (x0, y0, x0 + depth, y0 + depth),
+        (x1 - depth, y0, x1, y0 + depth),
+        (x1 - depth, y1 - depth, x1, y1),
+        (x0, y1 - depth, x0 + depth, y1),
+    ]
+    for cx0, cy0, cx1, cy1 in corners:
+        msp.add_lwpolyline([
+            (cx0, cy0), (cx1, cy0), (cx1, cy1), (cx0, cy1), (cx0, cy0)
+        ])
+
+
+def draw_bend_lines_rect(doc, msp, x0, y0, x1, y1, bend_positions):
+    """Draw internal fold/bend lines on a dedicated BEND layer for press brake scoring."""
+    bend_layer = "BEND"
+    if bend_layer not in doc.layers:
+        doc.layers.new(name=bend_layer, dxfattribs={"color": 2})
+    for bx in bend_positions:
+        if x0 < bx < x1:
+            msp.add_line((bx, y0), (bx, y1), dxfattribs={"layer": bend_layer})
+
+
+def _split_kufsa_plates(w, h, length, allowance, part_id, prefix, conn_type, output_folder):
+    """Split a box duct flat pattern into 4 individual side plates when exceeding sheet width."""
+    plates = [
+        (f"{part_id}_Bot", w, length),
+        (f"{part_id}_Right", h, length),
+        (f"{part_id}_Top", w, length),
+        (f"{part_id}_Left", h, length),
+    ]
+    for plate_name, pw, pl in plates:
+        aw = pw + 2 * allowance
+        ah = pl + 2 * allowance
+        doc = ezdxf.new(dxfversion="R2010")
+        msp = doc.modelspace()
+        msp.add_lwpolyline([(0, 0), (aw, 0), (aw, ah), (0, ah), (0, 0)])
+        draw_corner_notches(msp, 0, 0, aw, ah, conn_type, allowance)
+        add_marking_text(doc, msp, aw / 2, ah / 2, plate_name)
+        safe_plate = re.sub(r'[^\w\-]', '_', plate_name)
+        fn = f"{prefix}_{safe_plate}_final.dxf"
+        doc.saveas(os.path.join(output_folder, fn))
+        print(f"  [Final DXF] {plate_name}: {aw}x{ah}mm (split, {conn_type} +{allowance}mm) -> {fn}")
+
+
+def _split_maavar_plates(w, h, w2, h2, length, allowance, part_id, prefix, conn_type, output_folder):
+    """Split a transition/trapezoid into 4 side plates when exceeding sheet width."""
+    plates = [
+        (f"{part_id}_Front", w, length),
+        (f"{part_id}_Back", w2, length),
+        (f"{part_id}_SideA", (w + w2) // 2, length),
+        (f"{part_id}_SideB", (w + w2) // 2, length),
+    ]
+    for plate_name, pw, pl in plates:
+        aw = pw + 2 * allowance
+        ah = pl + 2 * allowance
+        doc = ezdxf.new(dxfversion="R2010")
+        msp = doc.modelspace()
+        msp.add_lwpolyline([(0, 0), (aw, 0), (aw, ah), (0, ah), (0, 0)])
+        draw_corner_notches(msp, 0, 0, aw, ah, conn_type, allowance)
+        add_marking_text(doc, msp, aw / 2, ah / 2, plate_name)
+        safe_plate = re.sub(r'[^\w\-]', '_', plate_name)
+        fn = f"{prefix}_{safe_plate}_final.dxf"
+        doc.saveas(os.path.join(output_folder, fn))
+        print(f"  [Final DXF] {plate_name}: {aw}x{ah}mm (split, {conn_type} +{allowance}mm) -> {fn}")
+
+
+def process_final_dxf(row, output_folder):
+    """
+    Generate a final DXF for a single React row, applying connection-type
+    allowance expansion, structural corner notches, and bend line marking.
+
+    Sheet constraint: 2500x1250mm. Parts exceeding 1250mm width are split
+    into individual side plates.
+
+    Args:
+        row: dict -- a React RowData object (dimensions in METERS, converted to mm here).
+        output_folder: str -- where to save the .dxf file.
+    """
+    conn_type = row.get("connectionType", "ללא")
+    allowance = CONNECTION_TYPE_MM.get(conn_type, 0)
+
+    part_type = row.get("type", "קטע ישר")
+    part_id = row.get("partNumber", "unknown")
+
+    # Convert from meters to mm
+    w = round(row.get("width1", 0) * 1000)
+    h = round(row.get("height1", 0) * 1000)
+    length = round(row.get("length", 0) * 1000)
+    w2 = round(row.get("width2", 0) * 1000)
+    h2 = round(row.get("height2", 0) * 1000)
+    r_small = round(row.get("rSmall", 0) * 1000)
+    r_big = round(row.get("rBig", 0) * 1000)
+
+    prefix = part_id.replace("/", "_").replace(" ", "_")
+
+    if part_type in ["קטע ישר"]:
+        flat_w = 2 * (w + h)
+        if flat_w > SHEET_MAX_WIDTH:
+            print(f"  [Final DXF] {part_id}: flat {flat_w}mm > {SHEET_MAX_WIDTH}mm, splitting into 4 plates")
+            _split_kufsa_plates(w, h, length, allowance, part_id, prefix, conn_type, output_folder)
+            return
+
+        bw = flat_w + 2 * allowance
+        bh = length + 2 * allowance
+        doc = ezdxf.new(dxfversion="R2010")
+        msp = doc.modelspace()
+        msp.add_lwpolyline([(0, 0), (bw, 0), (bw, bh), (0, bh), (0, 0)])
+        draw_corner_notches(msp, 0, 0, bw, bh, conn_type, allowance)
+
+        bl1 = allowance + w
+        bl2 = allowance + w + h
+        bl3 = allowance + 2 * w + h
+        draw_bend_lines_rect(doc, msp, 0, 0, bw, bh, [bl1, bl2, bl3])
+
+        add_marking_text(doc, msp, bw / 2, bh / 2, str(part_id))
+        fn = f"{prefix}_{conn_type.replace(' ', '_')}_final.dxf"
+        doc.saveas(os.path.join(output_folder, fn))
+        print(f"  [Final DXF] {part_id}: {bw}x{bh}mm allowance={allowance}mm -> {fn}")
+
+    elif part_type in ["קשת"]:
+        r_inner = r_small if r_small > 0 else 150
+        r_outer = r_big if r_big > r_inner else r_inner + w
+        h_dxf = h + 2 * allowance
+
+        # 1. Cheek (arc)
+        doc_cheek = ezdxf.new(dxfversion="R2010")
+        msp_cheek = doc_cheek.modelspace()
+        msp_cheek.add_arc((0, 0), radius=r_inner, start_angle=0, end_angle=90)
+        msp_cheek.add_arc((0, 0), radius=r_outer, start_angle=0, end_angle=90)
+        msp_cheek.add_line((r_inner, 0), (r_outer, 0))
+        msp_cheek.add_line((0, r_inner), (0, r_outer))
+        r_mid = (r_inner + r_outer) / 2
+        tx = r_mid * math.cos(math.radians(45))
+        ty = r_mid * math.sin(math.radians(45))
+        add_marking_text(doc_cheek, msp_cheek, tx, ty, str(part_id))
+        fn_cheek = f"{prefix}_Kashet_Dofan_final.dxf"
+        doc_cheek.saveas(os.path.join(output_folder, fn_cheek))
+
+        # 2. Heel (outer rect)
+        len_outer = (2 * math.pi * r_outer) / 4 + 2 * allowance
+        doc_heel = ezdxf.new(dxfversion="R2010")
+        msp_heel = doc_heel.modelspace()
+        msp_heel.add_lwpolyline([(0, 0), (len_outer, 0), (len_outer, h_dxf), (0, h_dxf), (0, 0)])
+        draw_corner_notches(msp_heel, 0, 0, len_outer, h_dxf, conn_type, allowance)
+        add_marking_text(doc_heel, msp_heel, len_outer / 2, h_dxf / 2, str(part_id))
+        fn_heel = f"{prefix}_Kashet_Gav_final.dxf"
+        doc_heel.saveas(os.path.join(output_folder, fn_heel))
+
+        # 3. Throat (inner rect)
+        len_inner = (2 * math.pi * r_inner) / 4 + 2 * allowance
+        doc_throat = ezdxf.new(dxfversion="R2010")
+        msp_throat = doc_throat.modelspace()
+        msp_throat.add_lwpolyline([(0, 0), (len_inner, 0), (len_inner, h_dxf), (0, h_dxf), (0, 0)])
+        draw_corner_notches(msp_throat, 0, 0, len_inner, h_dxf, conn_type, allowance)
+        add_marking_text(doc_throat, msp_throat, len_inner / 2, h_dxf / 2, str(part_id))
+        fn_throat = f"{prefix}_Kashet_Beten_final.dxf"
+        doc_throat.saveas(os.path.join(output_folder, fn_throat))
+
+        print(f"  [Final DXF] {part_id}: 3 kashet files ({conn_type} +{allowance}mm)")
+
+    elif part_type in ["מעבר"]:
+        slope = math.sqrt(length**2 + ((w2 - w) / 2)**2)
+        max_dim = max(w, w2, slope)
+        if max_dim > SHEET_MAX_WIDTH:
+            print(f"  [Final DXF] {part_id}: max dim {max_dim}mm > {SHEET_MAX_WIDTH}mm, splitting into 4 plates")
+            _split_maavar_plates(w, h, w2, h2, length, allowance, part_id, prefix, conn_type, output_folder)
+            return
+
+        offset = (w2 - w) / 2
+        aw = allowance
+        doc = ezdxf.new(dxfversion="R2010")
+        msp = doc.modelspace()
+        points = [
+            (-aw, -aw),
+            (w + aw, -aw),
+            (w + offset + aw, slope + aw),
+            (offset - aw, slope + aw),
+            (-aw, -aw),
+        ]
+        msp.add_lwpolyline(points)
+        draw_corner_notches(msp, -aw, -aw, w + offset + aw, slope + aw, conn_type, allowance)
+        add_marking_text(doc, msp, (w / 2) + (offset / 2), slope / 2, str(part_id))
+        fn = f"{prefix}_Maavar_final.dxf"
+        doc.saveas(os.path.join(output_folder, fn))
+        print(f"  [Final DXF] {part_id}: maavar ({conn_type} +{allowance}mm)")
+    else:
+        print(f"  [Final DXF] {part_id}: type '{part_type}' -- no auto geometry")
+
+
+# =====================================================================
+# 6. Flask HTTP API -- React POST -> Python generates final DXFs
+# =====================================================================
+
+def create_flask_app():
+    """Create a Flask app with CORS for React integration."""
+    if not FLASK_AVAILABLE:
+        print("Flask not installed. Run: pip install flask flask-cors")
+        return None
+
+    app = Flask(__name__)
+    CORS(app)
+
+    @app.route("/api/health", methods=["GET"])
+    def health():
+        return jsonify({"status": "ok", "message": "Sharara DXF engine running"})
+
+    @app.route("/api/export-dxf", methods=["POST"])
+    def export_dxf():
+        """
+        Expects JSON body:
+        {
+            "rows": [ { RowData }, ... ],
+            "projectName": "Shve Tzion #113",
+            "clientName": "Ali Sharara Ltd",
+            "productionConfig": { "slikAllowance": 12, ... }
+        }
+        """
+        data = request.get_json()
+        if not data or "rows" not in data:
+            return jsonify({"error": "Missing 'rows' in request body"}), 400
+
+        rows = data["rows"]
+        client_name = data.get("clientName", "PDF Import")
+        project_name = data.get("projectName", "Export")
+        prod_config = data.get("productionConfig", {})
+
+        # Build output folder
+        ts = datetime.now().strftime("%Y-%m-%d_%H-%M")
+        safe_client = sanitize_folder_name(client_name)
+        safe_project = sanitize_folder_name(project_name)
+        out_folder = os.path.join(
+            laser_dxf_outputs_root, safe_client,
+            f"{safe_project}", "final", ts
+        )
+        os.makedirs(out_folder, exist_ok=True)
+
+        generated = []
+        for row in rows:
+            # Inject vNotchDepth from productionConfig
+            row["vNotchDepth"] = prod_config.get("vNotchDepth", 7)
+            try:
+                process_final_dxf(row, out_folder)
+                generated.append(row.get("partNumber", "?"))
+            except Exception as e:
+                print(f"  Error for {row.get('partNumber', '?')}: {e}")
+
+        return jsonify({
+            "status": "ok",
+            "outputFolder": out_folder,
+            "generated": len(generated),
+            "parts": generated,
+        })
+
+    return app
+
+
+# =====================================================================
+# 4. Main entry point
 # =====================================================================
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="PDF duct measurement parser → DXF + Firebase sync")
+    parser = argparse.ArgumentParser(description="PDF duct measurement parser and DXF engine")
     parser.add_argument("pdf_file", nargs="?", default=None, help="Path to PDF file (interactive prompt if omitted)")
     parser.add_argument("--client", default="Ali Sharara Ltd", help="Client name for Firestore key (default: Ali Sharara Ltd)")
     parser.add_argument("--project", default="", help="Project name for Firestore key (auto-detected from PDF if omitted)")
+    parser.add_argument("--serve", action="store_true", help="Start the lightweight HTTP Flask server")
     cli_args = parser.parse_args()
+
+    # ─── --serve mode: start Flask server immediately ───
+    if cli_args.serve:
+        if not FLASK_AVAILABLE:
+            print("❌ Cannot start server — Flask not installed.")
+            print("   Run: pip install flask flask-cors")
+            exit(1)
+        flask_app = create_flask_app()
+        print("\n🚀 Sharara DXF API running on http://localhost:5555")
+        print("   POST /api/export-dxf  —  generate final DXFs with allowances")
+        print("   GET  /api/health      —  health check\n")
+        flask_app.run(host="0.0.0.0", port=5555, debug=True)
+        exit(0)
 
     # Override pdf_path if provided via CLI
     if cli_args.pdf_file:

@@ -315,7 +315,7 @@ export default function SummaryPage({
   );
 
   return (
-    <div className="landscape-print summary-print-page print-document" style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #cbd5e1', padding: '32px', width: '100%', maxWidth: '100%', margin: '0 auto', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' }}>
+    <div className="landscape-print summary-print-page print-document" style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #cbd5e1', padding: '32px', width: '100%', maxWidth: '100%', margin: '0 auto', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
       <div className="print-orientation-spacer landscape-print" aria-hidden="true" />
 
       <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '8px', gap: '6px' }}>
@@ -367,7 +367,7 @@ export default function SummaryPage({
         <span>הופק באמצעות מערכת עלי שרארה בע"מ - ממוחשב</span>
         <span>
           {companySignature ? (
-            <img src={companySignature} alt="חתימה" style={{ maxHeight: '50px', maxWidth: '180px', objectFit: 'contain' }} />
+            <img src={companySignature} alt="חתימה" style={{ maxHeight: '100px', maxWidth: '360px', objectFit: 'contain' }} />
           ) : (
             'חתימת העסק ומבצע הריכוז'
           )}

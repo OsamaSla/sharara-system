@@ -132,6 +132,7 @@ def build_row(part, page_num):
         "notes": notes,
         "manualThickness": 0,
         "rBig2": 0,
+        "connectionType": "ללא",
         "productionMode": "automatic",
         "productionOverrides": {},
     }

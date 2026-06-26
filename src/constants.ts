@@ -1,4 +1,4 @@
-import type { FormulaConfig } from './types';
+import type { FormulaConfig, ProductionConfig } from './types';
 
 // ──────────────────────────────────────────────
 // נתוני ברירת מחדל — לקוחות
@@ -29,4 +29,16 @@ export const DEFAULT_FORMULAS: FormulaConfig = {
   'חיבור גמיש': '0',
   'צינור עגול': '(PI * width1 * length) + (dofan * width1 * height1)',
   'לאמד S': '2 * (width1 + height1) * (length + (PI / 2) * (rSmall + rBig2))',
+};
+
+// ──────────────────────────────────────────────
+// נתוני ברירת מחדל — הגדרות ייצור
+// ──────────────────────────────────────────────
+
+export const DEFAULT_PRODUCTION_CONFIG: ProductionConfig = {
+  slikAllowance: 12,
+  pittsburghAllowance: 12,
+  vNotchDepth: 7,
+  flange20: 20,
+  flange30: 30,
 };

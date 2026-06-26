@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import ProductionPartSketch from '../ProductionPartSketch';
-import type { RowData, Sheet } from '../types';
+import type { RowData, Sheet, ConnectionType } from '../types';
 
 function SketchThumb({ type, notes, w = 30, h = 22 }: { type: string; notes?: string; w?: number; h?: number }) {
-  const row = { type, notes: notes || '', width1: 0, height1: 0, length: 0, rSmall: 0, rBig: 0, width2: 0, height2: 0, panels: 0, dofan: 0, partNumber: '', acoustic: false, external: false, manualThickness: 0, id: '', flexible: 0, adapterType: 'ללא', adapterQty: 0, shatuzar: false, sharshuriType: 'ללא', rBig2: 0 } as RowData;
+  const row = { type, notes: notes || '', width1: 0, height1: 0, length: 0, rSmall: 0, rBig: 0, width2: 0, height2: 0, panels: 0, dofan: 0, partNumber: '', acoustic: false, external: false, manualThickness: 0, id: '', flexible: 0, adapterType: 'ללא', adapterQty: 0, shatuzar: false, sharshuriType: 'ללא', rBig2: 0, connectionType: 'ללא' } as RowData;
   return <ProductionPartSketch row={row} width={w} height={h} />;
 }
 
@@ -74,6 +74,14 @@ export interface MeasurementPageProps {
   // Export
   handlePrint: () => void;
 
+  // DXF export
+  selectedClientKey: string;
+  isNewClient: boolean;
+  clientDetails: { name: string };
+  isNewProject: boolean;
+  newProjectName: string;
+  productionConfig: Record<string, number>;
+
   // Calculations
   calculateThickness: (w: number, h: number, manual: number) => number;
   calculateArea: (row: RowData) => number;
@@ -122,176 +130,128 @@ export default function MeasurementPage({
   handleRedo,
   pushToHistory,
   handlePrint,
+  selectedClientKey,
+  selectedProject,
+  isNewClient,
+  clientDetails,
+  isNewProject,
+  newProjectName,
+  productionConfig,
   calculateThickness,
   calculateArea,
   getPrice,
   getRowWarnings,
 }: MeasurementPageProps) {
+  const [dxfLoading, setDxfLoading] = useState(false);
+  const [dxfResult, setDxfResult] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  const handleExportDxf = async () => {
+    alert('DXF Export Triggered!');
+    const sanitize = (s: string) => s.replace(/[#!@\$%^&*()+=\[\]{};:'"\\|,.<>\/?]/g, '').trim();
+    const clientName = sanitize((isNewClient ? clientDetails.name : selectedClientKey) || clientDetails.name || selectedClientKey || 'Ali Sharara Ltd');
+    const projectName = sanitize((isNewProject ? newProjectName : selectedProject) || newProjectName || selectedProject || 'Shve Tzion 113');
+    const payload = {
+      rows: activeSheet.rows,
+      clientName: clientName.trim(),
+      projectName: projectName.trim(),
+      productionConfig,
+    };
+    console.log('Sending DXF Payload:', payload);
+    setDxfLoading(true);
+    setDxfResult(null);
+    try {
+      const res = await fetch('http://localhost:5555/api/export-dxf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (res.ok && data.status === 'ok') {
+        const count = data.generated;
+        setDxfResult({ ok: true, msg: 'קבצי ה-DXF נוצרו בהצלחה! (' + count + ' קבצים)' });
+      } else {
+        setDxfResult({ ok: false, msg: data.error || 'שגיאה לא ידועה מהשרת' });
+      }
+    } catch (err: any) {
+      setDxfResult({ ok: false, msg: `שגיאת חיבור לשרת: ${err.message}` });
+    } finally {
+      setDxfLoading(false);
+    }
+  };
+
+  const btnStyle: React.CSSProperties = { backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '4px 8px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#ffffff', fontSize: '11px', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 };
+  const ctrlBtn: React.CSSProperties = { color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 };
+
   return (
-    <div className="print-document" style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #cbd5e1', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', width: '100%' }}>
+      <div className="print-document" style={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #cbd5e1', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', width: '100%', overflow: 'hidden' }}>
 
-      <div className="measure-header" style={{ backgroundColor: '#1e293b', color: '#ffffff', padding: '12px 16px', borderTopLeftRadius: '7px', borderTopRightRadius: '7px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'nowrap' }}>
+      {/* Single dark header — LEFT: buttons | CENTER: parts | RIGHT: sheet+undo */}
+      <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#1e293b', color: '#ffffff', padding: '8px 10px', borderTopLeftRadius: '7px', borderTopRightRadius: '7px', gap: '10px' }}>
 
-        {/* קבוצה שמאלית: ניהול דפים */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start', flexShrink: 0 }}>
-          <div style={{ display: 'flex', gap: '6px' }}>
-            <button onClick={addSheet} style={{ backgroundColor: '#475569', color: '#ffffff', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>+ דף חדש</button>
-            {sheets.length > 1 && (
-              <button
-                onClick={() => deleteSheet(activeSheetId)}
-                style={{ backgroundColor: '#ef4444', color: '#ffffff', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '3px' }}
-                title="מחק דף נוכחי"
-              >
-                <Trash2 size={12} /> מחק
-              </button>
-            )}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'nowrap' }}>
-            {sheets.length <= 1 ? (
-              sheets.map(s => (
-                editingSheetId === s.id ? (
-                  <input
-                    key={s.id}
-                    autoFocus
-                    value={editingSheetName}
-                    onChange={(e) => setEditingSheetName(e.target.value)}
-                    onBlur={() => {
-                      if (editingSheetName.trim() !== '') {
-                        pushToHistory(sheets);
-                        setSheets(sheets.map(sh => sh.id === s.id ? { ...sh, name: editingSheetName.trim() } : sh));
-                      }
-                      setEditingSheetId(null);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-                      else if (e.key === 'Escape') setEditingSheetId(null);
-                    }}
-                    style={{ padding: '3px 6px', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', border: '2px solid #60a5fa', fontWeight: 'bold', fontSize: '11px', width: '80px', outline: 'none' }}
-                  />
-                ) : (
-                  <div
-                    key={s.id}
-                    onClick={() => setActiveSheetId(s.id)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '2px', padding: '4px 6px', borderRadius: '4px', backgroundColor: s.id === activeSheetId ? '#3b82f6' : '#475569', color: '#ffffff', border: s.id === activeSheetId ? '2px solid #60a5fa' : '1px solid #64748b', fontWeight: 'bold', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                  >
-                    <span>{s.name}</span>
-                    <span style={{ fontSize: '9px', opacity: 0.7, backgroundColor: 'rgba(255,255,255,0.15)', padding: '0 4px', borderRadius: '8px' }}>{s.rows.length}</span>
-                    <span onClick={(e) => { e.stopPropagation(); setEditingSheetId(s.id); setEditingSheetName(s.name); }} title="עריכת שם" style={{ cursor: 'pointer', fontSize: '10px', opacity: 0.7, marginLeft: '2px', padding: '0 2px' }}>&#9998;</span>
-                  </div>
-                )
-              ))
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <select
-                  value={activeSheetId}
-                  onChange={(e) => setActiveSheetId(e.target.value)}
-                  style={{ padding: '4px 8px', borderRadius: '4px', backgroundColor: '#334155', color: '#ffffff', border: '1px solid #475569', fontWeight: 'bold', fontSize: '11px' }}
-                >
-                  {sheets.map(s => <option key={s.id} value={s.id}>{s.name} ({s.rows.length})</option>)}
-                </select>
-                <span
-                  onClick={() => { setEditingSheetId(activeSheetId); setEditingSheetName(sheets.find(s => s.id === activeSheetId)?.name || ''); }}
-                  title="עריכת שם הדף הפעיל"
-                  style={{ cursor: 'pointer', fontSize: '12px', color: '#94a3b8', padding: '2px' }}
-                >
-                  &#9998;
-                </span>
-              </div>
-            )}
-          </div>
+        {/* LEFT: stacked print + DXF */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0, width: '176px' }}>
+          <button onClick={handlePrint} style={{ backgroundColor: '#2563eb', color: '#ffffff', border: 'none', padding: '6px 0', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', width: '100%' }}>הדפסה / PDF</button>
+          <button onClick={handleExportDxf} style={{ backgroundColor: dxfLoading ? '#64748b' : '#c2410c', color: '#ffffff', border: 'none', padding: '6px 0', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', width: '100%' }}>
+            {dxfLoading ? '⏳ מייצר...' : '🔧 הוצאת קבצי DXF ללייזר'}
+          </button>
         </div>
 
-        {/* קבוצה מרכזית: צורות החלקים */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center', flexGrow: 1 }}>
-          <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#94a3b8' }}>הוסף חלק:</span>
-          <div className="measure-part-buttons" style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, auto)', gap: '6px', border: '2px solid #3b82f6', borderRadius: '8px', padding: '6px' }}>
-              <button onClick={() => openAddPartForm('קטע ישר')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff', fontSize: '12px', fontWeight: 'bold' }}>
-                <SketchThumb type="קטע ישר" />
-                <span>קטע ישר</span>
-              </button>
-              <button onClick={() => openAddPartForm('קשת')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff', fontSize: '12px', fontWeight: 'bold' }}>
-                <SketchThumb type="קשת" />
-                <span>קשת</span>
-              </button>
-              <button onClick={() => openAddPartForm('מעבר')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff', fontSize: '12px', fontWeight: 'bold' }}>
-                <SketchThumb type="מעבר" />
-                <span>מעבר</span>
-              </button>
-              <button onClick={() => openAddPartForm('קטע ישר', 'לאמד S')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff', fontSize: '12px', fontWeight: 'bold' }}>
-                <SketchThumb type="קטע ישר" notes="לאמד S" />
-                <span>לאמד S</span>
-              </button>
-              <button onClick={() => openAddPartForm('קטע ישר', 'צינור עגול')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff', fontSize: '12px', fontWeight: 'bold' }}>
-                <SketchThumb type="קטע ישר" notes="צינור עגול" />
-                <span>צינור</span>
-              </button>
-              <button onClick={() => openAddPartForm('קטע ישר', 'קופסת פיזור')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff', fontSize: '12px', fontWeight: 'bold' }}>
-                <SketchThumb type="קטע ישר" notes="קופסת פיזור" />
-                <span>קופסה</span>
-              </button>
-              <button onClick={() => openAddPartForm('קטע ישר', 'מדף אש')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff', fontSize: '12px', fontWeight: 'bold', gridColumn: 'span 2', justifyContent: 'center' }}>
-                <SketchThumb type="קטע ישר" notes="מדף אש" />
-                <span>מדף אש</span>
-              </button>
+        {/* CENTER: part selector grids */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, justifyContent: 'center' }}>
+          <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#94a3b8', flexShrink: 0 }}>הוסף חלק:</span>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, auto)', gap: '4px', border: '2px solid #3b82f6', borderRadius: '8px', padding: '5px' }}>
+              <button onClick={() => openAddPartForm('קטע ישר')} style={btnStyle}><SketchThumb type="קטע ישר" /><span>קטע ישר</span></button>
+              <button onClick={() => openAddPartForm('קשת')} style={btnStyle}><SketchThumb type="קשת" /><span>קשת</span></button>
+              <button onClick={() => openAddPartForm('מעבר')} style={btnStyle}><SketchThumb type="מעבר" /><span>מעבר</span></button>
+              <button onClick={() => openAddPartForm('קטע ישר', 'לאמד S')} style={btnStyle}><SketchThumb type="קטע ישר" notes="לאמד S" /><span>לאמד S</span></button>
+              <button onClick={() => openAddPartForm('קטע ישר', 'צינור עגול')} style={btnStyle}><SketchThumb type="קטע ישר" notes="צינור עגול" /><span>צינור</span></button>
+              <button onClick={() => openAddPartForm('קטע ישר', 'קופסת פיזור')} style={btnStyle}><SketchThumb type="קטע ישר" notes="קופסת פיזור" /><span>קופסה</span></button>
+              <button onClick={() => openAddPartForm('קטע ישר', 'מדף אש')} style={{ ...btnStyle, gridColumn: 'span 2', justifyContent: 'center' }}><SketchThumb type="קטע ישר" notes="מדף אש" /><span>מדף אש</span></button>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, auto)', gap: '6px', border: '2px solid #10b981', borderRadius: '8px', padding: '6px' }}>
-              <button onClick={() => openAddPartForm('שתוצר')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff', fontSize: '12px', fontWeight: 'bold' }}>
-                <svg width="30" height="22" viewBox="0 0 60 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="5" y="8" width="50" height="28" rx="2" fill="#e5e7eb" stroke="#374151" strokeWidth="1.5"/>
-                  <line x1="30" y1="8" x2="30" y2="36" stroke="#ef4444" strokeWidth="1.2"/>
-                  <rect x="22" y="16" width="16" height="12" rx="1" fill="#fef2f2" stroke="#ef4444" strokeWidth="0.8"/>
-                  <line x1="26" y1="22" x2="34" y2="22" stroke="#ef4444" strokeWidth="0.8"/>
-                </svg>
-                <span>שתוצר</span>
-              </button>
-              <button onClick={() => openAddPartForm('מתאם')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff', fontSize: '12px', fontWeight: 'bold' }}>
-                <svg width="30" height="22" viewBox="0 0 60 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="5" y="10" width="20" height="24" rx="2" fill="#e5e7eb" stroke="#374151" strokeWidth="1.5"/>
-                  <ellipse cx="45" cy="22" rx="10" ry="12" fill="#e5e7eb" stroke="#374151" strokeWidth="1.5"/>
-                  <line x1="25" y1="14" x2="35" y2="12" stroke="#374151" strokeWidth="1" strokeDasharray="2,1.5"/>
-                  <line x1="25" y1="30" x2="35" y2="32" stroke="#374151" strokeWidth="1" strokeDasharray="2,1.5"/>
-                </svg>
-                <span>מתאם</span>
-              </button>
-              <button onClick={() => openAddPartForm('שרשורי')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff', fontSize: '12px', fontWeight: 'bold' }}>
-                <svg width="30" height="22" viewBox="0 0 60 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <line x1="30" y1="4" x2="30" y2="40" stroke="#374151" strokeWidth="2.5"/>
-                  <line x1="27" y1="8" x2="33" y2="8" stroke="#9ca3af" strokeWidth="0.8"/>
-                  <line x1="27" y1="12" x2="33" y2="12" stroke="#9ca3af" strokeWidth="0.8"/>
-                  <line x1="27" y1="16" x2="33" y2="16" stroke="#9ca3af" strokeWidth="0.8"/>
-                  <line x1="27" y1="20" x2="33" y2="20" stroke="#9ca3af" strokeWidth="0.8"/>
-                  <line x1="27" y1="24" x2="33" y2="24" stroke="#9ca3af" strokeWidth="0.8"/>
-                  <line x1="27" y1="28" x2="33" y2="28" stroke="#9ca3af" strokeWidth="0.8"/>
-                  <line x1="27" y1="32" x2="33" y2="32" stroke="#9ca3af" strokeWidth="0.8"/>
-                  <rect x="22" y="2" width="16" height="5" rx="1" fill="#d1d5db" stroke="#374151" strokeWidth="1"/>
-                  <rect x="22" y="37" width="16" height="5" rx="1" fill="#d1d5db" stroke="#374151" strokeWidth="1"/>
-                </svg>
-                <span>שרשורי</span>
-              </button>
-              <button onClick={() => openAddPartForm('חיבור גמיש')} style={{ backgroundColor: '#334155', border: '1px solid #475569', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#ffffff', fontSize: '12px', fontWeight: 'bold' }}>
-                <svg width="30" height="22" viewBox="0 0 60 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="2" y="10" width="12" height="24" rx="1" fill="#e5e7eb" stroke="#374151" strokeWidth="1.2"/>
-                  <rect x="46" y="10" width="12" height="24" rx="1" fill="#e5e7eb" stroke="#374151" strokeWidth="1.2"/>
-                  <path d="M14,14 C20,14 20,34 26,34 C32,34 32,14 38,14 C42,14 44,14 46,14" fill="none" stroke="#374151" strokeWidth="1.2"/>
-                  <path d="M14,18 C20,18 20,30 26,30 C32,30 32,18 38,18 C42,18 44,18 46,18" fill="none" stroke="#9ca3af" strokeWidth="0.6" strokeDasharray="2,1.5"/>
-                  <path d="M14,22 C20,22 20,26 26,26 C32,26 32,22 38,22 C42,22 44,22 46,22" fill="none" stroke="#9ca3af" strokeWidth="0.6" strokeDasharray="2,1.5"/>
-                </svg>
-                <span>גמיש</span>
-              </button>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, auto)', gap: '4px', border: '2px solid #10b981', borderRadius: '8px', padding: '5px' }}>
+              <button onClick={() => openAddPartForm('שתוצר')} style={btnStyle}><svg width="22" height="16" viewBox="0 0 60 44" fill="none"><rect x="5" y="8" width="50" height="28" rx="2" fill="#e5e7eb" stroke="#374151" strokeWidth="1.5"/><line x1="30" y1="8" x2="30" y2="36" stroke="#ef4444" strokeWidth="1.2"/><rect x="22" y="16" width="16" height="12" rx="1" fill="#fef2f2" stroke="#ef4444" strokeWidth="0.8"/></svg><span>שתוצר</span></button>
+              <button onClick={() => openAddPartForm('מתאם')} style={btnStyle}><svg width="22" height="16" viewBox="0 0 60 44" fill="none"><rect x="5" y="10" width="20" height="24" rx="2" fill="#e5e7eb" stroke="#374151" strokeWidth="1.5"/><ellipse cx="45" cy="22" rx="10" ry="12" fill="#e5e7eb" stroke="#374151" strokeWidth="1.5"/><line x1="25" y1="14" x2="35" y2="12" stroke="#374151" strokeWidth="1" strokeDasharray="2,1.5"/><line x1="25" y1="30" x2="35" y2="32" stroke="#374151" strokeWidth="1" strokeDasharray="2,1.5"/></svg><span>מתאם</span></button>
+              <button onClick={() => openAddPartForm('שרשורי')} style={btnStyle}><svg width="22" height="16" viewBox="0 0 60 44" fill="none"><line x1="30" y1="4" x2="30" y2="40" stroke="#374151" strokeWidth="2.5"/><rect x="22" y="2" width="16" height="5" rx="1" fill="#d1d5db" stroke="#374151" strokeWidth="1"/><rect x="22" y="37" width="16" height="5" rx="1" fill="#d1d5db" stroke="#374151" strokeWidth="1"/></svg><span>שרשורי</span></button>
+              <button onClick={() => openAddPartForm('חיבור גמיש')} style={btnStyle}><svg width="22" height="16" viewBox="0 0 60 44" fill="none"><rect x="2" y="10" width="12" height="24" rx="1" fill="#e5e7eb" stroke="#374151" strokeWidth="1.2"/><rect x="46" y="10" width="12" height="24" rx="1" fill="#e5e7eb" stroke="#374151" strokeWidth="1.2"/><path d="M14,14 C20,14 20,34 26,34 C32,34 32,14 38,14 C42,14 44,14 46,14" fill="none" stroke="#374151" strokeWidth="1.2"/><path d="M14,18 C20,18 20,30 26,30 C32,30 32,18 38,18 C42,18 44,18 46,18" fill="none" stroke="#9ca3af" strokeWidth="0.6" strokeDasharray="2,1.5"/><path d="M14,22 C20,22 20,26 26,26 C32,26 32,22 38,22 C42,22 44,22 46,22" fill="none" stroke="#9ca3af" strokeWidth="0.6" strokeDasharray="2,1.5"/></svg><span>גמיש</span></button>
             </div>
           </div>
         </div>
 
-        {/* קבוצה ימנית: ביטול/שחזור + ייצוא */}
-        <div className="measure-actions" style={{ display: 'flex', gap: '4px', alignItems: 'center', flexShrink: 0 }}>
-          <button onClick={handleUndo} disabled={undoStack.length === 0} title="בטל (Ctrl+Z)" style={{ backgroundColor: undoStack.length === 0 ? '#0f172a' : '#475569', color: undoStack.length === 0 ? '#64748b' : '#ffffff', border: 'none', padding: '5px 8px', borderRadius: '4px', cursor: undoStack.length === 0 ? 'not-allowed' : 'pointer', fontSize: '11px', fontWeight: 'bold' }}>↩</button>
-          <button onClick={handleRedo} disabled={redoStack.length === 0} title="שחזור (Ctrl+Y)" style={{ backgroundColor: redoStack.length === 0 ? '#0f172a' : '#475569', color: redoStack.length === 0 ? '#64748b' : '#ffffff', border: 'none', padding: '5px 8px', borderRadius: '4px', cursor: redoStack.length === 0 ? 'not-allowed' : 'pointer', fontSize: '11px', fontWeight: 'bold' }}>↪</button>
-          <button onClick={handlePrint} style={{ backgroundColor: '#2563eb', color: '#ffffff', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>הדפסה / PDF</button>
+        {/* RIGHT: sheet tabs + add page + undo/redo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
+          {sheets.length <= 1 ? (
+            sheets.map(s => (
+              editingSheetId === s.id ? (
+                <input key={s.id} autoFocus value={editingSheetName} onChange={(e) => setEditingSheetName(e.target.value)} onBlur={() => { if (editingSheetName.trim() !== '') { pushToHistory(sheets); setSheets(sheets.map(sh => sh.id === s.id ? { ...sh, name: editingSheetName.trim() } : sh)); } setEditingSheetId(null); }} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); else if (e.key === 'Escape') setEditingSheetId(null); }} style={{ padding: '3px 6px', borderRadius: '4px', backgroundColor: '#ffffff', color: '#0f172a', border: '2px solid #60a5fa', fontWeight: 'bold', fontSize: '11px', width: '70px', outline: 'none' }} />
+              ) : (
+                <div key={s.id} onClick={() => setActiveSheetId(s.id)} style={{ display: 'flex', alignItems: 'center', gap: '2px', padding: '3px 6px', borderRadius: '4px', backgroundColor: s.id === activeSheetId ? '#3b82f6' : '#475569', color: '#ffffff', border: s.id === activeSheetId ? '2px solid #60a5fa' : '1px solid #64748b', fontWeight: 'bold', fontSize: '10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  <span>{s.name}</span>
+                  <span onClick={(e) => { e.stopPropagation(); setEditingSheetId(s.id); setEditingSheetName(s.name); }} style={{ cursor: 'pointer', fontSize: '9px', opacity: 0.7 }}>&#9998;</span>
+                </div>
+              )
+            ))
+          ) : (
+            <select value={activeSheetId} onChange={(e) => setActiveSheetId(e.target.value)} style={{ padding: '3px 6px', borderRadius: '4px', backgroundColor: '#334155', color: '#ffffff', border: '1px solid #475569', fontWeight: 'bold', fontSize: '10px' }}>
+              {sheets.map(s => <option key={s.id} value={s.id}>{s.name} ({s.rows.length})</option>)}
+            </select>
+          )}
+          <button onClick={addSheet} style={{ ...ctrlBtn, backgroundColor: '#475569' }}>+</button>
+          {sheets.length > 1 && (
+            <button onClick={() => { if (sheets.length <= 1) return; if (!confirm('למחוק את הדף הנוכחי?')) return; pushToHistory(sheets); const idx = sheets.findIndex(s => s.id === activeSheetId); const newSheets = sheets.filter(s => s.id !== activeSheetId); setSheets(newSheets); setActiveSheetId(newSheets[Math.min(idx, newSheets.length - 1)].id); }} style={{ ...ctrlBtn, backgroundColor: '#991b1b', color: '#fca5a5' }} title="מחק דף">&#128465;</button>
+          )}
+          <div style={{ width: '1px', height: '22px', backgroundColor: '#475569' }} />
+          <button onClick={handleUndo} disabled={undoStack.length === 0} style={{ ...ctrlBtn, backgroundColor: undoStack.length === 0 ? '#0f172a' : '#475569', color: undoStack.length === 0 ? '#64748b' : '#ffffff', cursor: undoStack.length === 0 ? 'not-allowed' : 'pointer' }}>↩</button>
+          <button onClick={handleRedo} disabled={redoStack.length === 0} style={{ ...ctrlBtn, backgroundColor: redoStack.length === 0 ? '#0f172a' : '#475569', color: redoStack.length === 0 ? '#64748b' : '#ffffff', cursor: redoStack.length === 0 ? 'not-allowed' : 'pointer' }}>↪</button>
         </div>
-
 
       </div>
+
+      {dxfResult && (
+        <div style={{ margin: '8px 16px 0', padding: '8px 16px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', backgroundColor: dxfResult.ok ? '#dcfce7' : '#fef2f2', color: dxfResult.ok ? '#166534' : '#991b1b', border: '1px solid ' + (dxfResult.ok ? '#86efac' : '#fca5a5') }}>
+          {dxfResult.ok ? '✓ ' : '✗ '}{dxfResult.msg}
+        </div>
+      )}
 
       {/* טופס הוספת חלק ויזואלי נוח ורחב */}
       {isAddingPart && (
@@ -525,6 +485,22 @@ export default function MeasurementPage({
                   </div>
                 )}
 
+                {/* סוג חיבור */}
+                <div style={{ minWidth: '120px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>סוג חיבור:</label>
+                  <select
+                    value={newPartData.connectionType || 'ללא'}
+                    onChange={(e) => setNewPartData({...newPartData, connectionType: e.target.value as ConnectionType})}
+                    style={{ width: '100%', padding: '6px', border: '1px solid #cbd5e1', borderRadius: '4px', fontWeight: '600', backgroundColor: newPartData.connectionType && newPartData.connectionType !== 'ללא' ? '#fef3c7' : '#ffffff' }}
+                  >
+                    <option value="ללא">ללא</option>
+                    <option value="פלאנץ' 20">פלאנץ' 20</option>
+                    <option value="פלאנץ' 30">פלאנץ' 30</option>
+                    <option value="שיכטה">שיכטה</option>
+                    <option value="פיטסבורג">פיטסבורג</option>
+                  </select>
+                </div>
+
                 {/* הערות */}
                 <div style={{ flexGrow: 1, minWidth: '150px' }}>
                   <label style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', display: 'block', marginBottom: '2px' }}>הערות:</label>
@@ -627,6 +603,7 @@ export default function MeasurementPage({
                     <th style={{ padding: '3px 2px', textAlign: 'center', width: '28px' }}>מס'</th>
                     <th style={{ padding: '3px 2px', textAlign: 'center', width: '55px' }}>מס' חלק</th>
                     <th style={{ padding: '3px 2px', width: '110px' }}>סוג חלק</th>
+                    <th style={{ padding: '3px 2px', width: '95px' }}>סוג חיבור</th>
                     <th style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: '#f8fafc', width: '55px' }}>רוחב</th>
                     <th style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: '#f8fafc', width: '55px' }}>גובה</th>
                     <th style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: hasTransition ? '#e2f5ec' : 'transparent', width: hasTransition ? '55px' : '0' }}>{hasTransition ? 'רוחב 2' : ''}</th>
@@ -654,6 +631,19 @@ export default function MeasurementPage({
                       </td>
                       <td style={{ padding: '3px 2px', fontWeight: 500, color: '#0f172a' }}>
                         {row.notes && ['לאמד S','צינור עגול','קופסת פיזור','מדף אש'].includes(row.notes) ? row.notes : row.type}
+                      </td>
+                      <td style={{ padding: '3px 2px' }}>
+                        <select
+                          value={row.connectionType || 'ללא'}
+                          onChange={(e) => updateRow(row.id, 'connectionType', e.target.value as ConnectionType)}
+                          style={{ width: '88px', padding: '2px', border: '1px solid #cbd5e1', borderRadius: '3px', fontSize: '11px', backgroundColor: row.connectionType && row.connectionType !== 'ללא' ? '#fef3c7' : '#ffffff', color: '#0f172a', boxSizing: 'border-box', cursor: 'pointer' }}
+                        >
+                          <option value="ללא">ללא</option>
+                          <option value="פלאנץ' 20">פלאנץ' 20</option>
+                          <option value="פלאנץ' 30">פלאנץ' 30</option>
+                          <option value="שיכטה">שיכטה</option>
+                          <option value="פיטסבורג">פיטסבורג</option>
+                        </select>
                       </td>
                       <td style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: '#f8fafc' }}><input type="number" value={row.width1 || ''} onChange={(e) => updateRow(row.id, 'width1', Number(e.target.value))} style={{ width: '50px', padding: '2px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '3px', backgroundColor: '#ffffff', color: '#0f172a', boxSizing: 'border-box' }} /></td>
                       <td style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: '#f8fafc' }}><input type="number" value={row.height1 || ''} onChange={(e) => updateRow(row.id, 'height1', Number(e.target.value))} style={{ width: '50px', padding: '2px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '3px', backgroundColor: '#ffffff', color: '#0f172a', boxSizing: 'border-box' }} /></td>
@@ -911,7 +901,7 @@ export default function MeasurementPage({
 
       <div className="totals-bar" style={{ backgroundColor: '#0f172a', color: '#ffffff', padding: '14px 20px', display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 'bold', borderBottomLeftRadius: '7px', borderBottomRightRadius: '7px' }}>
         <span>סך הכל: {activeSheet.rows.length} חלקים | שטח בדף הנוכחי:</span>
-        <span style={{ color: '#3b82f6', fontSize: '16px' }}>{activeSheet.rows.reduce((s, r) => s + calculateArea(r), 0).toFixed(3)} מ"ר</span>
+        <span style={{ color: '#eab308', fontSize: '16px' }}>{activeSheet.rows.reduce((s, r) => s + calculateArea(r), 0).toFixed(3)} מ"ר</span>
       </div>
     </div>
   );

@@ -1,4 +1,22 @@
 // ─── Types ───
+export type ConnectionType = 'ללא' | 'פלאנץ\' 20' | 'פלאנץ\' 30' | 'שיכטה' | 'פיטסבורג';
+
+export interface ProductionConfig {
+  slikAllowance: number;
+  pittsburghAllowance: number;
+  vNotchDepth: number;
+  flange20: number;
+  flange30: number;
+}
+
+export const CONNECTION_TYPE_MAP: Record<ConnectionType, number> = {
+  'ללא': 0,
+  'פלאנץ\' 20': 20,
+  'פלאנץ\' 30': 30,
+  'שיכטה': 12,
+  'פיטסבורג': 12,
+};
+
 export interface RowData {
   id: string;
   partNumber: string;
@@ -23,6 +41,7 @@ export interface RowData {
   notes: string;
   manualThickness: number;
   rBig2: number;
+  connectionType: ConnectionType;
   productionMode: 'automatic' | 'manual';
   productionOverrides: {
     width1?: number;

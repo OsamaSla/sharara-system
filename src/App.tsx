@@ -8,10 +8,10 @@ import ProductionWorksheet from './ProductionWorksheet';
 import { db } from './firebase';
 import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import logoSrc from './assets/logo.png';
-import { EXISTING_DATA, DEFAULT_FORMULAS } from './constants';
+import { EXISTING_DATA, DEFAULT_FORMULAS, DEFAULT_PRODUCTION_CONFIG } from './constants';
 import { calculateThickness, calculateArea, getPrice as getPriceFromCalc, getRowWarnings, getDetailedSheetCosts as getDetailedSheetCostsFromCalc, getProjectTotals as getProjectTotalsFromCalc, getSubtotal as getSubtotalFromCalc, getSheetTotals, setFormulas as setFormulasCalc } from './calculations';
 
-import type { RowData, Sheet, PriceItem, FormulaConfig } from './types';
+import type { RowData, Sheet, PriceItem, FormulaConfig, ProductionConfig } from './types';
 import { formatDateTime } from './utils';
 import MeasurementPage from './pages/MeasurementPage';
 import SummaryPage from './pages/SummaryPage';
@@ -266,7 +266,8 @@ export default function App() {
     manualThickness: 0,
     rBig2: 0,
     panels: 0,
-    dofan: 0
+    dofan: 0,
+    connectionType: 'ללא'
   });
   const [quickQty, setQuickQty] = useState<number>(1);
   const [invoicePriceOverrides, setInvoicePriceOverrides] = useState<Record<string, number>>({});
@@ -309,11 +310,22 @@ export default function App() {
     } catch { return { ...DEFAULT_FORMULAS }; }
   });
 
+  const [productionConfig, setProductionConfig] = useState<ProductionConfig>(() => {
+    try {
+      const saved = localStorage.getItem('sharara_productionConfig');
+      return saved ? { ...DEFAULT_PRODUCTION_CONFIG, ...JSON.parse(saved) } : { ...DEFAULT_PRODUCTION_CONFIG };
+    } catch { return { ...DEFAULT_PRODUCTION_CONFIG }; }
+  });
+
   const saveFormula = (type: string) => {
     const updated = { ...formulas, [type]: formulaDrafts[type] };
     setFormulas(updated);
     localStorage.setItem('sharara_formulas', JSON.stringify(updated));
   };
+
+  useEffect(() => {
+    localStorage.setItem('sharara_productionConfig', JSON.stringify(productionConfig));
+  }, [productionConfig]);
 
   // אפקטים לשמירה אוטומטית בענן (Firestore)
   // Sheets are stored per-project under sheetsByProject: { "client|||project": Sheet[] }
@@ -334,7 +346,8 @@ export default function App() {
           projectDocNumbers,
           projectDocDates,
           producedProjects,
-          producedSnapshots
+          producedSnapshots,
+          productionConfig,
         }, { merge: true });
         setLastSaved(new Date());
       } catch (error) {
@@ -343,7 +356,7 @@ export default function App() {
     };
     const timer = setTimeout(saveData, 1500);
     return () => clearTimeout(timer);
-  }, [sheets, sheetsByProject, clientsData, pricesList, myCompanyDetails, projectDocNumbers, projectDocDates, producedProjects, producedSnapshots, isLoading]);
+  }, [sheets, sheetsByProject, clientsData, pricesList, myCompanyDetails, projectDocNumbers, projectDocDates, producedProjects, producedSnapshots, productionConfig, isLoading]);
 
   // Keep projectKeyRef in sync with the active client/project selection.
   // The save effect reads from this ref so it never fires on dropdown change.
@@ -627,6 +640,7 @@ export default function App() {
           if (data.producedProjects) setProducedProjects(data.producedProjects);
           if (data.producedSnapshots) setProducedSnapshots(data.producedSnapshots);
           if (data.sheetsByProject) setSheetsByProject(data.sheetsByProject);
+          if (data.productionConfig) setProductionConfig(data.productionConfig);
 
           // Load sheets per-project: search ALL keys in sheetsByProject map
           const clients = data.clientsData || {};
@@ -1568,6 +1582,47 @@ export default function App() {
               {/* ─── Formulas Table (טבלת נוסחאות) ─── */}
               {activeAdminSection === 'formulas' && (
                 <div className="formulas-admin-wrapper" style={{ backgroundColor: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', padding: '12px 16px', marginBottom: '8px' }}>
+                  {/* ─── הגדרות ייצור גלובליות ─── */}
+                  <div style={{ backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '6px', padding: '10px 14px', marginBottom: '12px' }}>
+                    <div style={{ fontWeight: 'bold', color: '#1e40af', marginBottom: '8px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      🔧 הגדרות ייצור גלובליות
+                    </div>
+                    <p style={{ fontSize: '10px', color: '#64748b', margin: '0 0 8px 0' }}>מידות התוספות (mm) עבור סוגי חיבורים — משפיעות על גודל גיליון הפח ב-DXF.</p>
+                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                      {([
+                        ['שיכטה', 'slikAllowance', 'mm'],
+                        ['פיטסבורג', 'pittsburghAllowance', 'mm'],
+                        ['V-Notch', 'vNotchDepth', 'mm'],
+                        ['פלאנץ\' 20', 'flange20', 'mm'],
+                        ['פלאנץ\' 30', 'flange30', 'mm'],
+                      ] as [string, keyof ProductionConfig, string][]).map(([label, key, unit]) => (
+                        <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <label style={{ fontSize: '10px', fontWeight: 'bold', color: '#475569' }}>{label}:</label>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={productionConfig[key]}
+                              onChange={(e) => setProductionConfig({ ...productionConfig, [key]: Number(e.target.value) })}
+                              style={{ width: '55px', padding: '4px 6px', border: '1px solid #93c5fd', borderRadius: '4px', fontSize: '12px', textAlign: 'center', backgroundColor: '#ffffff', color: '#0f172a', boxSizing: 'border-box' }}
+                            />
+                            <span style={{ fontSize: '10px', color: '#94a3b8' }}>{unit}</span>
+                          </div>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => {
+                          setProductionConfig({ ...DEFAULT_PRODUCTION_CONFIG });
+                          localStorage.setItem('sharara_productionConfig', JSON.stringify(DEFAULT_PRODUCTION_CONFIG));
+                        }}
+                        style={{ padding: '5px 10px', backgroundColor: '#e2e8f0', color: '#475569', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', height: 'fit-content' }}
+                      >
+                        ↺ איפוס
+                      </button>
+                    </div>
+                  </div>
+
                   <div style={{ fontWeight: 'bold', color: '#1e40af', marginBottom: '8px', fontSize: '14px' }}>
                     📐 טבלת נוסחאות — עריכת משוואות חישוב
                   </div>
@@ -2180,6 +2235,12 @@ export default function App() {
                 handleRedo={handleRedo}
                 pushToHistory={pushToHistory}
                 handlePrint={handlePrint}
+                selectedClientKey={selectedClientKey}
+                isNewClient={isNewClient}
+                clientDetails={clientDetails}
+                isNewProject={isNewProject}
+                newProjectName={newProjectName}
+                productionConfig={productionConfig}
               />
             )}
 

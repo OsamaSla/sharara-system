@@ -105,7 +105,7 @@ export function SignatureImage({ src, className }: { src?: string; className?: s
       src={src}
       alt="חתימה"
       className={className}
-      style={{ maxHeight: '60px', maxWidth: '200px', objectFit: 'contain', display: 'block' }}
+      style={{ maxHeight: '120px', maxWidth: '400px', objectFit: 'contain', display: 'block' }}
     />
   );
 }
