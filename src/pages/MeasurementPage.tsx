@@ -4,7 +4,7 @@ import ProductionPartSketch from '../ProductionPartSketch';
 import type { RowData, Sheet, ConnectionType } from '../types';
 
 function SketchThumb({ type, notes, w = 30, h = 22 }: { type: string; notes?: string; w?: number; h?: number }) {
-  const row = { type, notes: notes || '', width1: 0, height1: 0, length: 0, rSmall: 0, rBig: 0, width2: 0, height2: 0, panels: 0, dofan: 0, partNumber: '', acoustic: false, external: false, manualThickness: 0, id: '', flexible: 0, adapterType: 'ללא', adapterQty: 0, shatuzar: false, sharshuriType: 'ללא', rBig2: 0, connectionType: 'ללא' } as RowData;
+  const row = { type, notes: notes || '', width1: 0, height1: 0, length: 0, rSmall: 0, rBig: 0, width2: 0, height2: 0, panels: 0, dofan: 0, partNumber: '', acoustic: false, external: false, manualThickness: 0, id: '', flexible: 0, adapterType: 'ללא', adapterQty: 0, shatuzar: false, sharshuriType: 'ללא', rBig2: 0, connectionType: 'ללא', bendingMarks: false } as RowData;
   return <ProductionPartSketch row={row} width={w} height={h} />;
 }
 
@@ -87,6 +87,9 @@ export interface MeasurementPageProps {
   calculateArea: (row: RowData) => number;
   getPrice: (name: string) => number;
   getRowWarnings: (row: RowData) => string[];
+
+  // Activity logging
+  logActivity: (actionType: string, details?: string, snapshotData?: Sheet[]) => Promise<void>;
 }
 
 export default function MeasurementPage({
@@ -141,9 +144,33 @@ export default function MeasurementPage({
   calculateArea,
   getPrice,
   getRowWarnings,
+  logActivity,
 }: MeasurementPageProps) {
   const [dxfLoading, setDxfLoading] = useState(false);
   const [dxfResult, setDxfResult] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [showDebugLogs, setShowDebugLogs] = useState(false);
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
+  const [debugLoading, setDebugLoading] = useState(false);
+
+  const handleFetchDebugLogs = async () => {
+    setDebugLoading(true);
+    try {
+      const res = await fetch('http://localhost:5555/api/debug-logs');
+      const data = await res.json();
+      if (res.ok && data.status === 'ok') {
+        setDebugLogs(data.logs);
+        setShowDebugLogs(true);
+      } else {
+        setDebugLogs(['Error: Server returned error']);
+        setShowDebugLogs(true);
+      }
+    } catch (err: any) {
+      setDebugLogs(['Error connecting to Flask server:', err.message]);
+      setShowDebugLogs(true);
+    } finally {
+      setDebugLoading(false);
+    }
+  };
 
   const handleExportDxf = async () => {
     alert('DXF Export Triggered!');
@@ -169,6 +196,7 @@ export default function MeasurementPage({
       if (res.ok && data.status === 'ok') {
         const count = data.generated;
         setDxfResult({ ok: true, msg: 'קבצי ה-DXF נוצרו בהצלחה! (' + count + ' קבצים)' });
+        logActivity('DXF_EXPORTED', count + ' קבצים', sheets);
       } else {
         setDxfResult({ ok: false, msg: data.error || 'שגיאה לא ידועה מהשרת' });
       }
@@ -193,6 +221,9 @@ export default function MeasurementPage({
           <button onClick={handlePrint} style={{ backgroundColor: '#2563eb', color: '#ffffff', border: 'none', padding: '6px 0', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', width: '100%' }}>הדפסה / PDF</button>
           <button onClick={handleExportDxf} style={{ backgroundColor: dxfLoading ? '#64748b' : '#c2410c', color: '#ffffff', border: 'none', padding: '6px 0', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', width: '100%' }}>
             {dxfLoading ? '⏳ מייצר...' : '🔧 הוצאת קבצי DXF ללייזר'}
+          </button>
+          <button onClick={handleFetchDebugLogs} style={{ backgroundColor: '#6366f1', color: '#ffffff', border: 'none', padding: '6px 0', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', width: '100%' }}>
+            {debugLoading ? '⏳...' : '📋 DEBUG LOGS'}
           </button>
         </div>
 
@@ -499,6 +530,10 @@ export default function MeasurementPage({
                     <option value="שיכטה">שיכטה</option>
                     <option value="פיטסבורג">פיטסבורג</option>
                   </select>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={newPartData.bendingMarks || false} onChange={(e) => setNewPartData({...newPartData, bendingMarks: e.target.checked})} style={{ width: '14px', height: '14px', cursor: 'pointer', accentColor: '#2563eb' }} />
+                    <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>סימני כיפוף</span>
+                  </label>
                 </div>
 
                 {/* הערות */}
@@ -566,7 +601,7 @@ export default function MeasurementPage({
         </div>
       )}
 
-      <div style={{ overflowX: 'auto', width: '100%', backgroundColor: '#ffffff' }}>
+      <div style={{ overflow: 'hidden', width: '100%', backgroundColor: '#ffffff' }}>
         {(() => {
           const accessoryTypes = ['שתוצר','מתאם','שרשורי','חיבור גמיש'];
           const regularRows = activeSheet.rows.filter(r => !accessoryTypes.includes(r.type));
@@ -633,17 +668,23 @@ export default function MeasurementPage({
                         {row.notes && ['לאמד S','צינור עגול','קופסת פיזור','מדף אש'].includes(row.notes) ? row.notes : row.type}
                       </td>
                       <td style={{ padding: '3px 2px' }}>
-                        <select
-                          value={row.connectionType || 'ללא'}
-                          onChange={(e) => updateRow(row.id, 'connectionType', e.target.value as ConnectionType)}
-                          style={{ width: '88px', padding: '2px', border: '1px solid #cbd5e1', borderRadius: '3px', fontSize: '11px', backgroundColor: row.connectionType && row.connectionType !== 'ללא' ? '#fef3c7' : '#ffffff', color: '#0f172a', boxSizing: 'border-box', cursor: 'pointer' }}
-                        >
-                          <option value="ללא">ללא</option>
-                          <option value="פלאנץ' 20">פלאנץ' 20</option>
-                          <option value="פלאנץ' 30">פלאנץ' 30</option>
-                          <option value="שיכטה">שיכטה</option>
-                          <option value="פיטסבורג">פיטסבורג</option>
-                        </select>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                          <select
+                            value={row.connectionType || 'ללא'}
+                            onChange={(e) => updateRow(row.id, 'connectionType', e.target.value as ConnectionType)}
+                            style={{ width: '88px', padding: '2px', border: '1px solid #cbd5e1', borderRadius: '3px', fontSize: '11px', backgroundColor: row.connectionType && row.connectionType !== 'ללא' ? '#fef3c7' : '#ffffff', color: '#0f172a', boxSizing: 'border-box', cursor: 'pointer' }}
+                          >
+                            <option value="ללא">ללא</option>
+                            <option value="פלאנץ' 20">פלאנץ' 20</option>
+                            <option value="פלאנץ' 30">פלאנץ' 30</option>
+                            <option value="שיכטה">שיכטה</option>
+                            <option value="פיטסבורג">פיטסבורג</option>
+                          </select>
+                          <label title="סימני כיפוף" style={{ display: 'flex', alignItems: 'center', gap: '2px', cursor: 'pointer', flexShrink: 0 }}>
+                            <input type="checkbox" checked={row.bendingMarks || false} onChange={(e) => updateRow(row.id, 'bendingMarks', e.target.checked)} style={{ width: '13px', height: '13px', cursor: 'pointer', accentColor: '#2563eb' }} />
+                            <span style={{ fontSize: '9px', color: '#64748b', whiteSpace: 'nowrap' }}>✓ כיפוף</span>
+                          </label>
+                        </div>
                       </td>
                       <td style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: '#f8fafc' }}><input type="number" value={row.width1 || ''} onChange={(e) => updateRow(row.id, 'width1', Number(e.target.value))} style={{ width: '50px', padding: '2px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '3px', backgroundColor: '#ffffff', color: '#0f172a', boxSizing: 'border-box' }} /></td>
                       <td style={{ padding: '3px 2px', textAlign: 'center', backgroundColor: '#f8fafc' }}><input type="number" value={row.height1 || ''} onChange={(e) => updateRow(row.id, 'height1', Number(e.target.value))} style={{ width: '50px', padding: '2px', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '3px', backgroundColor: '#ffffff', color: '#0f172a', boxSizing: 'border-box' }} /></td>
@@ -903,6 +944,22 @@ export default function MeasurementPage({
         <span>סך הכל: {activeSheet.rows.length} חלקים | שטח בדף הנוכחי:</span>
         <span style={{ color: '#eab308', fontSize: '16px' }}>{activeSheet.rows.reduce((s, r) => s + calculateArea(r), 0).toFixed(3)} מ"ר</span>
       </div>
+
+      {showDebugLogs && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowDebugLogs(false)}>
+          <div style={{ backgroundColor: '#1e293b', color: '#e2e8f0', borderRadius: '8px', width: '80vw', maxHeight: '80vh', display: 'flex', flexDirection: 'column', border: '2px solid #6366f1' }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#818cf8' }}>📋 DEBUG LOGS — Flask Server Output ({debugLogs.length} lines)</span>
+              <button onClick={() => setShowDebugLogs(false)} style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', padding: '4px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>✕ סגור</button>
+            </div>
+            <div style={{ flex: 1, overflow: 'auto', padding: '12px 16px', fontFamily: 'monospace', fontSize: '12px', lineHeight: '1.6', direction: 'ltr' }}>
+              {debugLogs.length === 0 ? <span style={{ color: '#64748b' }}>No logs captured yet.</span> : debugLogs.map((line, i) => (
+                <div key={i} style={{ color: line.includes('ERROR') ? '#f87171' : line.includes('DEBUG') ? '#60a5fa' : line.includes('V-NOTCH') ? '#34d399' : line.includes('CORNER') ? '#fbbf24' : '#cbd5e1', borderBottom: '1px solid #1e293b' }}>{line}</div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

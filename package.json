@@ -5,7 +5,9 @@
   "type": "module",
   "homepage": "https://OsamaSla.github.io/sharara-system/",
   "scripts": {
-    "dev": "vite --host",
+    "dev": "concurrently \"vite\" \"python pdf_processor/app1.py --serve\"",
+    "dev:frontend": "vite",
+    "dev:backend": "python pdf_processor/app1.py --serve",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "build": "vite build",
@@ -25,6 +27,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
+    "concurrently": "^10.0.3",
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",

@@ -393,17 +393,32 @@ def draw_corner_notches(msp, x0, y0, x1, y1, conn_type, allowance):
         ])
 
 
-def draw_bend_lines_rect(doc, msp, x0, y0, x1, y1, bend_positions):
-    """Draw internal fold/bend lines on a dedicated BEND layer for press brake scoring."""
-    bend_layer = "BEND"
-    if bend_layer not in doc.layers:
-        doc.layers.new(name=bend_layer, dxfattribs={"color": 2})
-    for bx in bend_positions:
-        if x0 < bx < x1:
-            msp.add_line((bx, y0), (bx, y1), dxfattribs={"layer": bend_layer})
+def generate_split_plate_dxf(dwg, msp, width, length, bending_marks):
+    """Generate a single split plate DXF with or without V-notches."""
+    if bending_marks:
+        base_width = 3.0
+        notch_depth = 5.0
+        bend_x = length / 2.0
+
+        x_left = bend_x - (base_width / 2.0)
+        x_right = bend_x + (base_width / 2.0)
+
+        vertices = [
+            (0, 0),
+            (x_left, 0), (bend_x, notch_depth), (x_right, 0),
+            (length, 0),
+            (length, width),
+            (x_right, width), (bend_x, width - notch_depth), (x_left, width),
+            (0, width),
+            (0, 0)
+        ]
+        msp.add_lwpolyline(vertices, dxfattribs={'layer': 'CUT', 'color': 3})
+    else:
+        msp.add_lwpolyline([(0, 0), (length, 0), (length, width), (0, width), (0, 0)])
+        draw_corner_notches(msp, 0, 0, length, width, 'ללא', 0)
 
 
-def _split_kufsa_plates(w, h, length, allowance, part_id, prefix, conn_type, output_folder):
+def _split_kufsa_plates(w, h, length, allowance, part_id, prefix, conn_type, output_folder, bending_marks=False):
     """Split a box duct flat pattern into 4 individual side plates when exceeding sheet width."""
     plates = [
         (f"{part_id}_Bot", w, length),
@@ -416,8 +431,7 @@ def _split_kufsa_plates(w, h, length, allowance, part_id, prefix, conn_type, out
         ah = pl + 2 * allowance
         doc = ezdxf.new(dxfversion="R2010")
         msp = doc.modelspace()
-        msp.add_lwpolyline([(0, 0), (aw, 0), (aw, ah), (0, ah), (0, 0)])
-        draw_corner_notches(msp, 0, 0, aw, ah, conn_type, allowance)
+        generate_split_plate_dxf(doc, msp, aw, ah, bending_marks)
         add_marking_text(doc, msp, aw / 2, ah / 2, plate_name)
         safe_plate = re.sub(r'[^\w\-]', '_', plate_name)
         fn = f"{prefix}_{safe_plate}_final.dxf"
@@ -425,7 +439,7 @@ def _split_kufsa_plates(w, h, length, allowance, part_id, prefix, conn_type, out
         print(f"  [Final DXF] {plate_name}: {aw}x{ah}mm (split, {conn_type} +{allowance}mm) -> {fn}")
 
 
-def _split_maavar_plates(w, h, w2, h2, length, allowance, part_id, prefix, conn_type, output_folder):
+def _split_maavar_plates(w, h, w2, h2, length, allowance, part_id, prefix, conn_type, output_folder, bending_marks=False):
     """Split a transition/trapezoid into 4 side plates when exceeding sheet width."""
     plates = [
         (f"{part_id}_Front", w, length),
@@ -438,8 +452,7 @@ def _split_maavar_plates(w, h, w2, h2, length, allowance, part_id, prefix, conn_
         ah = pl + 2 * allowance
         doc = ezdxf.new(dxfversion="R2010")
         msp = doc.modelspace()
-        msp.add_lwpolyline([(0, 0), (aw, 0), (aw, ah), (0, ah), (0, 0)])
-        draw_corner_notches(msp, 0, 0, aw, ah, conn_type, allowance)
+        generate_split_plate_dxf(doc, msp, aw, ah, bending_marks)
         add_marking_text(doc, msp, aw / 2, ah / 2, plate_name)
         safe_plate = re.sub(r'[^\w\-]', '_', plate_name)
         fn = f"{prefix}_{safe_plate}_final.dxf"
@@ -461,6 +474,9 @@ def process_final_dxf(row, output_folder):
     """
     conn_type = row.get("connectionType", "ללא")
     allowance = CONNECTION_TYPE_MM.get(conn_type, 0)
+    bending_marks = row.get("bendingMarks", False)
+    print(f"DEBUG: Full row keys: {list(row.keys())}")
+    print(f"DEBUG: bending_marks raw value = {repr(row.get('bendingMarks'))}, parsed = {repr(bending_marks)}, type = {type(bending_marks)}")
 
     part_type = row.get("type", "קטע ישר")
     part_id = row.get("partNumber", "unknown")
@@ -480,20 +496,37 @@ def process_final_dxf(row, output_folder):
         flat_w = 2 * (w + h)
         if flat_w > SHEET_MAX_WIDTH:
             print(f"  [Final DXF] {part_id}: flat {flat_w}mm > {SHEET_MAX_WIDTH}mm, splitting into 4 plates")
-            _split_kufsa_plates(w, h, length, allowance, part_id, prefix, conn_type, output_folder)
+            _split_kufsa_plates(w, h, length, allowance, part_id, prefix, conn_type, output_folder, bending_marks)
             return
 
         bw = flat_w + 2 * allowance
         bh = length + 2 * allowance
         doc = ezdxf.new(dxfversion="R2010")
         msp = doc.modelspace()
-        msp.add_lwpolyline([(0, 0), (bw, 0), (bw, bh), (0, bh), (0, 0)])
-        draw_corner_notches(msp, 0, 0, bw, bh, conn_type, allowance)
 
         bl1 = allowance + w
         bl2 = allowance + w + h
         bl3 = allowance + 2 * w + h
-        draw_bend_lines_rect(doc, msp, 0, 0, bw, bh, [bl1, bl2, bl3])
+        if bending_marks:
+            base_width = 3.0
+            notch_depth = 5.0
+            vertices = [(0, 0)]
+            for bx in [bl1, bl2, bl3]:
+                xl = bx - base_width / 2.0
+                xr = bx + base_width / 2.0
+                vertices += [(xl, 0), (bx, notch_depth), (xr, 0)]
+            vertices.append((bw, 0))
+            vertices.append((bw, bh))
+            for bx in [bl3, bl2, bl1]:
+                xl = bx - base_width / 2.0
+                xr = bx + base_width / 2.0
+                vertices += [(xr, bh), (bx, bh - notch_depth), (xl, bh)]
+            vertices.append((0, bh))
+            vertices.append((0, 0))
+            msp.add_lwpolyline(vertices, dxfattribs={'layer': 'CUT', 'color': 3})
+        else:
+            msp.add_lwpolyline([(0, 0), (bw, 0), (bw, bh), (0, bh), (0, 0)])
+            draw_corner_notches(msp, 0, 0, bw, bh, conn_type, allowance)
 
         add_marking_text(doc, msp, bw / 2, bh / 2, str(part_id))
         fn = f"{prefix}_{conn_type.replace(' ', '_')}_final.dxf"
@@ -523,8 +556,24 @@ def process_final_dxf(row, output_folder):
         len_outer = (2 * math.pi * r_outer) / 4 + 2 * allowance
         doc_heel = ezdxf.new(dxfversion="R2010")
         msp_heel = doc_heel.modelspace()
-        msp_heel.add_lwpolyline([(0, 0), (len_outer, 0), (len_outer, h_dxf), (0, h_dxf), (0, 0)])
-        draw_corner_notches(msp_heel, 0, 0, len_outer, h_dxf, conn_type, allowance)
+        if bending_marks:
+            base_width = 3.0
+            notch_depth = 5.0
+            bend_x1 = len_outer / 3.0
+            bend_x2 = 2.0 * len_outer / 3.0
+            vertices = [(0, 0)]
+            for bx in [bend_x1, bend_x2]:
+                xl = bx - base_width / 2.0
+                xr = bx + base_width / 2.0
+                vertices += [(xl, 0), (bx, notch_depth), (xr, 0)]
+            vertices.append((len_outer, 0))
+            vertices.append((len_outer, h_dxf))
+            vertices.append((0, h_dxf))
+            vertices.append((0, 0))
+            msp_heel.add_lwpolyline(vertices, dxfattribs={'layer': 'CUT', 'color': 3})
+        else:
+            msp_heel.add_lwpolyline([(0, 0), (len_outer, 0), (len_outer, h_dxf), (0, h_dxf), (0, 0)])
+            draw_corner_notches(msp_heel, 0, 0, len_outer, h_dxf, conn_type, allowance)
         add_marking_text(doc_heel, msp_heel, len_outer / 2, h_dxf / 2, str(part_id))
         fn_heel = f"{prefix}_Kashet_Gav_final.dxf"
         doc_heel.saveas(os.path.join(output_folder, fn_heel))
@@ -533,8 +582,24 @@ def process_final_dxf(row, output_folder):
         len_inner = (2 * math.pi * r_inner) / 4 + 2 * allowance
         doc_throat = ezdxf.new(dxfversion="R2010")
         msp_throat = doc_throat.modelspace()
-        msp_throat.add_lwpolyline([(0, 0), (len_inner, 0), (len_inner, h_dxf), (0, h_dxf), (0, 0)])
-        draw_corner_notches(msp_throat, 0, 0, len_inner, h_dxf, conn_type, allowance)
+        if bending_marks:
+            base_width = 3.0
+            notch_depth = 5.0
+            bend_x1 = len_inner / 3.0
+            bend_x2 = 2.0 * len_inner / 3.0
+            vertices = [(0, 0)]
+            for bx in [bend_x1, bend_x2]:
+                xl = bx - base_width / 2.0
+                xr = bx + base_width / 2.0
+                vertices += [(xl, 0), (bx, notch_depth), (xr, 0)]
+            vertices.append((len_inner, 0))
+            vertices.append((len_inner, h_dxf))
+            vertices.append((0, h_dxf))
+            vertices.append((0, 0))
+            msp_throat.add_lwpolyline(vertices, dxfattribs={'layer': 'CUT', 'color': 3})
+        else:
+            msp_throat.add_lwpolyline([(0, 0), (len_inner, 0), (len_inner, h_dxf), (0, h_dxf), (0, 0)])
+            draw_corner_notches(msp_throat, 0, 0, len_inner, h_dxf, conn_type, allowance)
         add_marking_text(doc_throat, msp_throat, len_inner / 2, h_dxf / 2, str(part_id))
         fn_throat = f"{prefix}_Kashet_Beten_final.dxf"
         doc_throat.saveas(os.path.join(output_folder, fn_throat))
@@ -546,22 +611,35 @@ def process_final_dxf(row, output_folder):
         max_dim = max(w, w2, slope)
         if max_dim > SHEET_MAX_WIDTH:
             print(f"  [Final DXF] {part_id}: max dim {max_dim}mm > {SHEET_MAX_WIDTH}mm, splitting into 4 plates")
-            _split_maavar_plates(w, h, w2, h2, length, allowance, part_id, prefix, conn_type, output_folder)
+            _split_maavar_plates(w, h, w2, h2, length, allowance, part_id, prefix, conn_type, output_folder, bending_marks)
             return
 
         offset = (w2 - w) / 2
         aw = allowance
         doc = ezdxf.new(dxfversion="R2010")
         msp = doc.modelspace()
-        points = [
-            (-aw, -aw),
-            (w + aw, -aw),
-            (w + offset + aw, slope + aw),
-            (offset - aw, slope + aw),
-            (-aw, -aw),
-        ]
-        msp.add_lwpolyline(points)
-        draw_corner_notches(msp, -aw, -aw, w + offset + aw, slope + aw, conn_type, allowance)
+        if bending_marks:
+            base_width = 3.0
+            notch_depth = 5.0
+            bend_x1 = (w + offset) / 3.0
+            bend_x2 = 2.0 * (w + offset) / 3.0
+            x0, y0 = -aw, -aw
+            x1, y1 = w + aw, -aw
+            x2, y2 = w + offset + aw, slope + aw
+            x3, y3 = offset - aw, slope + aw
+            vertices = [(x0, y0)]
+            for bx in [bend_x1, bend_x2]:
+                xl = bx - base_width / 2.0
+                xr = bx + base_width / 2.0
+                vertices += [(xl + x0, y0), (bx + x0, y0 + notch_depth), (xr + x0, y0)]
+            vertices.append((x1, y1))
+            vertices.append((x2, y2))
+            vertices.append((x3, y3))
+            vertices.append((x0, y0))
+            msp.add_lwpolyline(vertices, dxfattribs={'layer': 'CUT', 'color': 3})
+        else:
+            msp.add_lwpolyline([(-aw, -aw), (w + aw, -aw), (w + offset + aw, slope + aw), (offset - aw, slope + aw), (-aw, -aw)])
+            draw_corner_notches(msp, -aw, -aw, w + offset + aw, slope + aw, conn_type, allowance)
         add_marking_text(doc, msp, (w / 2) + (offset / 2), slope / 2, str(part_id))
         fn = f"{prefix}_Maavar_final.dxf"
         doc.saveas(os.path.join(output_folder, fn))
@@ -583,9 +661,42 @@ def create_flask_app():
     app = Flask(__name__)
     CORS(app)
 
+    import io, sys, threading
+
+    _log_buffer = []
+    _log_lock = threading.Lock()
+    _MAX_LOG_LINES = 500
+
+    class _LogTee(io.TextIOBase):
+        def __init__(self, original, buffer, lock):
+            self._orig = original
+            self._buf = buffer
+            self._lock = lock
+
+        def write(self, s):
+            self._orig.write(s)
+            if s.strip():
+                with self._lock:
+                    self._buf.append(s.rstrip('\n'))
+                    if len(self._buf) > _MAX_LOG_LINES:
+                        self._buf.pop(0)
+            return len(s)
+
+        def flush(self):
+            self._orig.flush()
+
+    tee = _LogTee(sys.stdout, _log_buffer, _log_lock)
+    sys.stdout = tee
+    print("[DEBUG-LOGS] Server log capture started")
+
     @app.route("/api/health", methods=["GET"])
     def health():
         return jsonify({"status": "ok", "message": "Sharara DXF engine running"})
+
+    @app.route("/api/debug-logs", methods=["GET"])
+    def debug_logs():
+        with _log_lock:
+            return jsonify({"status": "ok", "logs": list(_log_buffer), "count": len(_log_buffer)})
 
     @app.route("/api/export-dxf", methods=["POST"])
     def export_dxf():
@@ -606,6 +717,9 @@ def create_flask_app():
         client_name = data.get("clientName", "PDF Import")
         project_name = data.get("projectName", "Export")
         prod_config = data.get("productionConfig", {})
+        print(f"DEBUG ROUTE: Received {len(rows)} rows")
+        for i, r in enumerate(rows):
+            print(f"  Row {i}: partNumber={r.get('partNumber')}, bendingMarks={repr(r.get('bendingMarks'))}, type={type(r.get('bendingMarks'))}")
 
         # Build output folder
         ts = datetime.now().strftime("%Y-%m-%d_%H-%M")

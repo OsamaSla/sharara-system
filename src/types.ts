@@ -42,6 +42,7 @@ export interface RowData {
   manualThickness: number;
   rBig2: number;
   connectionType: ConnectionType;
+  bendingMarks: boolean;
   productionMode: 'automatic' | 'manual';
   productionOverrides: {
     width1?: number;

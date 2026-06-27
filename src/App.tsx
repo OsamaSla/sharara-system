@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
-import { FileSpreadsheet, Layers, CreditCard, Building2, Briefcase, User, Phone, Mail, CheckCircle2 } from 'lucide-react';
+import { FileSpreadsheet, Layers, CreditCard, Building2, Briefcase, User, Phone, Mail, CheckCircle2, Shield, Calculator, Key, LogIn, Trash2, Cloud, Download, Upload, FileText } from 'lucide-react';
 import PrintableReport from './PrintableReport';
 import { SAMPLE_SNAPSHOT } from './sampleData';
 import CompanyLetterhead from './CompanyLetterhead';
@@ -18,6 +18,7 @@ import SummaryPage from './pages/SummaryPage';
 import InvoicePage from './pages/InvoicePage';
 import PriceListPage from './pages/PriceListPage';
 import ProductionPage from './pages/ProductionPage';
+import AdminLogPage from './pages/AdminLogPage';
 export type { RowData, Sheet, PriceItem };
 
 export default function App() {
@@ -78,7 +79,7 @@ export default function App() {
     }
   ]);
   const [activeSheetId, setActiveSheetId] = useState<string>('1');
-  const [activeTab, setActiveTab] = useState<'measure' | 'summary' | 'invoice' | 'pricelist' | 'production'>('measure');
+  const [activeTab, setActiveTab] = useState<'measure' | 'summary' | 'invoice' | 'pricelist' | 'production' | 'admin'>('measure');
   const [editingSheetId, setEditingSheetId] = useState<string | null>(null);
   const [editingSheetName, setEditingSheetName] = useState<string>('');
 
@@ -267,7 +268,8 @@ export default function App() {
     rBig2: 0,
     panels: 0,
     dofan: 0,
-    connectionType: 'ללא'
+    connectionType: 'ללא',
+    bendingMarks: false
   });
   const [quickQty, setQuickQty] = useState<number>(1);
   const [invoicePriceOverrides, setInvoicePriceOverrides] = useState<Record<string, number>>({});
@@ -277,7 +279,7 @@ export default function App() {
   const [loadingBackups, setLoadingBackups] = useState(false);
   const [showBackupsList, setShowBackupsList] = useState(false);
   const [overwriteWarning, setOverwriteWarning] = useState<{ show: boolean; backupName: string; snapshot: any; resolve: (yes: boolean) => void }>({ show: false, backupName: '', snapshot: null, resolve: () => {} });
-  const [isAdmin, setIsAdmin] = useState(() => sessionStorage.getItem('sharara_isAdmin') === 'true');
+  const [isAdmin, setIsAdmin] = useState(true); // DEV: temporarily hardcoded to true for AdminLogPage testing
   const [adminPasscode, setAdminPasscode] = useState(() => localStorage.getItem('sharara_adminPasscode') || '1029');
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [adminPasscodeInput, setAdminPasscodeInput] = useState('');
@@ -291,6 +293,7 @@ export default function App() {
   const [newAppPass, setNewAppPass] = useState('');
   const [newAppPassConfirm, setNewAppPassConfirm] = useState('');
   const [activeAdminSection, setActiveAdminSection] = useState<string | null>(null);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   const [formulas, setFormulas] = useState<FormulaConfig>(() => {
     try {
@@ -507,6 +510,7 @@ export default function App() {
     setInvoicePriceOverrides({});
     setPartPresets([]);
     localStorage.removeItem('sharara-presets');
+    logActivity('PAGE_RESET', 'איפוס מלא של הפרויקט', sheets);
     alert('✅ הפרויקט אופס בהצלחה!');
   };
 
@@ -541,6 +545,7 @@ export default function App() {
       await setDoc(doc(db, 'appBackups', name), snapshot);
       // Auto-export JSON to local downloads — use the SAME name as the Firebase entry
       exportProjectToJSON(name, snapshot);
+      logActivity('BACKUP_CREATED', name);
       return true;
     } catch (error) {
       console.error('Error saving backup:', error);
@@ -607,6 +612,7 @@ export default function App() {
 
         // Auto-export JSON to local downloads — use the backup ID as filename
         exportProjectToJSON(`sharara-restore-${backupId}`, data);
+        logActivity('BACKUP_RESTORED', backupId);
       }
     } catch (error) {
       console.error('Error restoring backup:', error);
@@ -1081,6 +1087,7 @@ export default function App() {
     if (activeSheetId === sheetIdToDelete) {
       setActiveSheetId(remainingSheets[0].id);
     }
+    logActivity('PAGE_RESET', 'דף מדידה נמחק', sheets);
   };
 
   // שמירת מצב נוכחי בהיסטוריית הצעדים (בטל/בצע שוב)
@@ -1088,6 +1095,30 @@ export default function App() {
     const snapshot = JSON.parse(JSON.stringify(currentSheets));
     setUndoStack(prev => [...prev.slice(-49), snapshot]); // גבול של 50 צעדים
     setRedoStack([]); // איפוס ה-redo בעת פעולה חדשה
+  };
+
+  // תיעוד פעילות ב-Firestore measurement_history collection
+  const logActivity = async (
+    actionType: 'DXF_EXPORTED' | 'PAGE_RESET' | 'DATA_SAVED' | 'PRODUCTION_SNAPSHOT' | 'BACKUP_CREATED' | 'BACKUP_RESTORED' | 'PART_ADDED' | 'PART_DELETED',
+    details: string = '',
+    snapshotData?: Sheet[]
+  ) => {
+    try {
+      const clientName = (isNewClient ? clientDetails.name : selectedClientKey) || 'Unknown';
+      const projectName = selectedProject || 'Unknown';
+      const entryId = `${Date.now()}_${actionType}`;
+      const entry: Record<string, any> = {
+        timestamp: new Date().toISOString(),
+        projectName,
+        clientName,
+        actionType,
+        details,
+      };
+      if (snapshotData) entry.snapshotData = snapshotData;
+      await setDoc(doc(db, 'measurement_history', entryId), entry);
+    } catch (err) {
+      console.warn('Activity log failed:', err);
+    }
   };
 
   // פעולת בטל (Undo)
@@ -1358,22 +1389,43 @@ export default function App() {
             </div>
           ) : (
             <>
-              {/* ─── שורת מנהל compact ─── */}
-              <div style={{ display: 'flex', gap: '5px', marginBottom: '8px', alignItems: 'center', flexWrap: 'wrap', backgroundColor: '#ecfdf5', padding: '6px 10px', borderRadius: '6px', border: '1px solid #d1fae5' }}>
-                <span style={{ fontSize: '12px', color: '#059669', fontWeight: 'bold' }}>✓ מנהל</span>
-                <div style={{ width: '1px', height: '16px', backgroundColor: '#a7f3d0', margin: '0 3px' }} />
-                <button onClick={loadSampleData} title="טען נתוני דוגמה" style={{ backgroundColor: '#7c3aed', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>📋 דוגמה</button>
-                <button onClick={importFromJSON} title="ייבוא מקובץ" style={{ backgroundColor: '#0284c7', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>📂 ייבוא</button>
-                <button onClick={handleExportJSON} title="ייצוא לקובץ + ענן" style={{ backgroundColor: '#0891b2', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>💾 ייצוא</button>
-                <button onClick={async () => { await loadFirebaseBackups(); setActiveAdminSection(activeAdminSection === 'backups' ? null : 'backups'); }} title="גיבויים בענן" style={{ backgroundColor: activeAdminSection === 'backups' ? '#059669' : '#059669', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', outline: activeAdminSection === 'backups' ? '2px solid #166534' : 'none', outlineOffset: '1px' }}>☁️ גיבויים</button>
-                <button onClick={resetProject} title="איפוס" style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>🗑️ איפוס</button>
-                <div style={{ width: '1px', height: '16px', backgroundColor: '#a7f3d0', margin: '0 3px' }} />
-                <button onClick={() => setActiveAdminSection(activeAdminSection === 'passcode' ? null : 'passcode')} style={{ backgroundColor: activeAdminSection === 'passcode' ? '#475569' : '#94a3b8', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>🔑 קוד</button>
-                <button onClick={() => setActiveAdminSection(activeAdminSection === 'credentials' ? null : 'credentials')} style={{ backgroundColor: activeAdminSection === 'credentials' ? '#7c3aed' : '#94a3b8', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>👤 כניסה</button>
-                <button onClick={() => setActiveAdminSection(activeAdminSection === 'business' ? null : 'business')} style={{ backgroundColor: activeAdminSection === 'business' ? '#d97706' : '#94a3b8', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>🏢 עסק</button>
-                <button onClick={() => setActiveAdminSection(activeAdminSection === 'formulas' ? null : 'formulas')} style={{ backgroundColor: activeAdminSection === 'formulas' ? '#2563eb' : '#94a3b8', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>📐 נוסחאות</button>
-                <button onClick={() => { setIsAdmin(false); sessionStorage.removeItem('sharara_isAdmin'); setActiveAdminSection(null); }} title="התנתק" style={{ backgroundColor: '#94a3b8', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>🚪</button>
+              {/* ─── Two-Row Admin Toolbar ─── */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '12px', backgroundColor: '#f8fafc', padding: '14px 16px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+
+                {/* Row 1: Gray Utility Buttons */}
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <button onClick={() => setActiveAdminSection(activeAdminSection === 'formulas' ? null : 'formulas')} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: activeAdminSection === 'formulas' ? '#2563eb' : '#64748b', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 700 }}><Calculator size={16} /> נוסחאות</button>
+                  <button onClick={() => setActiveAdminSection(activeAdminSection === 'business' ? null : 'business')} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: activeAdminSection === 'business' ? '#d97706' : '#64748b', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 700 }}><Building2 size={16} /> עסק</button>
+                  <button onClick={() => setActiveAdminSection(activeAdminSection === 'credentials' ? null : 'credentials')} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: activeAdminSection === 'credentials' ? '#7c3aed' : '#64748b', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 700 }}><LogIn size={16} /> כניסה</button>
+                  <button onClick={() => setActiveAdminSection(activeAdminSection === 'passcode' ? null : 'passcode')} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: activeAdminSection === 'passcode' ? '#475569' : '#64748b', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 700 }}><Key size={16} /> קוד</button>
+                  <button onClick={() => setShowAdminPanel(prev => !prev)} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: showAdminPanel ? '#7c3aed' : '#64748b', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 700 }}><Shield size={16} /> מנהל</button>
+                  <div style={{ width: '1px', height: '24px', backgroundColor: '#cbd5e1', margin: '0 4px' }} />
+                  <button onClick={() => { setIsAdmin(false); sessionStorage.removeItem('sharara_isAdmin'); setActiveAdminSection(null); }} title="התנתק" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: '#94a3b8', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 700 }}>🚪 יציאה</button>
+                </div>
+
+                {/* Row 2: Vibrant Action Buttons */}
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <button onClick={resetProject} title="איפוס" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 700 }}><Trash2 size={16} /> איפוס</button>
+                  <button onClick={async () => { await loadFirebaseBackups(); setActiveAdminSection(activeAdminSection === 'backups' ? null : 'backups'); }} title="גיבויים בענן" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: '#059669', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 700, outline: activeAdminSection === 'backups' ? '2px solid #166534' : 'none', outlineOffset: '1px' }}><Cloud size={16} /> גיבויים</button>
+                  <button onClick={handleExportJSON} title="ייצוא לקובץ + ענן" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: '#0891b2', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 700 }}><Download size={16} /> ייצוא</button>
+                  <button onClick={importFromJSON} title="ייבוא מקובץ" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: '#0284c7', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 700 }}><Upload size={16} /> ייבוא</button>
+                  <button onClick={loadSampleData} title="טען נתוני דוגמה" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', backgroundColor: '#7c3aed', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 700 }}><FileText size={16} /> דוגמה</button>
+                </div>
               </div>
+
+              {/* ─── Admin Log Panel (inline toggle) ─── */}
+              {showAdminPanel && isAdmin && (
+                <div style={{ marginTop: '12px' }}>
+                  <AdminLogPage
+                    selectedClientKey={selectedClientKey}
+                    selectedProject={selectedProject}
+                    isNewClient={isNewClient}
+                    clientDetails={clientDetails}
+                    sheets={sheets}
+                    setSheets={setSheets}
+                  />
+                </div>
+              )}
 
               {/* ─── גיבויים בענן ─── */}
               {activeAdminSection === 'backups' && (
@@ -2166,7 +2218,7 @@ export default function App() {
           </section>
 
           {/* אזור תוכן מרכזי - טבלאות וחישובים */}
-          <main className="main-content-area" style={{ width: '100%', padding: '24px', boxSizing: 'border-box', overflowX: 'auto' }}>
+          <main className="main-content-area" style={{ width: '100%', padding: '24px', boxSizing: 'border-box', overflow: 'hidden' }}>
             
             {/* בדיקת תקינות: חברה ופרויקט חייבים להיות מסומנים */}
             {!(selectedClientKey || (isNewClient && clientDetails.name.trim())) || !(selectedProject || (isNewProject && newProjectName.trim())) ? (
@@ -2241,6 +2293,7 @@ export default function App() {
                 isNewProject={isNewProject}
                 newProjectName={newProjectName}
                 productionConfig={productionConfig}
+                logActivity={logActivity}
               />
             )}
 
@@ -2289,6 +2342,7 @@ export default function App() {
                 setProducedSnapshots={setProducedSnapshots}
                 activeSheet={activeSheet}
                 handlePrint={handlePrint}
+                logActivity={logActivity}
               />
             )}
 

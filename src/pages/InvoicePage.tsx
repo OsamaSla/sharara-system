@@ -32,6 +32,7 @@ export interface InvoicePageProps {
   setProducedProjects: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   setProducedSnapshots: React.Dispatch<React.SetStateAction<Record<string, Sheet[]>>>;
   handlePrint: () => void;
+  logActivity: (actionType: string, details?: string, snapshotData?: Sheet[]) => Promise<void>;
 }
 
 export default function InvoicePage({
@@ -52,6 +53,7 @@ export default function InvoicePage({
   setProducedProjects,
   setProducedSnapshots,
   handlePrint,
+  logActivity,
 }: InvoicePageProps) {
   const totals = getProjectTotals(sheets, pricesList);
 
@@ -96,6 +98,7 @@ export default function InvoicePage({
 
             setProducedProjects(prev => ({ ...prev, [key]: true }));
             setProducedSnapshots(prev => ({ ...prev, [key]: JSON.parse(JSON.stringify(sheets)) }));
+            logActivity('PRODUCTION_SNAPSHOT', `${currentClient} — ${currentProject}`, sheets);
             alert("החשבון והמדידות לפרויקט זה הופקו וננעלו בהצלחה!\nמעתה, כל ניסיון לשנות או למחוק שורות שהופצו יציג התראה.");
           }}
           style={{
