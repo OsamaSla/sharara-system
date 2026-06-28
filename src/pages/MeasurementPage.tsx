@@ -151,6 +151,7 @@ export default function MeasurementPage({
   const [showDebugLogs, setShowDebugLogs] = useState(false);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const [debugLoading, setDebugLoading] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(false);
 
   const handleFetchDebugLogs = async () => {
     setDebugLoading(true);
@@ -216,15 +217,30 @@ export default function MeasurementPage({
       {/* Single dark header — LEFT: buttons | CENTER: parts | RIGHT: sheet+undo */}
       <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#1e293b', color: '#ffffff', padding: '8px 10px', borderTopLeftRadius: '7px', borderTopRightRadius: '7px', gap: '10px' }}>
 
-        {/* LEFT: stacked print + DXF */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0, width: '176px' }}>
-          <button onClick={handlePrint} style={{ backgroundColor: '#2563eb', color: '#ffffff', border: 'none', padding: '6px 0', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', width: '100%' }}>הדפסה / PDF</button>
-          <button onClick={handleExportDxf} style={{ backgroundColor: dxfLoading ? '#64748b' : '#c2410c', color: '#ffffff', border: 'none', padding: '6px 0', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', width: '100%' }}>
-            {dxfLoading ? '⏳ מייצר...' : '🔧 הוצאת קבצי DXF ללייזר'}
-          </button>
-          <button onClick={handleFetchDebugLogs} style={{ backgroundColor: '#6366f1', color: '#ffffff', border: 'none', padding: '6px 0', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', width: '100%' }}>
-            {debugLoading ? '⏳...' : '📋 DEBUG LOGS'}
-          </button>
+        {/* LEFT: print + actions dropdown */}
+        <div style={{ display: 'flex', gap: '4px', flexShrink: 0, alignItems: 'stretch' }}>
+          <button onClick={handlePrint} style={{ backgroundColor: '#2563eb', color: '#ffffff', border: 'none', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>הדפסה / PDF</button>
+          <div style={{ position: 'relative' }}>
+            <button onClick={() => setActionsOpen(o => !o)} style={{ backgroundColor: actionsOpen ? '#475569' : '#334155', color: '#ffffff', border: '1px solid #475569', padding: '6px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+             Actions <span style={{ fontSize: '8px' }}>{actionsOpen ? '▲' : '▼'}</span>
+            </button>
+            {actionsOpen && (
+              <>
+                <div onClick={() => setActionsOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 99 }} />
+                <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '4px', backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '6px', boxShadow: '0 8px 16px rgba(0,0,0,0.3)', zIndex: 100, minWidth: '220px', overflow: 'hidden' }}>
+                  <button onClick={() => { setActionsOpen(false); handleExportDxf(); }} style={{ width: '100%', textAlign: 'right', backgroundColor: 'transparent', color: '#ffffff', border: 'none', padding: '10px 14px', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid #334155', direction: 'rtl' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#7c2d12'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
+                    <span style={{ fontSize: '14px' }}>🔧</span><span style={{ color: '#fb923c' }}>{dxfLoading ? 'מייצר...' : 'הוצאת קבצי DXF ללייזר'}</span>
+                  </button>
+                  <button onClick={() => { setActionsOpen(false); fetch('http://localhost:5555/api/open-dxf-folder', { method: 'POST' }).catch(() => {}); }} style={{ width: '100%', textAlign: 'right', backgroundColor: 'transparent', color: '#ffffff', border: 'none', padding: '10px 14px', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid #334155', direction: 'rtl' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#064e3b'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
+                    <span style={{ fontSize: '14px' }}>📁</span><span style={{ color: '#34d399' }}>פתח תיקיית DXF</span>
+                  </button>
+                  <button onClick={() => { setActionsOpen(false); handleFetchDebugLogs(); }} style={{ width: '100%', textAlign: 'right', backgroundColor: 'transparent', color: '#94a3b8', border: 'none', padding: '7px 14px', cursor: 'pointer', fontSize: '10px', display: 'flex', alignItems: 'center', gap: '8px', direction: 'rtl' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#312e81'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
+                    <span style={{ fontSize: '12px' }}>📋</span><span style={{ color: '#a78bfa' }}>{debugLoading ? 'טוען...' : 'DEBUG LOGS'}</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {/* CENTER: part selector grids */}

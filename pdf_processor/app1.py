@@ -748,6 +748,26 @@ def create_flask_app():
             "parts": generated,
         })
 
+    @app.route("/api/open-dxf-folder", methods=["POST"])
+    def open_dxf_folder():
+        if not os.path.isdir(laser_dxf_outputs_root):
+            os.makedirs(laser_dxf_outputs_root, exist_ok=True)
+        # Find deepest leaf directory (most recently created timestamped folder)
+        deepest = laser_dxf_outputs_root
+        for dirpath, dirnames, _ in os.walk(laser_dxf_outputs_root):
+            if dirnames:
+                # Pick the most recently modified subfolder
+                subdirs_full = [os.path.join(dirpath, d) for d in dirnames]
+                newest = max(subdirs_full, key=os.path.getmtime)
+                deepest = newest
+            else:
+                deepest = dirpath
+        try:
+            os.startfile(deepest)
+            return jsonify({"status": "ok", "folder": deepest})
+        except Exception as e:
+            return jsonify({"error": f"Failed to open folder: {e}"}), 500
+
     return app
 
 
@@ -769,9 +789,10 @@ if __name__ == "__main__":
             print("   Run: pip install flask flask-cors")
             exit(1)
         flask_app = create_flask_app()
-        print("\n🚀 Sharara DXF API running on http://localhost:5555")
-        print("   POST /api/export-dxf  —  generate final DXFs with allowances")
-        print("   GET  /api/health      —  health check\n")
+        print("🚀 Sharara DXF API running on http://localhost:5555")
+        print("   POST /api/export-dxf     —  generate final DXFs with allowances")
+        print("   POST /api/open-dxf-folder —  open DXF output folder in Explorer")
+        print("   GET  /api/health          —  health check\n")
         flask_app.run(host="0.0.0.0", port=5555, debug=True)
         exit(0)
 
