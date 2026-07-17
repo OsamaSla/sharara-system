@@ -1,0 +1,1190 @@
+@page portrait-page {
+  size: A4 portrait;
+  margin: 10mm;
+}
+
+@page landscape-page {
+  size: A4 landscape;
+  margin: 5mm;
+}
+
+/* Hide element on screen, show in print/PDF */
+.screen-hide-print-show {
+  display: none;
+}
+
+@media print {
+  /* ══════════════════════════════════════════
+     1. FULL RESET
+     ══════════════════════════════════════════ */
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  #root {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+    border: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* ══════════════════════════════════════════
+     2. HIDE UI CHROME — absolutely everything interactive
+     ══════════════════════════════════════════ */
+  header,
+  section,
+  nav,
+  .no-print,
+  .no-print-element,
+  button,
+  select,
+  input:not([type="text"]):not([type="number"]),
+  label {
+    display: none !important;
+  }
+
+  /* Summary editable inputs: show value as plain text in print */
+  .summary-edit-input {
+    display: block !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: textfield !important;
+    appearance: none !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    font: inherit !important;
+    color: #000000 !important;
+    text-align: center !important;
+    width: 100% !important;
+  }
+  .summary-edit-input::-webkit-inner-spin-button,
+  .summary-edit-input::-webkit-outer-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+  }
+  .summary-edit-input:focus {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .screen-hide-print-show {
+    display: block !important;
+  }
+
+  /* ══════════════════════════════════════════
+     3. MEASUREMENT TAB — hide editor, show report only
+     ══════════════════════════════════════════ */
+  .active-tab-measure .print-document {
+    display: none !important;
+  }
+  .active-tab-measure .printable-report {
+    display: block !important;
+  }
+
+  /* ══════════════════════════════════════════
+     4. OTHER TABS — hide printable-report, FORCE print-document visible
+     ══════════════════════════════════════════ */
+  .active-tab-summary .printable-report,
+  .active-tab-invoice .printable-report,
+  .active-tab-pricelist .printable-report,
+  .active-tab-production .printable-report {
+    display: none !important;
+  }
+
+  .active-tab-summary .print-document,
+  .active-tab-invoice .print-document,
+  .active-tab-pricelist .print-document,
+  .active-tab-production .print-document {
+    display: block !important;
+  }
+
+  /* ══════════════════════════════════════════
+     5. PAGE ORIENTATION — via @page on parent tabs
+     ══════════════════════════════════════════ */
+  .portrait-print { page: portrait-page; }
+  .landscape-print { page: landscape-page; }
+
+  .print-orientation-spacer {
+    display: none !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    line-height: 0 !important;
+  }
+
+  .active-tab-summary,
+  .active-tab-production,
+  .active-tab-measure {
+    page: landscape-page;
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .active-tab-invoice,
+  .active-tab-pricelist {
+    page: portrait-page;
+  }
+
+  /* ══════════════════════════════════════════
+     6. LAYOUT RESET — strip padding/shadows/borders
+     ══════════════════════════════════════════ */
+  .active-tab-summary main,
+  .active-tab-production main,
+  .active-tab-invoice main,
+  .active-tab-pricelist main,
+  .active-tab-measure main {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+
+  .print-document {
+    max-width: none !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .summary-print-page { page: landscape-page; }
+  .production-print-document { page: landscape-page; }
+  .invoice-print-page { page: portrait-page; }
+  .pricelist-print-page { page: portrait-page; }
+
+  .print-table-wrapper {
+    overflow: visible !important;
+    width: 100% !important;
+  }
+  .print-table-wrapper table {
+    min-width: 100% !important;
+    width: 100% !important;
+  }
+  .print-table-wrapper tfoot {
+    display: table-row-group !important;
+  }
+
+  .app-content-wrapper {
+    min-height: auto !important;
+    height: auto !important;
+  }
+
+  /* ══════════════════════════════════════════
+     7. COMPANY LETTERHEAD — compact, keep together
+     ══════════════════════════════════════════ */
+  .company-letterhead {
+    margin-bottom: 6px !important;
+    padding-bottom: 6px !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .company-letterhead .cl-name { font-size: 20px !important; margin-top: 2px !important; }
+  .company-letterhead .cl-subtitle { font-size: 10px !important; margin-bottom: 2px !important; }
+  .company-letterhead .cl-eng-name { font-size: 14px !important; }
+  .company-letterhead .cl-links { font-size: 9px !important; gap: 24px !important; padding: 3px 0 !important; }
+  .company-letterhead .cl-bottom { font-size: 7.5px !important; gap: 8px !important; padding-top: 4px !important; line-height: 1.35 !important; }
+  .company-letterhead .cl-logo-img { max-height: 40px !important; max-width: 100px !important; }
+  .cl-logo-img,
+  .pt-logo {
+    display: block !important;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* ══════════════════════════════════════════
+     8. SUMMARY PAGE — page breaks between sheets
+     ══════════════════════════════════════════ */
+  .active-tab-summary .summary-project-info {
+    margin-bottom: 8px !important;
+    padding-bottom: 4px !important;
+    font-size: 11px !important;
+  }
+
+  .active-tab-summary .summary-sheet-block {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    border-bottom: none !important;
+    page-break-inside: auto;
+    break-inside: auto;
+  }
+  .active-tab-summary .summary-sheet-block:not(:last-child) {
+    page-break-after: always;
+    break-after: page;
+  }
+  .active-tab-summary .summary-sheet-block:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+
+  .active-tab-summary .print-table-wrapper table {
+    min-width: 0 !important;
+    width: 100% !important;
+    font-size: 8px !important;
+    table-layout: fixed !important;
+  }
+  .active-tab-summary .print-table-wrapper th,
+  .active-tab-summary .print-table-wrapper td {
+    padding: 3px 4px !important;
+    white-space: nowrap;
+    word-wrap: normal !important;
+    overflow-wrap: normal !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .active-tab-summary .print-table-wrapper td:nth-child(3),
+  .active-tab-summary .print-table-wrapper th:nth-child(3) { white-space: normal; min-width: 90px; }
+  .active-tab-summary .print-table-wrapper td:last-child,
+  .active-tab-summary .print-table-wrapper th:last-child { white-space: normal; min-width: 70px; }
+
+  .active-tab-summary .summary-footer {
+    margin-top: 6px !important;
+    padding-top: 4px !important;
+    font-size: 9px !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* ══════════════════════════════════════════
+     9. PRODUCTION — page breaks between production pages
+     ══════════════════════════════════════════ */
+  .active-tab-production .production-print-page {
+    padding: 8mm !important;
+    margin-bottom: 0 !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .active-tab-production .production-print-page:not(:last-child) {
+    page-break-after: always;
+    break-after: page;
+  }
+  .active-tab-production .production-print-page:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+  .active-tab-production .production-page-footer {
+    margin-top: 10px !important;
+    padding-top: 8px !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* ══════════════════════════════════════════
+     10. TABLE ROWS — avoid breaks inside rows
+     ══════════════════════════════════════════ */
+  .print-table tbody tr,
+  .production-table-row {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .production-group-section {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* ══════════════════════════════════════════
+     11. EMPTY CONTENT — hide
+     ══════════════════════════════════════════ */
+  .pt-empty-sheet,
+  .production-empty {
+    display: none !important;
+  }
+
+  /* ══════════════════════════════════════════
+     12. BLANK PAGE PREVENTION — kill empty layout containers
+         NEVER kill table cells, rows, images, or SVGs
+     ══════════════════════════════════════════ */
+  :not(td):not(th):not(tr):not(tfoot):not(thead):not(img):not(svg):not(path):not(rect):not(.pt-logo):not(.cl-logo-img):empty {
+    display: none !important;
+  }
+
+  /* ══════════════════════════════════════════
+     13. PRINTABLE REPORT — break control
+     ══════════════════════════════════════════ */
+  .printable-report table,
+  .printable-report tr,
+  .printable-report img,
+  .printable-report .company-letterhead {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .pt-sheet-section {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    page-break-after: auto;
+    break-after: auto;
+  }
+
+  .pt-header-block {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  .pt-sheet-title {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  .pt-footer-block {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  /* ══════════════════════════════════════════
+     14. SVG SKETCHES — force visibility in PDF
+     ══════════════════════════════════════════ */
+  svg.prod-sketch {
+    display: block !important;
+    overflow: visible !important;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  .production-table td:has(svg.prod-sketch) {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Grand totals row: ensure blue background prints */
+  .grand-total-row td {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Per-sheet tfoot: force white background, never tinted */
+  tfoot tr {
+    background-color: #ffffff !important;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  /* Prevent summary sheet title from orphaning across pages */
+  .summary-sheet-block {
+    page-break-inside: avoid;
+  }
+
+  /* Prevent accessories section from orphaning across pages */
+  .accessories-group-section {
+    page-break-inside: avoid;
+  }
+
+  /* Keep accessories title attached to its table */
+  .accessories-title {
+    page-break-after: avoid;
+  }
+
+}
+
+/* ── PrintableReport ── */
+.printable-report {
+  display: none;
+  font-family: 'Assistant', 'Rubik', 'Arial', sans-serif;
+  direction: rtl;
+  line-height: 1.3;
+}
+
+.pt-header-block {
+  margin-bottom: 3mm;
+  page-break-after: avoid;
+  break-after: avoid;
+}
+
+.pt-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.pt-logo {
+  max-height: 100px;
+  width: auto;
+  object-fit: contain;
+}
+
+.pt-title {
+  font-size: 18pt;
+  font-weight: bold;
+  color: #1f4e79;
+  font-family: 'Rubik', sans-serif;
+  margin-top: 10px;
+}
+
+.pt-info {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4mm 8mm;
+  font-size: 7.5pt;
+  color: #333;
+  padding: 2mm 0;
+  border-top: 1px solid #999;
+  border-bottom: 1px solid #999;
+}
+
+.pt-sheet-title {
+  font-size: 9pt;
+  font-weight: bold;
+  padding: 2mm 0 1mm;
+  text-align: start;
+  color: #1f4e79;
+  page-break-after: avoid;
+  break-after: avoid;
+}
+
+/* ── Print Tables ── */
+.print-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 7.5pt;
+  page-break-inside: auto;
+}
+
+.print-table thead {
+  display: table-header-group;
+}
+
+.print-table tbody tr {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.pt-col-headers th {
+  background-color: #1f4e79;
+  color: #ffffff;
+  font-weight: bold;
+  padding: 2mm 1mm;
+  border: 0.5pt solid #1f4e79;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.pt-regular-header th {
+  background-color: #1f4e79;
+}
+
+.pt-accessory-header th {
+  background-color: #4a5568;
+}
+
+.pt-table-accessory {
+  margin-top: 2mm;
+}
+
+.pt-accessory-section {
+  margin-top: 2mm;
+}
+
+.pt-accessory-subtitle {
+  font-size: 8pt;
+  font-weight: bold;
+  color: #4a5568;
+  padding: 1mm 0;
+  border-bottom: 1px solid #4a5568;
+  margin-bottom: 1mm;
+}
+
+.print-table td {
+  padding: 1.5mm 1mm;
+  border: 0.5pt solid #888;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.pt-even {
+  background-color: #ffffff;
+}
+
+.pt-odd {
+  background-color: #f0f5fb;
+}
+
+.pt-detail {
+  text-align: start;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pt-empty-sheet {
+  text-align: center;
+  color: #94a3b8;
+  font-style: italic;
+  padding: 5mm;
+  font-size: 9pt;
+}
+
+/* ── Footer ── */
+.pt-footer-block {
+  margin-top: 3mm;
+}
+
+.pt-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 7.5pt;
+  color: #555;
+  border-top: 1px solid #999;
+  padding-top: 2mm;
+  margin-top: 2mm;
+}
+
+.pt-footer-date {
+  white-space: nowrap;
+}
+
+.pt-footer-sign {
+  white-space: nowrap;
+}
+
+.pt-page-break-spacer {
+  display: none;
+}
+
+/* ── Company Letterhead (Picture1 style) ── */
+.company-letterhead {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-bottom: 3px double #0f172a;
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+  width: 100%;
+  text-align: center;
+}
+
+.cl-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.cl-brand-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 30px;
+  width: 100%;
+}
+
+.cl-eng-name {
+  font-size: 18px;
+  font-family: 'Times New Roman', Times, serif;
+  color: #1e293b;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.cl-logo-img {
+  max-height: 80px;
+  max-width: 200px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.cl-name {
+  font-size: 38px;
+  font-weight: 900;
+  color: #1e293b;
+  margin: 5px 0 0 0;
+  letter-spacing: 1px;
+  font-family: 'Times New Roman', Times, serif;
+}
+
+.cl-subtitle {
+  font-size: 16px;
+  font-weight: bold;
+  color: #475569;
+  margin: 2px 0 10px 0;
+  letter-spacing: 0.5px;
+}
+
+.cl-links {
+  display: flex;
+  justify-content: center;
+  gap: 60px;
+  width: 100%;
+  border-top: 1px solid #cbd5e1;
+  padding: 6px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.cl-links a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.cl-bottom {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 15px;
+  width: 100%;
+  border-top: 1.5px solid #0f172a;
+  padding-top: 10px;
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: start;
+}
+
+.cl-services {
+  padding-inline-start: 5px;
+}
+
+.cl-service-line {
+  color: #4338ca;
+  font-weight: bold;
+  margin-bottom: 2px;
+}
+
+.cl-service-sep {
+  color: #d97706;
+}
+
+.cl-contact {
+  border-inline-start: 1.5px solid #cbd5e1;
+  padding-inline-start: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: #1e293b;
+  text-align: start;
+}
+
+.company-letterhead--production {
+  border-bottom-width: 3px;
+  border-bottom-style: solid;
+  margin-bottom: 25px;
+}
+
+@media print {
+  .active-tab-pricelist, 
+  .active-tab-pricelist * {
+    display: revert !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+}
+
+.company-letterhead--production .cl-name {
+  font-size: 28px;
+}
+
+.company-letterhead--production .cl-subtitle {
+  font-size: 13px;
+  margin-bottom: 0;
+}
+
+.company-letterhead--production .cl-logo-img {
+  max-height: 70px;
+  max-width: 175px;
+}
+
+/* ── Production Worksheet ── */
+.production-empty {
+  background: #ffffff;
+  padding: 40px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  text-align: center;
+  font-weight: bold;
+}
+
+.production-print-page {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  padding: 12mm;
+  margin-bottom: 24px;
+  box-sizing: border-box;
+}
+
+.production-meta {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr;
+  gap: 16px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #94a3b8;
+  font-size: 12px;
+  text-align: start;
+}
+
+.production-meta-dates {
+  text-align: end;
+}
+
+.production-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+  text-align: start;
+  table-layout: fixed;
+}
+
+.production-table thead th {
+  background: #f1f5f9;
+  border: 1px solid #475569;
+  padding: 6px 5px;
+  font-weight: bold;
+  color: #0f172a;
+}
+
+.production-table-row td {
+  border: 1px solid #cbd5e1;
+  padding: 6px 5px;
+  vertical-align: top;
+}
+
+.production-table-row:nth-child(even) td {
+  background: #fafafa;
+}
+
+.prod-col-num {
+  width: 28px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.prod-col-part {
+  width: 72px;
+}
+
+.prod-col-sketch {
+  width: 140px;
+  text-align: center;
+}
+
+.prod-col-dims {
+  width: auto;
+}
+
+.prod-col-notes {
+  width: 110px;
+}
+
+.prod-part-number {
+  font-weight: 700;
+  font-size: 11px;
+  color: #0f172a;
+}
+
+.prod-part-type {
+  font-size: 9px;
+  color: #475569;
+  margin-top: 2px;
+}
+
+.prod-sketch {
+  display: block;
+  margin: 0 auto;
+}
+
+.prod-dims-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.prod-dim-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.prod-dim-label {
+  font-weight: 600;
+  color: #334155;
+  white-space: nowrap;
+  font-size: 9px;
+}
+
+.prod-dim-ref {
+  font-size: 8px;
+  color: #64748b;
+}
+
+.prod-dim-line {
+  flex: 1;
+  min-width: 40px;
+  border-bottom: 1px solid #475569;
+  height: 12px;
+}
+
+.prod-notes-box {
+  min-height: 48px;
+  border: 1px dashed #94a3b8;
+  border-radius: 3px;
+  padding: 4px;
+  font-size: 9px;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.prod-sign-line {
+  font-size: 8px;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.production-page-footer {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 16px;
+  border-top: 2px solid #0f172a;
+  padding-top: 10px;
+  margin-top: 12px;
+  font-size: 10px;
+  line-height: 1.4;
+  text-align: start;
+}
+
+.production-footer-sign {
+  border-inline-start: 1.5px solid #cbd5e1;
+  padding-inline-start: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.production-sign-box {
+  text-align: center;
+  border-top: 1px dashed #475569;
+  width: 130px;
+  margin-top: 8px;
+  padding-top: 3px;
+}
+
+@media print {
+  .print-only-element {
+    display: inline-block !important;
+  }
+}
+
+/* ══════════════════════════════════════════
+   RESPONSIVE UTILITY SYSTEM
+   ══════════════════════════════════════════ */
+
+/* ─── Container ─── */
+.r-container { width: 100%; max-width: 1280px; margin: 0 auto; padding: 0 16px; box-sizing: border-box; }
+.r-container-narrow { width: 100%; max-width: 800px; margin: 0 auto; padding: 0 16px; box-sizing: border-box; }
+.r-container-full { width: 100%; box-sizing: border-box; }
+
+/* ─── Flex ─── */
+.r-flex { display: flex; }
+.r-flex-row { flex-direction: row; }
+.r-flex-col { flex-direction: column; }
+.r-flex-wrap { flex-wrap: wrap; }
+.r-flex-1 { flex: 1; }
+.r-items-center { align-items: center; }
+.r-items-start { align-items: flex-start; }
+.r-items-stretch { align-items: stretch; }
+.r-justify-between { justify-content: space-between; }
+.r-justify-center { justify-content: center; }
+.r-justify-end { justify-content: flex-end; }
+.r-gap-2 { gap: 4px; }
+.r-gap-3 { gap: 6px; }
+.r-gap-4 { gap: 8px; }
+.r-gap-6 { gap: 12px; }
+.r-gap-8 { gap: 16px; }
+
+/* ─── Grid ─── */
+.r-grid { display: grid; }
+.r-grid-1 { grid-template-columns: 1fr; }
+.r-grid-2 { grid-template-columns: repeat(2, 1fr); }
+.r-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.r-grid-4 { grid-template-columns: repeat(4, 1fr); }
+.r-grid-auto { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+
+/* ─── Overflow ─── */
+.r-overflow-auto { overflow: auto; }
+.r-overflow-x { overflow-x: auto; }
+.r-overflow-hidden { overflow: hidden; }
+.r-box-border { box-sizing: border-box; }
+
+/* ─── Width ─── */
+.r-w-full { width: 100%; }
+.r-w-auto { width: auto; }
+.r-min-w-0 { min-width: 0; }
+
+/* ─── Spacing ─── */
+.r-p-0 { padding: 0; }
+.r-p-2 { padding: 4px; }
+.r-p-3 { padding: 6px; }
+.r-p-4 { padding: 8px; }
+.r-p-6 { padding: 12px; }
+.r-p-8 { padding: 16px; }
+.r-px-4 { padding-left: 8px; padding-right: 8px; }
+.r-px-6 { padding-left: 12px; padding-right: 12px; }
+.r-py-2 { padding-top: 4px; padding-bottom: 4px; }
+.r-py-3 { padding-top: 6px; padding-bottom: 6px; }
+.r-mb-2 { margin-bottom: 4px; }
+.r-mb-3 { margin-bottom: 6px; }
+.r-mb-4 { margin-bottom: 8px; }
+.r-mb-6 { margin-bottom: 12px; }
+.r-mb-8 { margin-bottom: 16px; }
+.r-mt-4 { margin-top: 8px; }
+.r-mt-6 { margin-top: 12px; }
+
+/* ─── Text ─── */
+.r-text-xs { font-size: 11px; }
+.r-text-sm { font-size: 12px; }
+.r-text-base { font-size: 14px; }
+.r-text-lg { font-size: 16px; }
+.r-text-center { text-align: center; }
+.r-text-right { text-align: right; }
+.r-font-bold { font-weight: 700; }
+.r-font-semibold { font-weight: 600; }
+
+/* ─── Display ─── */
+.r-hidden { display: none; }
+.r-block { display: block; }
+.r-inline-block { display: inline-block; }
+
+/* ─── Border Radius ─── */
+.r-rounded { border-radius: 4px; }
+.r-rounded-lg { border-radius: 8px; }
+
+/* ══════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS — MOBILE (< 768px)
+   ══════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  /* Hide desktop-only, show mobile-only */
+  .r-desktop-only { display: none !important; }
+  .r-mobile-only { display: flex !important; }
+  .r-mobile-block { display: block !important; }
+
+  /* Flex: stack on mobile */
+  .r-flex-row { flex-direction: column; }
+  .r-flex-wrap { flex-wrap: wrap; }
+
+  /* Grid: collapse to 1-2 columns */
+  .r-grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .r-grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .r-grid-auto { grid-template-columns: 1fr; }
+
+  /* Spacing: tighten */
+  .r-p-8 { padding: 12px; }
+  .r-px-6 { padding-left: 8px; padding-right: 8px; }
+
+  /* Width: full */
+  .r-w-full { width: 100%; }
+
+  /* Cards: inputs full-width and touch-friendly */
+  .r-card-field input,
+  .r-card-field select,
+  .measure-form-fields input,
+  .measure-form-fields select {
+    width: 100% !important;
+    min-height: 40px !important;
+    font-size: 14px !important;
+  }
+
+  /* Tables: horizontal scroll */
+  .r-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .r-table-scroll table { min-width: 600px; }
+
+  /* Mobile card system */
+  .r-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .r-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .r-card-title {
+    font-weight: 700;
+    font-size: 14px;
+    color: #0f172a;
+  }
+  .r-card-badge {
+    font-weight: 700;
+    font-size: 13px;
+    color: #1d4ed8;
+    background: #eff6ff;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .r-card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .r-card-field {
+    display: flex;
+    flex-direction: column;
+  }
+  .r-card-field label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #64748b;
+    margin-bottom: 2px;
+  }
+  .r-card-field input,
+  .r-card-field select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    font-size: 14px;
+    text-align: center;
+    box-sizing: border-box;
+    min-height: 36px;
+  }
+  .r-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid #f1f5f9;
+  }
+  .r-card-actions button {
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  /* Nav tabs: vertical stack */
+  .nav-tabs-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 4px !important;
+    padding: 4px !important;
+  }
+  .nav-tabs-bar > button {
+    width: 100% !important;
+    padding: 10px 16px !important;
+    font-size: 13px !important;
+    justify-content: center !important;
+  }
+
+  /* Info bar: stack */
+  .info-bar-section {
+    flex-direction: column !important;
+    gap: 8px !important;
+    align-items: flex-start !important;
+    padding: 10px 12px !important;
+  }
+  .info-bar-section > div {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    border-right: none !important;
+    padding-right: 0 !important;
+  }
+  .info-bar-section > button {
+    width: 100% !important;
+    text-align: center !important;
+  }
+
+  /* Measure header: stack */
+  .measure-header {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  .measure-header > div {
+    width: 100% !important;
+  }
+  .measure-part-buttons > div {
+    grid-template-columns: repeat(3, 1fr) !important;
+    width: 100% !important;
+  }
+
+  /* Form: vertical */
+  .measure-form-fields {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  .measure-form-fields > div {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Bulk actions: wrap */
+  .bulk-actions-bar {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  /* Totals: stack */
+  .totals-bar {
+    flex-direction: column !important;
+    text-align: center !important;
+    gap: 4px !important;
+  }
+
+  /* Formulas admin */
+  .formulas-admin-wrapper {
+    padding: 8px !important;
+  }
+  .formulas-admin-wrapper table {
+    font-size: 11px !important;
+  }
+  .formulas-admin-wrapper input[type="text"] {
+    font-size: 13px !important;
+    padding: 8px !important;
+  }
+  .formulas-admin-wrapper button {
+    padding: 8px 14px !important;
+    font-size: 12px !important;
+  }
+
+  /* Main content */
+  .main-content-area {
+    padding: 12px !important;
+  }
+}
+
+/* Desktop: show desktop-only, hide mobile-only */
+@media (min-width: 769px) {
+  .r-desktop-only { display: block !important; }
+  .r-mobile-only { display: none !important; }
+  .r-mobile-block { display: none !important; }
+}

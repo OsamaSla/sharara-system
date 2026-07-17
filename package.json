@@ -1,0 +1,44 @@
+{
+  "name": "sharara-system",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "homepage": "https://OsamaSla.github.io/sharara-system/",
+  "scripts": {
+    "dev": "concurrently \"vite\" \"python pdf_processor/app1.py --serve\"",
+    "dev:frontend": "vite",
+    "dev:backend": "python pdf_processor/app1.py --serve",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "exceljs": "^3.4.0",
+    "firebase": "^12.14.0",
+    "lucide-react": "^1.17.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@tailwindcss/postcss": "^4.3.1",
+    "@types/node": "^24.13.1",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "autoprefixer": "^10.5.2",
+    "concurrently": "^10.0.3",
+    "eslint": "^10.3.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "gh-pages": "^6.3.0",
+    "globals": "^17.6.0",
+    "postcss": "^8.5.16",
+    "tailwindcss": "^4.3.1",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.59.2",
+    "vite": "^8.0.12"
+  }
+}

@@ -1,0 +1,42 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&family=Rubik:ital,wght@0,300..900;1,300..900&family=David+Libre:wght@400;500;700&family=Suez+One&family=Frank+Ruhl+Libre:wght@300..900&display=swap');
+
+:root {
+  --sans: 'Assistant', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: 'Rubik', 'Assistant', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+}
+
+#root {
+  width: 1126px;
+  max-width: 100%;
+  margin: 0 auto;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+@media print {
+  html, body {
+    height: auto !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  #root {
+    width: 100% !important;
+    max-width: none !important;
+    border: none !important;
+    min-height: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+}
+
+body {
+  margin: 0;
+}
